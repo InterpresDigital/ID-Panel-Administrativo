@@ -1,6 +1,12 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { AiBriefingRecord, sanitizeLegacyAnswers, toStringArray } from "./aiBriefingTypes";
+import {
+  AiBriefingRecord,
+  safeStr,
+  sanitizeLegacyAnswers,
+  toAttachmentArray,
+  toStringArray,
+} from "./aiBriefingTypes";
 import { loadPdfLogo, drawProportionalLogo } from "./pdfLogoHelper";
 
 const COLORS = {
@@ -65,7 +71,10 @@ export const generateAiBriefingPDF = async (briefing: AiBriefingRecord): Promise
     autoTable(doc, {
       startY: currentY,
       head: [[title, ""]],
-      body: rows.map(([label, val]) => [label, val && val.trim() ? val : "No especificado / Pendiente"]),
+      body: rows.map(([label, val]) => {
+        const cleanVal = safeStr(val).trim();
+        return [label, cleanVal ? cleanVal : "No especificado / Pendiente"];
+      }),
       theme: "grid",
       headStyles: {
         fillColor: COLORS.accent,
@@ -163,8 +172,8 @@ export const generateAiBriefingPDF = async (briefing: AiBriefingRecord): Promise
     ["Observaciones y comentarios adicionales", a.additionalComments],
     [
       "Documentos adjuntos",
-      (a.attachments || []).length > 0
-        ? a.attachments.map((att) => `${att.name} (${att.url})`).join("\n")
+      toAttachmentArray(a.attachments).length > 0
+        ? toAttachmentArray(a.attachments).map((att) => `${att.name} (${att.url})`).join("\n")
         : "Sin archivos adjuntos",
     ],
   ]);

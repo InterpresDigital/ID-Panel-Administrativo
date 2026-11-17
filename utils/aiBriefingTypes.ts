@@ -342,6 +342,32 @@ export const toStringArray = (val: unknown): string[] => {
   return [];
 };
 
+export const clampSection = (val: unknown, fallback = 1): number => {
+  const n = Number(val);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(10, Math.max(1, Math.round(n)));
+};
+
+export const safeStr = (val: unknown): string => {
+  if (typeof val === "string") return val;
+  if (Array.isArray(val)) return val.map((x) => String(x ?? "").trim()).filter(Boolean).join(", ");
+  if (val !== null && val !== undefined && typeof val !== "object") return String(val);
+  return "";
+};
+
+export const toAttachmentArray = (val: unknown): AiBriefingAttachment[] => {
+  if (!Array.isArray(val)) return [];
+  return val
+    .filter((item) => item && typeof item === "object" && typeof (item as any).url === "string")
+    .map((item: any) => ({
+      name: safeStr(item.name || "Documento adjunto"),
+      url: safeStr(item.url),
+      size: Number(item.size) || 0,
+      type: safeStr(item.type || "application/octet-stream"),
+      uploadedAt: safeStr(item.uploadedAt || ""),
+    }));
+};
+
 export const toNumberArray = (val: unknown): number[] => {
   const rawList = Array.isArray(val)
     ? val
@@ -357,7 +383,7 @@ export const toNumberArray = (val: unknown): number[] => {
 
 const hasArr = (val?: unknown): boolean => toStringArray(val).length > 0;
 
-const STRING_ANSWER_KEYS: (keyof AiBriefingAnswers)[] = [
+export const ALLOWED_STRING_RFI_FIELDS: (keyof AiBriefingAnswers)[] = [
   "requestDate",
   "companyName",
   "contactName",
@@ -396,32 +422,27 @@ const STRING_ANSWER_KEYS: (keyof AiBriefingAnswers)[] = [
 ];
 
 /**
- * Normaliza tipos (especialmente arrays devueltos como strings por Gemini Live) y limpia
- * valores heredados por defecto ("24/7" / "Español") en borradores antiguos.
+ * Normaliza todos los tipos (strings, arrays, números y adjuntos) para blindar al 100% la interfaz
+ * y los PDFs contra cualquier formato inesperado devuelto por el modelo de voz o datos heredados.
  */
 export const sanitizeLegacyAnswers = (raw?: Partial<AiBriefingAnswers> | null): AiBriefingAnswers => {
+  const safeRaw = raw && typeof raw === "object" ? raw : {};
   const merged: AiBriefingAnswers = {
     ...INITIAL_AI_BRIEFING_ANSWERS,
-    ...(raw || {}),
+    ...safeRaw,
   };
 
-  for (const key of STRING_ANSWER_KEYS) {
-    const v = (merged as any)[key];
-    if (typeof v !== "string") {
-      (merged as any)[key] = Array.isArray(v)
-        ? v.join(", ")
-        : v !== null && v !== undefined
-        ? String(v)
-        : "";
-    }
+  for (const key of ALLOWED_STRING_RFI_FIELDS) {
+    (merged as any)[key] = safeStr((merged as any)[key]);
   }
 
   merged.targetUsers = toStringArray(merged.targetUsers);
   merged.channels = toStringArray(merged.channels);
   merged.pendingSections = toNumberArray(merged.pendingSections);
-  merged.attachments = Array.isArray(merged.attachments) ? merged.attachments : [];
+  merged.attachments = toAttachmentArray(merged.attachments);
   merged.privacyConsentAccepted = Boolean(merged.privacyConsentAccepted);
   merged.observationsConfirmed = Boolean(merged.observationsConfirmed);
+  merged.lastActiveSection = clampSection(merged.lastActiveSection, 1);
 
   // Si una sección ya quedó contestada, quitarla de pendingSections para no confundir el avance
   merged.pendingSections = merged.pendingSections.filter((secNum) => !isSectionFilled(merged, secNum));
@@ -792,10 +813,20 @@ export const updateRfiFieldsTool: FunctionDeclaration = {
         description:
           "En la Etapa 10, ponlo en true únicamente cuando el cliente confirme explícitamente que NO tiene observaciones ni comentarios adicionales que agregar.",
       },
+      focusSection: {
+        type: Type.NUMBER,
+        description:
+          "Número de etapa (1 al 10) a la que el cliente pidió regresar, profundizar o revisar en pantalla (ej. si dice 'regresemos a la pregunta 4', envía focusSection=4).",
+      },
+      appendMode: {
+        type: Type.BOOLEAN,
+        description:
+          "Ponlo en true cuando el cliente esté agregando o profundizando detalles adicionales sobre una etapa ya contestada, para sumar la información nueva sin borrar lo que ya había dicho antes.",
+      },
       markSectionPending: {
         type: Type.NUMBER,
         description:
-          "Úsalo ÚNICAMENTE si el cliente dice explícitamente 'no lo sé' o 'lo revisará TI después' respecto a toda una sección (1 al 9). Nunca lo uses si el cliente sí respondió la pregunta.",
+          "Úsalo ÚNICAMENTE si el cliente dice explícitamente 'no lo sé' o 'lo revisará TI después' respecto a una sección (1 al 9).",
       },
     },
   },
@@ -899,10 +930,13 @@ CONOCIMIENTO OFICIAL DE INTERPRES DIGITAL (PARA RESPONDER SI PREGUNTAN SOBRE LA 
   6. **Plataformas SaaS propias:** *Lúmina Core* (estéticas, clínicas y spas), *TKD Register* (gestión deportiva y torneos) y *Wedding Calm Studio*.
 - **PROHIBIDO DAR PRECIOS O COSTOS:** Nunca menciones precios ni tarifas. Si preguntan por costos o desean atención directa, indícales que la inversión se cotiza exactamente a la medida de este diagnóstico con un especialista de Interpres Digital (pueden agendar videollamada en panel.interpresdigital.com/#/book, escribir por WhatsApp al +52 415 179 0204 o al correo admin@interpresdigital.com).
 
-REGLA DE GUARDADO CON updateRfiFields Y CIERRE EN ETAPA 10:
-- En cada respuesta del cliente llama a updateRfiFields con lo que expresó y haz ÚNICAMENTE la nextQuestion que te devuelva la herramienta.
-- En targetUsers y channels envía siempre un arreglo JSON de strings (ej. ["WhatsApp Business"]).
-- En Etapa 10: pregunta si desea dejar alguna observación adicional y ESPERA su respuesta. Regístrala con additionalComments o noAdditionalComments: true, despídete brevemente invitándolo a revisar su resumen en pantalla y presionar Enviar RFI, e invoca finishVoiceInterview.
+REGLA DE FLEXIBILIDAD NATURAL, NAVEGACIÓN LIBRE Y GUARDADO CON updateRfiFields:
+- **FLEXIBILIDAD TOTAL CON EL CLIENTE:** La guía de etapas (1 a 10) es tu brújula de orden sugerido, NUNCA una camisa de fuerza rígida.
+  * Si en cualquier momento el cliente te dice *"Oye, regresemos a la pregunta 4"*, *"Quiero profundizar o agregar algo en el punto anterior"*, *"Corrige lo que te dije de canales"* o te hace una pregunta abierta: **atiéndelo de inmediato con total naturalidad**.
+  * Si pide volver o profundizar en una etapa específica (1 al 10), llama a \`updateRfiFields({ focusSection: N })\` para posicionar su pantalla en esa etapa, escúchalo, guarda el complemento usando \`appendMode: true\` (para sumar a lo ya guardado sin borrar lo anterior, o sin \`appendMode\` si pidió reemplazar/corregir un dato), pregúntale brevemente si desea detallar algo más de ese punto y, cuando esté listo, retoma con suavidad la siguiente etapa pendiente que te sugiere el sistema (\`suggestedNextStage\`).
+- Cuando el cliente simplemente responda la pregunta en curso de forma normal, guarda con \`updateRfiFields\` y avanza con naturalidad usando la brújula \`suggestedNextQuestion\` (1 sola pregunta breve a la vez, sin encadenar varias preguntas juntas).
+- En \`targetUsers\` y \`channels\` envía siempre un arreglo JSON de strings (ej. \`["WhatsApp Business"]\`).
+- En Etapa 10: pregunta si desea dejar alguna observación adicional (o complementar alguna etapa anterior) y ESPERA su respuesta. Regístrala con \`additionalComments\` o \`noAdditionalComments: true\`, despídete brevemente invitándolo a revisar su resumen en pantalla y presionar Enviar RFI, e invoca \`finishVoiceInterview\`.
 
 ESTADO ACTUAL:
 - Etapa activa: Etapa ${nextStage.number} de 10 (${nextStage.shortTitle}).

@@ -52,11 +52,15 @@ import {
   CHANNEL_OPTIONS,
   INITIAL_AI_BRIEFING_ANSWERS,
   TARGET_USER_OPTIONS,
+  clampSection,
   hasAnySectionProgress,
   isSectionFilled,
   isSectionPartial,
   resolveResumeSection,
+  safeStr,
   sanitizeLegacyAnswers,
+  toAttachmentArray,
+  toNumberArray,
   toStringArray,
 } from "../utils/aiBriefingTypes";
 import {
@@ -718,19 +722,19 @@ const PublicAiBriefing: React.FC = () => {
       },
       onFieldsUpdated: (partial, pendingSec) => {
         setAnswers((prev) => {
-          const nextPending = new Set(prev.pendingSections || []);
+          const nextPending = new Set(toNumberArray(prev.pendingSections));
           if (typeof pendingSec === "number" && pendingSec >= 1 && pendingSec <= 10) {
-            nextPending.add(pendingSec);
+            nextPending.add(clampSection(pendingSec));
           }
 
           const nextPartial = { ...partial };
           if (
             typeof nextPartial.additionalComments === "string" &&
             nextPartial.additionalComments.trim() &&
-            prev.additionalComments.trim() &&
-            !nextPartial.additionalComments.includes(prev.additionalComments.trim())
+            safeStr(prev.additionalComments).trim() &&
+            !nextPartial.additionalComments.includes(safeStr(prev.additionalComments).trim())
           ) {
-            nextPartial.additionalComments = `${prev.additionalComments.trim()}\n• ${nextPartial.additionalComments.trim()}`;
+            nextPartial.additionalComments = `${safeStr(prev.additionalComments).trim()}\n• ${nextPartial.additionalComments.trim()}`;
           }
 
           const merged: AiBriefingAnswers = sanitizeLegacyAnswers({
@@ -739,14 +743,19 @@ const PublicAiBriefing: React.FC = () => {
             pendingSections: Array.from(nextPending),
           });
 
-          // Avanzar visualmente la etapa activa (1 -> ... -> 9 -> 10) y persistirla para nunca reiniciar en 1
-          let computedSection = activeSectionRef.current;
+          // Si Nexia posicionó una etapa solicitada por el cliente (focusSection -> lastActiveSection), respetarla;
+          // de lo contrario avanzar suavemente a la siguiente etapa pendiente (1 -> ... -> 9 -> 10)
+          let computedSection = clampSection(activeSectionRef.current);
           const touchedSec = AI_RFI_SECTIONS.find((sec) =>
             sec.fields.some((f) => f in partial)
           );
 
           if (typeof partial.lastActiveSection === "number") {
-            computedSection = partial.lastActiveSection;
+            computedSection = clampSection(partial.lastActiveSection);
+            if (touchedSec) {
+              setRecentlyUpdatedSection(touchedSec.number);
+              setTimeout(() => setRecentlyUpdatedSection(null), 2800);
+            }
           } else if (touchedSec) {
             setRecentlyUpdatedSection(touchedSec.number);
             if (touchedSec.number === 10) {
@@ -757,9 +766,8 @@ const PublicAiBriefing: React.FC = () => {
                   s.number >= touchedSec.number &&
                   s.number <= 9 &&
                   !isSectionFilled(merged, s.number) &&
-                  !(merged.pendingSections || []).includes(s.number)
+                  !toNumberArray(merged.pendingSections).includes(s.number)
               );
-              // Si ya se completó la Etapa 9 (o todas las etapas hasta la 9), avanzar directo a la Etapa 10
               computedSection = nextOpenSec ? nextOpenSec.number : 10;
             }
             setTimeout(() => setRecentlyUpdatedSection(null), 2800);
@@ -1912,10 +1920,10 @@ const PublicAiBriefing: React.FC = () => {
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/80 pb-4">
                 <div>
                   <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider">
-                    Sección {activeSection} de 10
+                    Sección {clampSection(activeSection)} de 10
                   </span>
                   <h2 className="text-xl font-black text-white">
-                    {AI_RFI_SECTIONS[activeSection - 1].title}
+                    {(AI_RFI_SECTIONS[clampSection(activeSection) - 1] || AI_RFI_SECTIONS[0]).title}
                   </h2>
                 </div>
 
@@ -1924,12 +1932,12 @@ const PublicAiBriefing: React.FC = () => {
                     onClick={() => togglePendingSection(activeSection)}
                     className={clsx(
                       "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
-                      (answers.pendingSections || []).includes(activeSection)
+                      toNumberArray(answers.pendingSections).includes(activeSection)
                         ? "bg-amber-500/20 border-amber-400 text-amber-200"
                         : "bg-slate-800 border-slate-600/80 text-slate-200 hover:border-slate-400 hover:text-white"
                     )}
                   >
-                    {(answers.pendingSections || []).includes(activeSection)
+                    {toNumberArray(answers.pendingSections).includes(activeSection)
                       ? "✓ Marcado pendiente para TI"
                       : "Marcar pendiente para TI / Colega"}
                   </button>
@@ -2395,8 +2403,10 @@ const PublicAiBriefing: React.FC = () => {
                         },
                       ].map((card) => {
                         const isDone = isSectionFilled(answers, card.sec);
-                        const isPend = (answers.pendingSections || []).includes(card.sec);
-                        const populated = card.items.filter(([, val]) => val && val.trim().length > 0);
+                        const isPend = toNumberArray(answers.pendingSections).includes(card.sec);
+                        const populated = card.items
+                          .map(([lbl, val]) => [lbl, safeStr(val).trim()] as [string, string])
+                          .filter(([, val]) => val.length > 0);
                         return (
                           <div
                             key={card.sec}
@@ -2471,9 +2481,9 @@ const PublicAiBriefing: React.FC = () => {
                       />
                     </label>
 
-                    {(answers.attachments || []).length > 0 && (
+                    {toAttachmentArray(answers.attachments).length > 0 && (
                       <div className="space-y-2 pt-2">
-                        {answers.attachments.map((att, idx) => (
+                        {toAttachmentArray(answers.attachments).map((att, idx) => (
                           <div
                             key={idx}
                             className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-600/85 text-xs"
@@ -2605,4 +2615,55 @@ const FieldTextarea = ({
   </div>
 );
 
-export default PublicAiBriefing;
+class AiBriefingErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any) {
+    console.error("Error controlado en vista de Briefing IA:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-slate-900 border border-indigo-500/40 rounded-3xl p-7 text-center space-y-4 shadow-2xl">
+            <AlertCircle className="w-10 h-10 text-amber-400 mx-auto" />
+            <h2 className="text-lg font-black">Tu avance está resguardado</h2>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Ocurrió un ajuste visual inesperado, pero todas tus respuestas están guardadas de forma segura. Presiona continuar para retomar tu diagnóstico.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                this.setState({ hasError: false });
+                window.location.reload();
+              }}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white"
+            >
+              Continuar mi diagnóstico
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const SafePublicAiBriefing: React.FC = () => (
+  <AiBriefingErrorBoundary>
+    <PublicAiBriefing />
+  </AiBriefingErrorBoundary>
+);
+
+export default SafePublicAiBriefing;

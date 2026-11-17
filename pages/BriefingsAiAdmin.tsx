@@ -15,7 +15,9 @@ import {
   AI_RFI_SECTIONS,
   isSectionFilled,
   formatVoiceDuration,
+  safeStr,
   sanitizeLegacyAnswers,
+  toAttachmentArray,
   toStringArray,
 } from "../utils/aiBriefingTypes";
 import { generateAiBriefingPDF } from "../utils/aiBriefingPdfGenerator";
@@ -469,9 +471,9 @@ const BriefingsAiAdmin: React.FC = () => {
                   </p>
                 </div>
 
-                {(selectedBriefing.answers.attachments || []).length > 0 && (
+                {toAttachmentArray(selectedBriefing.answers.attachments).length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    {selectedBriefing.answers.attachments.map((att, idx) => (
+                    {toAttachmentArray(selectedBriefing.answers.attachments).map((att, idx) => (
                       <a
                         key={idx}
                         href={att.url}
@@ -789,7 +791,7 @@ const InfoCard = ({
         <div key={i}>
           <div className="text-[11px] font-bold text-gray-400 uppercase">{label}</div>
           <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-            {val && val.trim() ? val : <span className="text-gray-400 italic">Pendiente / No especificado</span>}
+            {safeStr(val).trim() ? safeStr(val) : <span className="text-gray-400 italic">Pendiente / No especificado</span>}
           </div>
         </div>
       ))}

@@ -9,15 +9,18 @@ import {
 } from "@google/genai";
 import {
   AI_RFI_SECTIONS,
+  ALLOWED_STRING_RFI_FIELDS,
   AiBriefingAnswers,
   INITIAL_AI_BRIEFING_ANSWERS,
   buildVoiceConsultantSystemPrompt,
+  clampSection,
   finishVoiceInterviewTool,
   getNextQuestionGuidance,
   hasAnySectionProgress,
   isSectionFilled,
   isSectionPartial,
   resolveResumeSection,
+  safeStr,
   sanitizeLegacyAnswers,
   toStringArray,
   updateRfiFieldsTool,
@@ -466,188 +469,232 @@ export class AiVoiceBriefingSession {
   private handleServerMessage(msg: LiveServerMessage) {
     if (this.closed) return;
 
-    // Guardar handle de reanudación continua provisto por Gemini Live
-    const newHandle = (msg as any).sessionResumptionUpdate?.newHandle;
-    if (typeof newHandle === "string" && newHandle.trim()) {
-      this.resumptionHandle = newHandle;
-    }
+    try {
+      // Guardar handle de reanudación continua provisto por Gemini Live
+      const newHandle = (msg as any).sessionResumptionUpdate?.newHandle;
+      if (typeof newHandle === "string" && newHandle.trim()) {
+        this.resumptionHandle = newHandle;
+      }
 
-    // 1. Si hubo interrupción mientras no estaba pausado
-    if (msg.serverContent?.interrupted) {
-      this.stopPlaybackQueue();
+      // 1. Si hubo interrupción mientras no estaba pausado
+      if (msg.serverContent?.interrupted) {
+        this.stopPlaybackQueue();
+        if (!this.isPaused) {
+          this.callbacks.onStatusChange("connected");
+        }
+      }
+
+      // 2. Transcripciones en tiempo real
+      const inTx = msg.serverContent?.inputTranscription?.text;
+      if (inTx && inTx.trim()) {
+        this.spokeInCurrentModelTurn = false;
+        this.callbacks.onTranscriptUpdate("user", inTx);
+      }
+      const outTx = msg.serverContent?.outputTranscription?.text;
+      if (outTx && outTx.trim()) {
+        this.callbacks.onTranscriptUpdate("agent", outTx);
+      }
+
+      // 3. Reproducción fluida de chunks de audio PCM 24kHz (omitir si el usuario puso Pausa)
       if (!this.isPaused) {
-        this.callbacks.onStatusChange("connected");
-      }
-    }
-
-    // 2. Transcripciones en tiempo real
-    const inTx = msg.serverContent?.inputTranscription?.text;
-    if (inTx && inTx.trim()) {
-      this.spokeInCurrentModelTurn = false;
-      this.callbacks.onTranscriptUpdate("user", inTx);
-    }
-    const outTx = msg.serverContent?.outputTranscription?.text;
-    if (outTx && outTx.trim()) {
-      this.callbacks.onTranscriptUpdate("agent", outTx);
-    }
-
-    // 3. Reproducción fluida de chunks de audio PCM 24kHz (omitir si el usuario puso Pausa)
-    if (!this.isPaused) {
-      const parts = msg.serverContent?.modelTurn?.parts || [];
-      for (const part of parts) {
-        if (part.inlineData?.data && part.inlineData.mimeType?.startsWith("audio/pcm")) {
-          this.enqueueAudioChunk(part.inlineData.data);
+        const parts = msg.serverContent?.modelTurn?.parts || [];
+        for (const part of parts) {
+          if (part.inlineData?.data && part.inlineData.mimeType?.startsWith("audio/pcm")) {
+            this.enqueueAudioChunk(part.inlineData.data);
+          }
         }
       }
-    }
 
-    if (msg.serverContent?.turnComplete) {
-      this.spokeInCurrentModelTurn = false;
-      if (!this.isPaused && this.activeSources.size === 0) {
-        this.callbacks.onStatusChange("connected");
-      }
-      if (this.pendingFinishSummary !== null) {
-        this.postFinishTurnCompleted = true;
-        if (this.activeSources.size === 0) {
-          this.scheduleGracefulFinish(900);
+      if (msg.serverContent?.turnComplete) {
+        this.spokeInCurrentModelTurn = false;
+        if (!this.isPaused && this.activeSources.size === 0) {
+          this.callbacks.onStatusChange("connected");
+        }
+        if (this.pendingFinishSummary !== null) {
+          this.postFinishTurnCompleted = true;
+          if (this.activeSources.size === 0) {
+            this.scheduleGracefulFinish(900);
+          }
         }
       }
-    }
 
-    // 4. Ejecución de Tool Calls en vivo (Autollenado visual del RFI + Guía determinista de siguiente pregunta)
-    if (msg.toolCall?.functionCalls && msg.toolCall.functionCalls.length > 0) {
-      const responses = msg.toolCall.functionCalls.map((fc) => {
-        const args = (fc.args || {}) as Record<string, any>;
+      // 4. Ejecución flexible y segura de Tool Calls en vivo (Autollenado + Navegación Libre + Brújula)
+      if (msg.toolCall?.functionCalls && msg.toolCall.functionCalls.length > 0) {
+        const allowedStrings = new Set<string>(ALLOWED_STRING_RFI_FIELDS as string[]);
 
-        if (fc.name === "updateRfiFields") {
-          const { markSectionPending, noAdditionalComments, ...fieldUpdates } = args;
-          const cleaned: Partial<AiBriefingAnswers> = {};
+        const responses = msg.toolCall.functionCalls.map((fc) => {
+          const args = (fc.args && typeof fc.args === "object" ? fc.args : {}) as Record<string, any>;
 
-          for (const [key, val] of Object.entries(fieldUpdates)) {
-            if (val === undefined || val === null || val === "") continue;
-            // Coerción estricta de tipos para evitar errores .join is not a function
-            if (key === "targetUsers" || key === "channels") {
-              const arr = toStringArray(val);
-              if (arr.length > 0) {
-                (cleaned as any)[key] = arr;
+          if (fc.name === "updateRfiFields") {
+            const {
+              markSectionPending,
+              noAdditionalComments,
+              focusSection,
+              appendMode,
+              ...fieldUpdates
+            } = args;
+
+            const cleaned: Partial<AiBriefingAnswers> = {};
+            const useAppend = Boolean(appendMode);
+
+            for (const [key, val] of Object.entries(fieldUpdates)) {
+              if (val === undefined || val === null || val === "") continue;
+
+              if (key === "targetUsers" || key === "channels") {
+                const incomingArr = toStringArray(val);
+                if (incomingArr.length > 0) {
+                  const prevArr = toStringArray((this.latestAnswers as any)[key]);
+                  (cleaned as any)[key] = useAppend
+                    ? Array.from(new Set([...prevArr, ...incomingArr]))
+                    : incomingArr;
+                }
+              } else if (allowedStrings.has(key)) {
+                const incomingText = safeStr(val).trim();
+                if (!incomingText) continue;
+
+                const prevText = safeStr((this.latestAnswers as any)[key]).trim();
+                if (
+                  (useAppend || key === "additionalComments") &&
+                  prevText &&
+                  !incomingText.toLowerCase().includes(prevText.toLowerCase()) &&
+                  !prevText.toLowerCase().includes(incomingText.toLowerCase())
+                ) {
+                  (cleaned as any)[key] =
+                    key === "additionalComments"
+                      ? `${prevText}\n• ${incomingText}`
+                      : `${prevText}. ${incomingText}`;
+                } else {
+                  (cleaned as any)[key] = incomingText;
+                }
               }
-            } else {
-              (cleaned as any)[key] = typeof val === "string" ? val.trim() : String(val).trim();
             }
-          }
 
-          if (
-            noAdditionalComments === true ||
-            (typeof cleaned.additionalComments === "string" &&
-              cleaned.additionalComments.trim().length > 0)
-          ) {
-            cleaned.observationsConfirmed = true;
-          }
+            if (
+              noAdditionalComments === true ||
+              (typeof cleaned.additionalComments === "string" &&
+                cleaned.additionalComments.trim().length > 0)
+            ) {
+              cleaned.observationsConfirmed = true;
+            }
 
-          // Combinar comentarios adicionales sin duplicar
-          const mergedComments =
-            typeof cleaned.additionalComments === "string" &&
-            cleaned.additionalComments.trim() &&
-            this.latestAnswers.additionalComments?.trim() &&
-            !cleaned.additionalComments.includes(this.latestAnswers.additionalComments.trim())
-              ? `${this.latestAnswers.additionalComments.trim()}\n• ${cleaned.additionalComments.trim()}`
-              : cleaned.additionalComments;
+            const requestedFocus =
+              typeof focusSection === "number" && Number.isFinite(focusSection)
+                ? clampSection(focusSection)
+                : undefined;
 
-          const candidateAnswers = sanitizeLegacyAnswers({
-            ...this.latestAnswers,
-            ...cleaned,
-            ...(mergedComments !== undefined ? { additionalComments: mergedComments } : {}),
-          });
+            if (requestedFocus) {
+              cleaned.lastActiveSection = requestedFocus;
+            }
 
-          // Solo aceptar markSectionPending si esa sección realmente NO tiene respuestas registradas
-          let validPendingSec: number | undefined = undefined;
-          if (
-            typeof markSectionPending === "number" &&
-            markSectionPending >= 1 &&
-            markSectionPending <= 9 &&
-            !isSectionFilled(candidateAnswers, markSectionPending) &&
-            !isSectionPartial(candidateAnswers, markSectionPending)
-          ) {
-            validPendingSec = markSectionPending;
-            candidateAnswers.pendingSections = Array.from(
-              new Set([...(candidateAnswers.pendingSections || []), validPendingSec])
-            );
-          }
-
-          this.latestAnswers = candidateAnswers;
-
-          this.callbacks.onFieldsUpdated(cleaned, validPendingSec);
-
-          const guidance = getNextQuestionGuidance(this.latestAnswers);
-
-          return {
-            id: fc.id,
-            name: fc.name,
-            response: {
-              status: "saved",
-              activeStage: guidance.stage,
-              stageTitle: guidance.stageTitle,
-              nextQuestion: guidance.nextQuestion,
-              instruction: this.spokeInCurrentModelTurn
-                ? "Datos guardados. Ya hablaste en este turno; NO generes más audio ahora, quédate en silencio esperando la respuesta del cliente."
-                : guidance.stage10ReadyToClose
-                ? guidance.nextQuestion
-                : `Datos guardados. Confirma en máximo 4 palabras y formula ÚNICAMENTE esta pregunta (Etapa ${guidance.stage}): "${guidance.nextQuestion}". Luego cállate y espera en silencio al cliente.`,
-            },
-          };
-        }
-
-        if (fc.name === "finishVoiceInterview") {
-          const stage10Answered =
-            Boolean(this.latestAnswers.observationsConfirmed) ||
-            Boolean(this.latestAnswers.additionalComments && this.latestAnswers.additionalComments.trim().length > 0);
-
-          // Candado de seguridad: jamás permitir que se corte la entrevista sin haber preguntado y confirmado Etapa 10
-          if (!stage10Answered) {
-            this.latestAnswers = {
+            const candidateAnswers = sanitizeLegacyAnswers({
               ...this.latestAnswers,
-              lastActiveSection: 10,
-            };
-            this.callbacks.onFieldsUpdated({ lastActiveSection: 10 });
+              ...cleaned,
+            });
+
+            let validPendingSec: number | undefined = undefined;
+            if (
+              typeof markSectionPending === "number" &&
+              markSectionPending >= 1 &&
+              markSectionPending <= 9 &&
+              !isSectionFilled(candidateAnswers, markSectionPending) &&
+              !isSectionPartial(candidateAnswers, markSectionPending)
+            ) {
+              validPendingSec = clampSection(markSectionPending);
+              candidateAnswers.pendingSections = Array.from(
+                new Set([...(candidateAnswers.pendingSections || []), validPendingSec])
+              );
+            }
+
+            this.latestAnswers = candidateAnswers;
+            this.callbacks.onFieldsUpdated(cleaned, validPendingSec);
+
+            const guidance = getNextQuestionGuidance(this.latestAnswers);
+            const focusedSecMeta = requestedFocus
+              ? AI_RFI_SECTIONS[requestedFocus - 1]
+              : undefined;
+            const focusedSnapshot = focusedSecMeta
+              ? Object.fromEntries(
+                  focusedSecMeta.fields.map((f) => [f, (this.latestAnswers as any)[f]])
+                )
+              : undefined;
+
             return {
               id: fc.id,
               name: fc.name,
               response: {
-                status: "wait_stage_10_observations_pending",
-                instruction:
-                  "Aún NO cierres la llamada. Pregunta primero al cliente en la Etapa 10 si desea dejar alguna observación o comentario adicional, espera su respuesta, regístrala con updateRfiFields (usando additionalComments o noAdditionalComments=true) y solo después despídete e invoca finishVoiceInterview.",
+                status: "saved",
+                focusedStageOnScreen: requestedFocus || guidance.stage,
+                ...(focusedSnapshot ? { currentDataInFocusedStage: focusedSnapshot } : {}),
+                suggestedNextStage: guidance.stage,
+                suggestedStageTitle: guidance.stageTitle,
+                suggestedNextQuestion: guidance.nextQuestion,
+                guidanceNote: this.spokeInCurrentModelTurn
+                  ? "Datos guardados. Si ya hablaste en este turno, NO generes otro turno de voz seguido; espera en silencio al cliente."
+                  : requestedFocus
+                  ? `Pantalla posicionada en Etapa ${requestedFocus} (${focusedSecMeta?.shortTitle || ""}). Atiende con total naturalidad lo que el cliente desea profundizar o ajustar aquí; cuando te indique que está listo para seguir adelante, retoma la Etapa ${guidance.stage}: "${guidance.nextQuestion}".`
+                  : guidance.stage10ReadyToClose
+                  ? guidance.nextQuestion
+                  : `Datos guardados. Si el cliente pidió profundizar, volver a otro punto o hizo una consulta, respóndele con total naturalidad; si fue una respuesta normal de avance, confirma brevemente y pasa de forma natural a la Etapa ${guidance.stage}: "${guidance.nextQuestion}". Después espera en silencio su respuesta.`,
               },
             };
           }
 
-          this.pendingFinishSummary = String(args.summaryMessage || "completed");
-          this.postFinishTurnCompleted = false;
-          this.finishRequestedAtMs = Date.now();
-          this.startFinishDrainMonitor();
+          if (fc.name === "finishVoiceInterview") {
+            const stage10Answered =
+              Boolean(this.latestAnswers.observationsConfirmed) ||
+              Boolean(
+                this.latestAnswers.additionalComments &&
+                  this.latestAnswers.additionalComments.trim().length > 0
+              );
+
+            if (!stage10Answered) {
+              this.latestAnswers = {
+                ...this.latestAnswers,
+                lastActiveSection: 10,
+              };
+              this.callbacks.onFieldsUpdated({ lastActiveSection: 10 });
+              return {
+                id: fc.id,
+                name: fc.name,
+                response: {
+                  status: "wait_stage_10_observations_pending",
+                  instruction:
+                    "Aún NO cierres la llamada. Pregunta primero al cliente en la Etapa 10 si desea dejar alguna observación o complementar algún punto anterior, espera su respuesta, regístrala con updateRfiFields y solo después despídete e invoca finishVoiceInterview.",
+                },
+              };
+            }
+
+            this.pendingFinishSummary = safeStr(args.summaryMessage || "completed");
+            this.postFinishTurnCompleted = false;
+            this.finishRequestedAtMs = Date.now();
+            this.startFinishDrainMonitor();
+
+            return {
+              id: fc.id,
+              name: fc.name,
+              response: {
+                status: "interview_completed",
+                instruction:
+                  "Despídete brevemente si aún no lo hiciste e invita al cliente a revisar el resumen de sus respuestas en pantalla.",
+              },
+            };
+          }
 
           return {
             id: fc.id,
             name: fc.name,
-            response: {
-              status: "interview_completed",
-              instruction:
-                "Despídete brevemente si aún no lo hiciste e invita al cliente a revisar el resumen de sus respuestas en pantalla.",
-            },
+            response: { status: "ok" },
           };
+        });
+
+        try {
+          this.session?.sendToolResponse({ functionResponses: responses });
+        } catch (e) {
+          console.warn("Error enviando respuesta de toolCall:", e);
         }
-
-        return {
-          id: fc.id,
-          name: fc.name,
-          response: { status: "ok" },
-        };
-      });
-
-      try {
-        this.session?.sendToolResponse({ functionResponses: responses });
-      } catch (e) {
-        console.warn("Error enviando respuesta de toolCall:", e);
       }
+    } catch (err) {
+      console.error("Error controlado procesando mensaje de Gemini Live:", err);
     }
   }
 
