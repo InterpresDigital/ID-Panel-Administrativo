@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { AiBriefingRecord, sanitizeLegacyAnswers } from "./aiBriefingTypes";
+import { AiBriefingRecord, sanitizeLegacyAnswers, toStringArray } from "./aiBriefingTypes";
 import { loadPdfLogo, drawProportionalLogo } from "./pdfLogoHelper";
 
 const COLORS = {
@@ -123,14 +123,14 @@ export const generateAiBriefingPDF = async (briefing: AiBriefingRecord): Promise
   ]);
 
   addSectionTable("4. Usuarios y Volumen", [
-    ["Quiénes usarán el agente", (a.targetUsers || []).join(", ")],
+    ["Quiénes usarán el agente", toStringArray(a.targetUsers).join(", ")],
     ["Número aproximado de usuarios", a.approxUserCount],
     ["Volumen esperado de interacciones", a.interactionVolume],
     ["Horarios de operación", a.operatingHours],
   ]);
 
   addSectionTable("5. Canales e Integraciones", [
-    ["Canales de operación", (a.channels || []).join(", ")],
+    ["Canales de operación", toStringArray(a.channels).join(", ")],
     ["Sistemas a integrar (CRM, ERP, BD, etc.)", a.systemsToIntegrate],
     ["Disponibilidad de APIs o acceso técnico", a.apiAvailability],
   ]);
@@ -175,8 +175,8 @@ export const generateAiBriefingPDF = async (briefing: AiBriefingRecord): Promise
       ["Complejidad estimada", `${diag.complexityLevel} (${diag.estimatedImplementationWeeks || "Por definir"})`],
       ["Resumen ejecutivo", diag.executiveSummary],
       ["Arquitectura sugerida", diag.recommendedArchitecture],
-      ["Riesgos críticos detectados", (diag.criticalRisks || []).join(" • ")],
-      ["Alcance MVP sugerido", (diag.mvpScope || []).join(" • ")],
+      ["Riesgos críticos detectados", toStringArray(diag.criticalRisks).join(" • ")],
+      ["Alcance MVP sugerido", toStringArray(diag.mvpScope).join(" • ")],
     ]);
   }
 

@@ -56,6 +56,7 @@ import {
   isSectionPartial,
   resolveResumeSection,
   sanitizeLegacyAnswers,
+  toStringArray,
 } from "../utils/aiBriefingTypes";
 import {
   AiVoiceBriefingSession,
@@ -346,7 +347,9 @@ const PublicAiBriefing: React.FC = () => {
 
         if (
           cleaned.operatingHours !== (data.answers.operatingHours || "") ||
-          cleaned.operatingLanguages !== (data.answers.operatingLanguages || "")
+          cleaned.operatingLanguages !== (data.answers.operatingLanguages || "") ||
+          !Array.isArray(data.answers.targetUsers) ||
+          !Array.isArray(data.answers.channels)
         ) {
           setDoc(doc(db, "briefings", id), { answers: syncedAnswers }, { merge: true }).catch(() => {});
         }
@@ -708,11 +711,11 @@ const PublicAiBriefing: React.FC = () => {
             nextPartial.additionalComments = `${prev.additionalComments.trim()}\n• ${nextPartial.additionalComments.trim()}`;
           }
 
-          const merged: AiBriefingAnswers = {
+          const merged: AiBriefingAnswers = sanitizeLegacyAnswers({
             ...prev,
             ...nextPartial,
             pendingSections: Array.from(nextPending),
-          };
+          });
 
           // Avanzar visualmente la etapa activa (1 -> ... -> 9 -> 10) y persistirla para nunca reiniciar en 1
           let computedSection = activeSectionRef.current;
@@ -835,7 +838,7 @@ const PublicAiBriefing: React.FC = () => {
   const toggleArrayOption = (field: "channels" | "targetUsers", item: string) => {
     setUsedManualOnce(true);
     setAnswers((prev) => {
-      const current = prev[field] || [];
+      const current = toStringArray(prev[field]);
       const exists = current.includes(item);
       const nextArr = exists ? current.filter((x) => x !== item) : [...current, item];
       const next: AiBriefingAnswers = {
@@ -2025,7 +2028,7 @@ const PublicAiBriefing: React.FC = () => {
                           onClick={() => toggleArrayOption("targetUsers", opt)}
                           className={clsx(
                             "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all",
-                            (answers.targetUsers || []).includes(opt)
+                            toStringArray(answers.targetUsers).includes(opt)
                               ? "bg-indigo-600 border-indigo-400 text-white shadow-xs"
                               : "bg-slate-900/80 border-slate-600/90 text-slate-200 hover:border-indigo-400/70"
                           )}
@@ -2071,7 +2074,7 @@ const PublicAiBriefing: React.FC = () => {
                           onClick={() => toggleArrayOption("channels", opt)}
                           className={clsx(
                             "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all",
-                            (answers.channels || []).includes(opt)
+                            toStringArray(answers.channels).includes(opt)
                               ? "bg-indigo-600 border-indigo-400 text-white shadow-xs"
                               : "bg-slate-900/80 border-slate-600/90 text-slate-200 hover:border-indigo-400/70"
                           )}
@@ -2317,7 +2320,7 @@ const PublicAiBriefing: React.FC = () => {
                           sec: 4,
                           title: "4. Usuarios y Volumen",
                           items: [
-                            ["Usuarios", (answers.targetUsers || []).join(", ")],
+                            ["Usuarios", toStringArray(answers.targetUsers).join(", ")],
                             ["Volumen", answers.interactionVolume || answers.approxUserCount],
                             ["Horario", answers.operatingHours],
                           ],
@@ -2326,7 +2329,7 @@ const PublicAiBriefing: React.FC = () => {
                           sec: 5,
                           title: "5. Canales y Sistemas",
                           items: [
-                            ["Canales", (answers.channels || []).join(", ")],
+                            ["Canales", toStringArray(answers.channels).join(", ")],
                             ["Sistemas", answers.systemsToIntegrate],
                             ["APIs", answers.apiAvailability],
                           ],

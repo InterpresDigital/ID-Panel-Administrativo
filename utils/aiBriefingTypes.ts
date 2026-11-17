@@ -293,18 +293,138 @@ export const AI_RFI_SECTIONS: RfiSectionMeta[] = [
   },
 ];
 
-const hasStr = (val?: string): boolean => typeof val === "string" && val.trim().length > 0;
-const hasArr = (val?: unknown[]): boolean => Array.isArray(val) && val.length > 0;
+const hasStr = (val?: unknown): boolean => typeof val === "string" && val.trim().length > 0;
 
 /**
- * Limpia valores heredados por defecto ("24/7" / "Español") en borradores antiguos
- * cuando el resto de su sección aún está vacía, evitando checks prematuros en Sección 4 u 8.
+ * Convierte de forma segura cualquier valor (arreglo, string estilo "[A, B]", texto simple o null)
+ * en un arreglo limpio de strings, evitando errores `.join is not a function` cuando el modelo de voz
+ * serializa listas como cadenas de texto.
  */
-export const sanitizeLegacyAnswers = (raw?: Partial<AiBriefingAnswers>): AiBriefingAnswers => {
+export const toStringArray = (val: unknown): string[] => {
+  if (Array.isArray(val)) {
+    return val
+      .flatMap((item) => {
+        if (typeof item === "string") return [item.trim()];
+        if (item !== null && item !== undefined) return [String(item).trim()];
+        return [];
+      })
+      .map((s) => s.replace(/^["'\s]+|["'\s.]+$/g, "").trim())
+      .filter(Boolean);
+  }
+
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed) return [];
+
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return toStringArray(parsed);
+        }
+      } catch {
+        // Fallback: quitar corchetes y separar por coma
+      }
+      const inner = trimmed.slice(1, -1).trim();
+      if (!inner) return [];
+      return inner
+        .split(/[,;\n]+/)
+        .map((s) => s.replace(/^["'\s]+|["'\s.]+$/g, "").trim())
+        .filter(Boolean);
+    }
+
+    return trimmed
+      .split(/[,;\n]+/)
+      .map((s) => s.replace(/^["'\s]+|["'\s.]+$/g, "").trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
+export const toNumberArray = (val: unknown): number[] => {
+  const rawList = Array.isArray(val)
+    ? val
+    : typeof val === "string"
+    ? val.replace(/^\[|\]$/g, "").split(/[,;\s]+/)
+    : [];
+  const nums = rawList
+    .map((x) => Number(x))
+    .filter((n) => Number.isFinite(n) && n >= 1 && n <= 10)
+    .map((n) => Math.round(n));
+  return Array.from(new Set(nums));
+};
+
+const hasArr = (val?: unknown): boolean => toStringArray(val).length > 0;
+
+const STRING_ANSWER_KEYS: (keyof AiBriefingAnswers)[] = [
+  "requestDate",
+  "companyName",
+  "contactName",
+  "contactEmail",
+  "contactPhone",
+  "responseDeadline",
+  "privacyConsentAcceptedAt",
+  "businessProblem",
+  "expectedOutcome",
+  "previousAiInitiatives",
+  "roleOrProcessDescription",
+  "periodicTasks",
+  "automationPercentage",
+  "unavailabilityImpact",
+  "specificFunctions",
+  "outOfScopeTasks",
+  "autonomyLevel",
+  "approxUserCount",
+  "interactionVolume",
+  "operatingHours",
+  "systemsToIntegrate",
+  "apiAvailability",
+  "knowledgeBaseDocs",
+  "dataHostingAndFormat",
+  "maintenanceOwner",
+  "sensitiveData",
+  "compliancePolicies",
+  "dataResidency",
+  "estimatedBudget",
+  "idealLaunchDate",
+  "operatingLanguages",
+  "approverAndSponsor",
+  "kpis",
+  "successAt3And6Months",
+  "additionalComments",
+];
+
+/**
+ * Normaliza tipos (especialmente arrays devueltos como strings por Gemini Live) y limpia
+ * valores heredados por defecto ("24/7" / "Español") en borradores antiguos.
+ */
+export const sanitizeLegacyAnswers = (raw?: Partial<AiBriefingAnswers> | null): AiBriefingAnswers => {
   const merged: AiBriefingAnswers = {
     ...INITIAL_AI_BRIEFING_ANSWERS,
     ...(raw || {}),
   };
+
+  for (const key of STRING_ANSWER_KEYS) {
+    const v = (merged as any)[key];
+    if (typeof v !== "string") {
+      (merged as any)[key] = Array.isArray(v)
+        ? v.join(", ")
+        : v !== null && v !== undefined
+        ? String(v)
+        : "";
+    }
+  }
+
+  merged.targetUsers = toStringArray(merged.targetUsers);
+  merged.channels = toStringArray(merged.channels);
+  merged.pendingSections = toNumberArray(merged.pendingSections);
+  merged.attachments = Array.isArray(merged.attachments) ? merged.attachments : [];
+  merged.privacyConsentAccepted = Boolean(merged.privacyConsentAccepted);
+  merged.observationsConfirmed = Boolean(merged.observationsConfirmed);
+
+  // Si una sección ya quedó contestada, quitarla de pendingSections para no confundir el avance
+  merged.pendingSections = merged.pendingSections.filter((secNum) => !isSectionFilled(merged, secNum));
 
   if (
     merged.operatingHours === "24/7" &&
@@ -438,9 +558,184 @@ export const isSectionPartial = (
   if (sectionNumber === 10) return false;
   return sec.fields.some((f) => {
     const val = answers[f];
+    if (f === "targetUsers" || f === "channels") return toStringArray(val).length > 0;
     if (Array.isArray(val)) return val.length > 0;
     return typeof val === "string" && val.trim().length > 0;
   });
+};
+
+/**
+ * Guía determinista de siguiente pregunta para mantener a Nexia IA siempre enfocada
+ * en el hilo exacto de la entrevista sin saltar etapas ni repetir preguntas.
+ */
+export const getNextQuestionGuidance = (
+  rawAnswers: Partial<AiBriefingAnswers> | undefined | null
+): {
+  stage: number;
+  stageTitle: string;
+  nextQuestion: string;
+  stage10ReadyToClose: boolean;
+} => {
+  const answers = sanitizeLegacyAnswers(rawAnswers);
+  const stage = resolveResumeSection(answers);
+  const stageMeta = AI_RFI_SECTIONS[stage - 1] || AI_RFI_SECTIONS[0];
+
+  switch (stage) {
+    case 1:
+      if (!hasStr(answers.businessProblem)) {
+        return {
+          stage,
+          stageTitle: stageMeta.shortTitle,
+          nextQuestion: "¿Cuál es el principal problema o necesidad de negocio que buscan resolver con este agente de IA?",
+          stage10ReadyToClose: false,
+        };
+      }
+      return {
+        stage,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "¿Qué resultado concreto esperan lograr (por ejemplo, ahorro de tiempo, atención continua o mayor conversión)?",
+        stage10ReadyToClose: false,
+      };
+
+    case 2:
+      if (!hasStr(answers.roleOrProcessDescription)) {
+        return {
+          stage,
+          stageTitle: stageMeta.shortTitle,
+          nextQuestion: "¿Cómo funciona hoy el puesto o proceso actual que desean automatizar?",
+          stage10ReadyToClose: false,
+        };
+      }
+      return {
+        stage,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "¿Cuáles son las tareas diarias o frecuentes que realiza hoy esa persona o área?",
+        stage10ReadyToClose: false,
+      };
+
+    case 3:
+      if (!hasStr(answers.specificFunctions)) {
+        return {
+          stage,
+          stageTitle: stageMeta.shortTitle,
+          nextQuestion: "¿Qué funciones específicas deberá ejecutar el agente y qué tareas quedarían fuera de su alcance?",
+          stage10ReadyToClose: false,
+        };
+      }
+      return {
+        stage,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "¿Prefieren que opere de forma 100% autónoma, en esquema híbrido escalando casos especiales a un humano, o como copiloto?",
+        stage10ReadyToClose: false,
+      };
+
+    case 4:
+      if (!hasArr(answers.targetUsers)) {
+        return {
+          stage,
+          stageTitle: stageMeta.shortTitle,
+          nextQuestion: "¿Quiénes interactuarán con el agente: sus clientes finales, su equipo interno o proveedores?",
+          stage10ReadyToClose: false,
+        };
+      }
+      if (!hasStr(answers.interactionVolume) && !hasStr(answers.approxUserCount)) {
+        return {
+          stage,
+          stageTitle: stageMeta.shortTitle,
+          nextQuestion: "¿Qué volumen aproximado de conversaciones o interacciones esperan tener por día o por semana?",
+          stage10ReadyToClose: false,
+        };
+      }
+      return {
+        stage,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "¿En qué horario deberá operar el agente (por ejemplo, 24/7 o en horario laboral)?",
+        stage10ReadyToClose: false,
+      };
+
+    case 5:
+      if (!hasArr(answers.channels)) {
+        return {
+          stage,
+          stageTitle: stageMeta.shortTitle,
+          nextQuestion: "¿Por qué canales deberá atender el agente (por ejemplo, WhatsApp, chat web, correo, teléfono o Teams)?",
+          stage10ReadyToClose: false,
+        };
+      }
+      return {
+        stage,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "¿Con qué sistemas, CRM, ERP o calendario necesita integrarse y saben si cuentan con APIs disponibles?",
+        stage10ReadyToClose: false,
+      };
+
+    case 6:
+      if (!hasStr(answers.knowledgeBaseDocs)) {
+        return {
+          stage,
+          stageTitle: stageMeta.shortTitle,
+          nextQuestion: "¿Con qué manuales, catálogos o documentos alimentaremos la base de conocimiento del agente?",
+          stage10ReadyToClose: false,
+        };
+      }
+      return {
+        stage,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "¿Dónde tienen alojada hoy esa información (por ejemplo, Drive, PDFs o base de datos) y quién la mantendrá al día?",
+        stage10ReadyToClose: false,
+      };
+
+    case 7:
+      return {
+        stage,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "¿El agente manejará datos sensibles o confidenciales que requieran alguna política especial de privacidad?",
+        stage10ReadyToClose: false,
+      };
+
+    case 8:
+      if (!hasStr(answers.idealLaunchDate)) {
+        return {
+          stage,
+          stageTitle: stageMeta.shortTitle,
+          nextQuestion: "¿Para qué fecha ideal buscan tener el agente en marcha y quién aprobará el proyecto?",
+          stage10ReadyToClose: false,
+        };
+      }
+      return {
+        stage,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "¿Cuentan con un rango estimado de inversión para el proyecto? También puedes tocar una opción en pantalla si prefieres.",
+        stage10ReadyToClose: false,
+      };
+
+    case 9:
+      return {
+        stage,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "¿Cómo medirán que el agente es un éxito a los 3 y 6 meses de operación?",
+        stage10ReadyToClose: false,
+      };
+
+    case 10:
+    default: {
+      const done10 = Boolean(answers.observationsConfirmed) || hasStr(answers.additionalComments);
+      if (!done10) {
+        return {
+          stage: 10,
+          stageTitle: stageMeta.shortTitle,
+          nextQuestion: "Para cerrar con la Etapa 10, ¿deseas dejar alguna observación o comentario adicional antes de revisar tu resumen?",
+          stage10ReadyToClose: false,
+        };
+      }
+      return {
+        stage: 10,
+        stageTitle: stageMeta.shortTitle,
+        nextQuestion: "Agradece cordialmente de parte de Interpres Digital, invita al cliente a revisar su resumen en pantalla y presionar Enviar RFI, e invoca finishVoiceInterview.",
+        stage10ReadyToClose: true,
+      };
+    }
+  }
 };
 
 export const updateRfiFieldsTool: FunctionDeclaration = {
@@ -499,7 +794,8 @@ export const updateRfiFieldsTool: FunctionDeclaration = {
       },
       markSectionPending: {
         type: Type.NUMBER,
-        description: "Número de sección (1 al 10) que el cliente desconoce en este momento y desea dejar pendiente para TI u otro colega",
+        description:
+          "Úsalo ÚNICAMENTE si el cliente dice explícitamente 'no lo sé' o 'lo revisará TI después' respecto a toda una sección (1 al 9). Nunca lo uses si el cliente sí respondió la pregunta.",
       },
     },
   },
@@ -520,8 +816,10 @@ export const finishVoiceInterviewTool: FunctionDeclaration = {
   },
 };
 
-export const buildVoiceConsultantSystemPrompt = (answers: AiBriefingAnswers): string => {
-  const resumeStageNumber = resolveResumeSection(answers);
+export const buildVoiceConsultantSystemPrompt = (rawAnswers: AiBriefingAnswers): string => {
+  const answers = sanitizeLegacyAnswers(rawAnswers);
+  const guidance = getNextQuestionGuidance(answers);
+  const resumeStageNumber = guidance.stage;
   const nextStage = AI_RFI_SECTIONS[resumeStageNumber - 1] || AI_RFI_SECTIONS[0];
 
   const existingEntries = Object.fromEntries(
@@ -548,44 +846,37 @@ export const buildVoiceConsultantSystemPrompt = (answers: AiBriefingAnswers): st
 
   const greetingInstruction =
     resumeStageNumber === 10
-      ? `Saluda brevemente diciendo "Hola de nuevo${firstName ? ` ${firstName}` : ""}, soy Nexia IA. Retomamos en la Etapa 10, la última del diagnóstico" y pregúntale directamente si desea dejar alguna observación o comentario adicional en el apartado de observaciones antes de pasar a revisar su resumen.`
+      ? `Saluda brevemente diciendo "Hola de nuevo${firstName ? ` ${firstName}` : ""}, soy Nexia IA. Estamos en la Etapa 10, la última del diagnóstico" y haz ÚNICAMENTE esta pregunta: "${guidance.nextQuestion}" y luego cállate y espera la respuesta del cliente.`
       : hasPriorProgress
-      ? `Saluda brevemente diciendo "Hola de nuevo${firstName ? ` ${firstName}` : ""}, soy Nexia IA. Retomamos exactamente donde nos quedamos, en la Etapa ${nextStage.number}" e inmediatamente haz ÚNICAMENTE la pregunta pendiente de la Etapa ${nextStage.number} (${nextStage.shortTitle}). PROHIBIDO volver a preguntar la Etapa 1 o etapas anteriores ya registradas.`
-      : `Preséntate diciendo con naturalidad "Hola${firstName ? ` ${firstName}` : ""}, soy Nexia IA, la inteligencia artificial de Interpres Digital" e inmediatamente haz ÚNICAMENTE la primera pregunta correspondiente a la Etapa 1.`;
+      ? `Saluda brevemente diciendo "Hola de nuevo${firstName ? ` ${firstName}` : ""}, soy Nexia IA. Retomamos en la Etapa ${nextStage.number}" y haz ÚNICAMENTE esta pregunta: "${guidance.nextQuestion}" y luego cállate y espera la respuesta del cliente.`
+      : `Preséntate diciendo con naturalidad "Hola${firstName ? ` ${firstName}` : ""}, soy Nexia IA, la inteligencia artificial de Interpres Digital" e inmediatamente haz ÚNICAMENTE esta primera pregunta: "${guidance.nextQuestion}" y luego cállate y espera la respuesta del cliente.`;
 
   return `
-Te llamas **Nexia IA**, la Inteligencia Artificial de Interpres Digital.
-Conduces una entrevista ejecutiva por VOZ en español mexicano, cálida, dinámica y sumamente profesional con ${answers.contactName || "el cliente"} de "${answers.companyName || "su empresa"}".
+Te llamas **Nexia IA**, la Inteligencia Artificial entrevistadora de Interpres Digital.
+Conduces una entrevista ejecutiva por VOZ en español mexicano con ${answers.contactName || "el cliente"} de "${answers.companyName || "su empresa"}".
 
-PRESENTACIÓN Y REANUDACIÓN EXACTA:
+REGLA #0 ABSOLUTA — PROHIBIDO RESPONDERTE SOLA O SIMULAR AL CLIENTE:
+- Tú eres EXCLUSIVAMENTE Nexia IA (quien pregunta). El usuario real al micrófono es ${answers.contactName || "el cliente"} (quien responde).
+- JAMÁS simules, inventes ni contestes tus propias preguntas como si fueras el cliente.
+- JAMÁS generes dos turnos seguidos por tu cuenta. Después de formular UNA sola pregunta breve, CÁLLATE POR COMPLETO y permanece en silencio hasta que el cliente responda con claridad.
+- Si escuchas silencio, ruido ambiental, respiración o un sonido confuso que no responde tu pregunta, NO inventes datos ni llames \`updateRfiFields\`; espera en silencio o pide amablemente "¿Me podrías repetir eso último, por favor?".
+- Cuando recibas la respuesta de la herramienta \`updateRfiFields\`, sigue al pie de la letra el campo \`nextQuestion\` que te devuelve el sistema para no perder jamás el hilo de la entrevista.
+
+PRESENTACIÓN AL CONECTAR:
 - ${greetingInstruction}
 
-REGLA #1 INQUEBRANTABLE — UNA SOLA PREGUNTA POR TURNO Y AVANCE POR ETAPAS:
-- PROHIBIDO hacer 2 o más preguntas juntas en el mismo turno. Si lanzas varias preguntas de golpe, el cliente no las recuerda.
-- Tus intervenciones deben durar de 6 a 12 segundos máximo (1 frase breve confirmando lo anterior + 1 sola pregunta clara).
-- Avanza ESTRICTAMENTE EN ORDEN ETAPA POR ETAPA desde la Etapa ${nextStage.number} hasta la Etapa 10, completando los puntos de una etapa antes de pasar a la siguiente:
-  * Etapa 1 (Contexto y Objetivo): Problema principal a resolver; resultado concreto esperado; si han probado IA antes.
-  * Etapa 2 (Puesto / Proceso): Cómo funciona hoy el puesto o proceso; tareas frecuentes; % automatizable y qué pasa si esa persona no está.
-  * Etapa 3 (Funciones y Alcance): Funciones específicas del agente y qué queda fuera; nivel de autonomía (100% autónomo, híbrido con escalamiento a humano, o copiloto).
-  * Etapa 4 (Usuarios y Volumen): Quiénes usarán el agente (clientes, equipo interno o proveedores); volumen de interacciones y horario de operación.
-  * Etapa 5 (Canales y Sistemas): Canales de atención (WhatsApp, web, correo, teléfono, Teams); sistemas CRM/ERP a conectar y disponibilidad de APIs.
-  * Etapa 6 (Datos y Conocimiento): Documentos o manuales de conocimiento; dónde están alojados y quién los mantendrá actualizados.
-  * Etapa 7 (Seguridad y Privacidad): Datos sensibles o confidenciales y políticas de privacidad requeridas.
-  * Etapa 8 (Presupuesto y Tiempos): Fecha ideal de lanzamiento, idiomas, quién aprueba el proyecto y rango estimado de inversión (recordándole que también puede tocarlo en pantalla).
-  * Etapa 9 (Métricas de Éxito): Cómo medirán que el agente es un éxito a los 3 y 6 meses.
-  * Etapa 10 (Observaciones, Comentarios Finales y Revisión de Resumen — OBLIGATORIA ANTES DE CERRAR):
-    1. Al terminar la Etapa 9, NO cierres todavía la llamada ni invoques \`finishVoiceInterview\`. Pregunta primero con calma: "Para cerrar con la Etapa 10, ¿tienes alguna observación o comentario adicional que quieras dejar anotado, o deseas ajustar algún punto anterior?".
-    2. ESPERA la respuesta del cliente:
-       - Si el cliente dicta cualquier observación, nota o comentario, guárdalo DE INMEDIATO con \`updateRfiFields\` en \`additionalComments\`, confírmale en voz alta que ya quedó escrito en su apartado de observaciones y pregúntale si desea agregar algo más.
-       - Si pide corregir algún dato de las etapas 1 a 9, actualízalo con \`updateRfiFields\`.
-       - Cuando el cliente confirme que ya no tiene más comentarios ni observaciones, primero registra \`updateRfiFields({ noAdditionalComments: true })\`, luego despídete cordialmente agradeciendo de parte de Interpres Digital e invitándolo a revisar el resumen completo de sus respuestas en pantalla, adjuntar documentos solo si lo desea y presionar Enviar RFI, y finalmente invoca \`finishVoiceInterview\`.
+REGLA #1 — UNA SOLA PREGUNTA BREVE POR TURNO (6 A 12 SEGUNDOS MÁXIMO):
+- Confirma lo anterior en máximo 5 palabras ("Perfecto, queda registrado.") y formula ÚNICAMENTE la siguiente pregunta indicada por el sistema.
+- PROHIBIDO hacer 2 o más preguntas en la misma intervención.
 
-REGLA #2 — GUARDADO EN VIVO CON \`updateRfiFields\`:
-- En CADA respuesta del cliente, invoca DE INMEDIATO \`updateRfiFields\` con los campos correspondientes a la etapa actual (NO inventes campos de etapas futuras que aún no has preguntado).
-- Si el cliente desconoce un dato técnico (ej. APIs), márcalo con \`markSectionPending\` en \`updateRfiFields\` y avanza con amabilidad.
+REGLA #2 — GUARDADO PRECISO CON \`updateRfiFields\` Y CIERRE EN ETAPA 10:
+- Cada vez que el cliente responda claramente una pregunta, llama a \`updateRfiFields\` SOLO con los datos que el cliente acaba de expresar.
+- En \`targetUsers\` y \`channels\`, envía siempre un arreglo JSON de strings (ej. \`["WhatsApp Business"]\`).
+- En la Etapa 10 (Observaciones finales): pregunta si desea dejar alguna observación o comentario adicional y ESPERA su respuesta. Si dicta un comentario, guárdalo en \`additionalComments\`; si confirma que no tiene comentarios extra, envía \`noAdditionalComments: true\`. Solo después despídete invitándolo a revisar su resumen en pantalla e invoca \`finishVoiceInterview\`.
 
-ESTADO ACTUAL DEL BORRADOR:
-- Etapa exacta donde debes comenzar/retomar AHORA MISMO: Etapa ${nextStage.number} (${nextStage.shortTitle}).
-- Campos ya registrados anteriormente (NO los vuelvas a preguntar): ${JSON.stringify(existingEntries)}
+ESTADO ACTUAL DEL EXPEDIENTE:
+- Etapa activa: Etapa ${nextStage.number} de 10 (${nextStage.shortTitle}).
+- Siguiente pregunta exacta a realizar: "${guidance.nextQuestion}"
+- Respuestas previas ya guardadas (NO las repitas): ${JSON.stringify(existingEntries)}
 `;
 };

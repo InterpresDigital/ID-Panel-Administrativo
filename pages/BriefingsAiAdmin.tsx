@@ -16,6 +16,7 @@ import {
   isSectionFilled,
   formatVoiceDuration,
   sanitizeLegacyAnswers,
+  toStringArray,
 } from "../utils/aiBriefingTypes";
 import { generateAiBriefingPDF } from "../utils/aiBriefingPdfGenerator";
 import { generateAiRfiPreDiagnostic } from "../services/geminiService";
@@ -401,7 +402,7 @@ const BriefingsAiAdmin: React.FC = () => {
               <InfoCard
                 title="4. Usuarios y Volumen"
                 items={[
-                  ["Usuarios objetivo", (selectedBriefing.answers.targetUsers || []).join(", ")],
+                  ["Usuarios objetivo", toStringArray(selectedBriefing.answers.targetUsers).join(", ")],
                   ["Número aprox. de usuarios", selectedBriefing.answers.approxUserCount],
                   ["Volumen de interacciones", selectedBriefing.answers.interactionVolume],
                   ["Horarios de operación", selectedBriefing.answers.operatingHours],
@@ -411,7 +412,7 @@ const BriefingsAiAdmin: React.FC = () => {
               <InfoCard
                 title="5. Canales e Integraciones"
                 items={[
-                  ["Canales", (selectedBriefing.answers.channels || []).join(", ")],
+                  ["Canales", toStringArray(selectedBriefing.answers.channels).join(", ")],
                   ["Sistemas a integrar", selectedBriefing.answers.systemsToIntegrate],
                   ["Disponibilidad de APIs", selectedBriefing.answers.apiAvailability],
                 ]}
@@ -563,7 +564,7 @@ const BriefingsAiAdmin: React.FC = () => {
                         Riesgos Críticos / Dependencias
                       </h4>
                       <ul className="list-disc pl-4 space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                        {(selectedBriefing.aiPreDiagnostic.criticalRisks || []).map((r, i) => (
+                        {toStringArray(selectedBriefing.aiPreDiagnostic.criticalRisks).map((r, i) => (
                           <li key={i}>{r}</li>
                         ))}
                       </ul>
@@ -574,7 +575,7 @@ const BriefingsAiAdmin: React.FC = () => {
                         Alcance Sugerido Fase 1 (MVP)
                       </h4>
                       <ul className="list-disc pl-4 space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                        {(selectedBriefing.aiPreDiagnostic.mvpScope || []).map((m, i) => (
+                        {toStringArray(selectedBriefing.aiPreDiagnostic.mvpScope).map((m, i) => (
                           <li key={i}>{m}</li>
                         ))}
                       </ul>

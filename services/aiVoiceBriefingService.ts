@@ -1,12 +1,24 @@
-import { GoogleGenAI, LiveServerMessage, Modality } from "@google/genai";
+import {
+  ActivityHandling,
+  EndSensitivity,
+  GoogleGenAI,
+  LiveServerMessage,
+  Modality,
+  StartSensitivity,
+  TurnCoverage,
+} from "@google/genai";
 import {
   AI_RFI_SECTIONS,
   AiBriefingAnswers,
   INITIAL_AI_BRIEFING_ANSWERS,
   buildVoiceConsultantSystemPrompt,
   finishVoiceInterviewTool,
+  getNextQuestionGuidance,
   isSectionFilled,
+  isSectionPartial,
   resolveResumeSection,
+  sanitizeLegacyAnswers,
+  toStringArray,
   updateRfiFieldsTool,
 } from "../utils/aiBriefingTypes";
 import { requestEphemeralVoiceToken } from "./geminiService";
@@ -90,6 +102,8 @@ export class AiVoiceBriefingSession {
   private nextPlaybackTime = 0;
   private activeSources: Set<AudioBufferSourceNode> = new Set();
   private echoGuardUntilMs = 0;
+  private speechGateOpenUntilMs = 0;
+  private spokeInCurrentModelTurn = false;
   private isMuted = false;
   private isPaused = false;
   private closed = false;
@@ -135,7 +149,9 @@ export class AiVoiceBriefingSession {
   public async start(briefingId: string, currentAnswers: AiBriefingAnswers): Promise<void> {
     this.closed = false;
     this.isPaused = false;
-    this.latestAnswers = { ...currentAnswers };
+    this.latestAnswers = sanitizeLegacyAnswers(currentAnswers);
+    this.spokeInCurrentModelTurn = false;
+    this.speechGateOpenUntilMs = 0;
     this.pendingFinishSummary = null;
     this.postFinishTurnCompleted = false;
     this.finishRequestedAtMs = 0;
@@ -194,7 +210,21 @@ export class AiVoiceBriefingSession {
               },
             },
           },
-          systemInstruction: buildVoiceConsultantSystemPrompt(currentAnswers),
+          // Configuración oficial anti-eco y anti-autorespuesta:
+          // - Sensibilidad baja evita que ruidos de teclado, ventilador o eco del altavoz disparen turnos falsos
+          // - silenceDurationMs da margen natural (1.15s) para que el cliente piense sin que Nexia lo corte
+          // - NO_INTERRUPTION evita que el eco del propio altavoz interrumpa o encadene respuestas fantasma
+          realtimeInputConfig: {
+            automaticActivityDetection: {
+              startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
+              endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
+              prefixPaddingMs: 250,
+              silenceDurationMs: 1150,
+            },
+            activityHandling: ActivityHandling.NO_INTERRUPTION,
+            turnCoverage: TurnCoverage.TURN_INCLUDES_ONLY_ACTIVITY,
+          },
+          systemInstruction: buildVoiceConsultantSystemPrompt(this.latestAnswers),
           tools: [{ functionDeclarations: [updateRfiFieldsTool, finishVoiceInterviewTool] }],
           inputAudioTranscription: {},
           outputAudioTranscription: {},
@@ -242,25 +272,24 @@ export class AiVoiceBriefingSession {
       this.session = session;
       this.callbacks.onStatusChange("connected");
 
-      // Detonar saludo breve y la pregunta exacta de la etapa correspondiente antes de abrir el micrófono
+      // Enviar un saludo natural de cliente (SIN instrucciones de sistema en role:"user" para evitar confusión de rol)
       try {
-        const resumeStage = resolveResumeSection(currentAnswers);
-        const stageMeta = AI_RFI_SECTIONS[resumeStage - 1] || AI_RFI_SECTIONS[0];
+        const resumeStage = resolveResumeSection(this.latestAnswers);
         const hasProgress =
           resumeStage > 1 ||
-          AI_RFI_SECTIONS.some((sec) => isSectionFilled(currentAnswers, sec.number));
-        const who = currentAnswers.contactName
-          ? `${currentAnswers.contactName}${currentAnswers.companyName ? ` de ${currentAnswers.companyName}` : ""}`
+          AI_RFI_SECTIONS.some((sec) => isSectionFilled(this.latestAnswers, sec.number));
+        const who = this.latestAnswers.contactName
+          ? `${this.latestAnswers.contactName}${
+              this.latestAnswers.companyName ? ` de ${this.latestAnswers.companyName}` : ""
+            }`
           : "";
 
-        const guestIntro =
-          resumeStage === 10
-            ? `Hola${who ? `, soy ${who}` : ""}. Ya completamos las etapas 1 a la 9 y nos quedamos en la Etapa 10 (Observaciones finales). Preséntate brevemente como Nexia IA y pregúntame directamente si deseo dejar alguna observación o comentario adicional antes de pasar a revisar mi resumen.`
-            : hasProgress
-            ? `Hola${who ? `, soy ${who}` : ""}. Regreso para retomar mi briefing exactamente en la Etapa ${resumeStage} (${stageMeta.shortTitle}). Preséntate muy brevemente como Nexia IA confirmando que retomamos en la Etapa ${resumeStage} y hazme únicamente la siguiente pregunta pendiente de esta etapa (sin repetir las etapas anteriores).`
-            : who
-            ? `Hola, soy ${who}. Iniciemos la Etapa 1 del briefing. Preséntate diciendo "Hola, soy Nexia IA, la inteligencia artificial de Interpres Digital" y hazme únicamente la primera pregunta.`
-            : `Hola, iniciemos la Etapa 1 del briefing. Preséntate diciendo "Hola, soy Nexia IA, la inteligencia artificial de Interpres Digital" y hazme únicamente la primera pregunta.`;
+        // Bloquear entrada de micrófono durante el arranque inicial para no capturar clics/ruido al iniciar
+        this.echoGuardUntilMs = Date.now() + 1800;
+
+        const guestIntro = hasProgress
+          ? `Hola Nexia${who ? `, soy ${who}` : ""}. Ya estoy listo para continuar donde nos quedamos.`
+          : `Hola Nexia${who ? `, soy ${who}` : ""}. Estoy listo para comenzar.`;
 
         this.session.sendClientContent({
           turns: [
@@ -304,27 +333,49 @@ export class AiVoiceBriefingSession {
     this.scriptProcessor = this.captureCtx.createScriptProcessor(4096, 1, 1);
 
     this.scriptProcessor.onaudioprocess = (event) => {
-      if (this.closed || this.isMuted || this.isPaused || !this.session) return;
-
-      // Protección anti-eco en celulares (altavoz -> micrófono):
-      // Mientras el Consultor IA está hablando (+ 320ms de cola acústica), no reenviar el eco del altavoz
-      // para evitar que la IA se auto-interrumpa a mitad de frase. El usuario siempre puede tocar "Pausar IA".
-      if (this.activeSources.size > 0 || Date.now() < this.echoGuardUntilMs) {
-        this.callbacks.onAudioLevel(0.08);
-        return;
-      }
+      if (this.closed || this.isPaused || !this.session) return;
 
       const rawInput = event.inputBuffer.getChannelData(0);
       const inputData = downsampleTo16kHz(rawInput, actualRate);
+      const now = Date.now();
+
+      // Protección anti-eco reforzada (laptops y altavoces móviles):
+      // Mientras Nexia IA habla (+ margen completo de latencia de hardware y reverberación de sala),
+      // enviamos silencio digital puro (ceros) para mantener estable el piso de ruido del VAD del servidor
+      // sin que jamás escuche su propia voz de regreso.
+      if (this.isMuted || this.activeSources.size > 0 || now < this.echoGuardUntilMs) {
+        this.callbacks.onAudioLevel(this.activeSources.size > 0 ? 0.08 : 0);
+        const silenceBase64 = floatTo16BitPCMBase64(new Float32Array(inputData.length));
+        try {
+          this.session.sendRealtimeInput({
+            audio: {
+              data: silenceBase64,
+              mimeType: "audio/pcm;rate=16000",
+            },
+          });
+        } catch {}
+        return;
+      }
 
       let sum = 0;
       for (let i = 0; i < inputData.length; i++) {
         sum += inputData[i] * inputData[i];
       }
-      const rms = Math.min(1, Math.sqrt(sum / inputData.length) * 6);
-      this.callbacks.onAudioLevel(rms);
+      const rawRms = Math.sqrt(sum / inputData.length);
+      const uiLevel = Math.min(1, rawRms * 6);
+      this.callbacks.onAudioLevel(uiLevel);
 
-      const base64Audio = floatTo16BitPCMBase64(inputData);
+      // Compuerta de ruido suave (Noise Gate con 750ms de cola natural):
+      // Evita que el zumbido del ventilador, aire acondicionado o ruido de escritorio haga que Gemini
+      // alucine palabras cuando el cliente está callado pensando.
+      if (rawRms >= 0.01) {
+        this.speechGateOpenUntilMs = now + 750;
+      }
+
+      const pcmToSend =
+        now <= this.speechGateOpenUntilMs ? inputData : new Float32Array(inputData.length);
+      const base64Audio = floatTo16BitPCMBase64(pcmToSend);
+
       try {
         this.session.sendRealtimeInput({
           audio: {
@@ -355,6 +406,7 @@ export class AiVoiceBriefingSession {
     // 2. Transcripciones en tiempo real
     const inTx = msg.serverContent?.inputTranscription?.text;
     if (inTx && inTx.trim()) {
+      this.spokeInCurrentModelTurn = false;
       this.callbacks.onTranscriptUpdate("user", inTx);
     }
     const outTx = msg.serverContent?.outputTranscription?.text;
@@ -373,6 +425,7 @@ export class AiVoiceBriefingSession {
     }
 
     if (msg.serverContent?.turnComplete) {
+      this.spokeInCurrentModelTurn = false;
       if (!this.isPaused && this.activeSources.size === 0) {
         this.callbacks.onStatusChange("connected");
       }
@@ -384,7 +437,7 @@ export class AiVoiceBriefingSession {
       }
     }
 
-    // 4. Ejecución de Tool Calls en vivo (Autollenado visual del RFI)
+    // 4. Ejecución de Tool Calls en vivo (Autollenado visual del RFI + Guía determinista de siguiente pregunta)
     if (msg.toolCall?.functionCalls && msg.toolCall.functionCalls.length > 0) {
       const responses = msg.toolCall.functionCalls.map((fc) => {
         const args = (fc.args || {}) as Record<string, any>;
@@ -394,8 +447,15 @@ export class AiVoiceBriefingSession {
           const cleaned: Partial<AiBriefingAnswers> = {};
 
           for (const [key, val] of Object.entries(fieldUpdates)) {
-            if (val !== undefined && val !== null && val !== "") {
-              (cleaned as any)[key] = val;
+            if (val === undefined || val === null || val === "") continue;
+            // Coerción estricta de tipos para evitar errores .join is not a function
+            if (key === "targetUsers" || key === "channels") {
+              const arr = toStringArray(val);
+              if (arr.length > 0) {
+                (cleaned as any)[key] = arr;
+              }
+            } else {
+              (cleaned as any)[key] = typeof val === "string" ? val.trim() : String(val).trim();
             }
           }
 
@@ -407,7 +467,7 @@ export class AiVoiceBriefingSession {
             cleaned.observationsConfirmed = true;
           }
 
-          // Combinar en la memoria viva de la sesión
+          // Combinar comentarios adicionales sin duplicar
           const mergedComments =
             typeof cleaned.additionalComments === "string" &&
             cleaned.additionalComments.trim() &&
@@ -416,21 +476,47 @@ export class AiVoiceBriefingSession {
               ? `${this.latestAnswers.additionalComments.trim()}\n• ${cleaned.additionalComments.trim()}`
               : cleaned.additionalComments;
 
-          this.latestAnswers = {
+          const candidateAnswers = sanitizeLegacyAnswers({
             ...this.latestAnswers,
             ...cleaned,
             ...(mergedComments !== undefined ? { additionalComments: mergedComments } : {}),
-          };
+          });
 
-          this.callbacks.onFieldsUpdated(
-            cleaned,
-            typeof markSectionPending === "number" ? markSectionPending : undefined
-          );
+          // Solo aceptar markSectionPending si esa sección realmente NO tiene respuestas registradas
+          let validPendingSec: number | undefined = undefined;
+          if (
+            typeof markSectionPending === "number" &&
+            markSectionPending >= 1 &&
+            markSectionPending <= 9 &&
+            !isSectionFilled(candidateAnswers, markSectionPending) &&
+            !isSectionPartial(candidateAnswers, markSectionPending)
+          ) {
+            validPendingSec = markSectionPending;
+            candidateAnswers.pendingSections = Array.from(
+              new Set([...(candidateAnswers.pendingSections || []), validPendingSec])
+            );
+          }
+
+          this.latestAnswers = candidateAnswers;
+
+          this.callbacks.onFieldsUpdated(cleaned, validPendingSec);
+
+          const guidance = getNextQuestionGuidance(this.latestAnswers);
 
           return {
             id: fc.id,
             name: fc.name,
-            response: { status: "updated_on_screen" },
+            response: {
+              status: "saved",
+              activeStage: guidance.stage,
+              stageTitle: guidance.stageTitle,
+              nextQuestion: guidance.nextQuestion,
+              instruction: this.spokeInCurrentModelTurn
+                ? "Datos guardados. Ya hablaste en este turno; NO generes más audio ahora, quédate en silencio esperando la respuesta del cliente."
+                : guidance.stage10ReadyToClose
+                ? guidance.nextQuestion
+                : `Datos guardados. Confirma en máximo 4 palabras y formula ÚNICAMENTE esta pregunta (Etapa ${guidance.stage}): "${guidance.nextQuestion}". Luego cállate y espera en silencio al cliente.`,
+            },
           };
         }
 
@@ -544,11 +630,20 @@ export class AiVoiceBriefingSession {
     source.buffer = audioBuffer;
     source.connect(this.playbackCtx.destination);
 
+    const hwLatencyMs = Math.round(
+      (((this.playbackCtx as any).outputLatency || 0.12) +
+        ((this.playbackCtx as any).baseLatency || 0.05)) *
+        1000
+    );
+    const tailGuardMs = hwLatencyMs + 780;
+
     const startTime = Math.max(this.playbackCtx.currentTime, this.nextPlaybackTime);
     source.start(startTime);
     this.nextPlaybackTime = startTime + audioBuffer.duration;
-    this.echoGuardUntilMs = Date.now() + Math.ceil((this.nextPlaybackTime - this.playbackCtx.currentTime) * 1000) + 320;
+    this.echoGuardUntilMs =
+      Date.now() + Math.ceil((this.nextPlaybackTime - this.playbackCtx.currentTime) * 1000) + tailGuardMs;
 
+    this.spokeInCurrentModelTurn = true;
     this.activeSources.add(source);
     this.lastAudioActivityAtMs = Date.now();
     this.callbacks.onStatusChange("speaking");
@@ -556,7 +651,7 @@ export class AiVoiceBriefingSession {
     source.onended = () => {
       this.activeSources.delete(source);
       this.lastAudioActivityAtMs = Date.now();
-      this.echoGuardUntilMs = Date.now() + 320;
+      this.echoGuardUntilMs = Date.now() + tailGuardMs;
       if (this.activeSources.size === 0 && !this.closed) {
         if (this.pendingFinishSummary !== null && this.postFinishTurnCompleted) {
           this.scheduleGracefulFinish(900);
