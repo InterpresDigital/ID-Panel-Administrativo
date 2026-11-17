@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interpres Digital | Infraestructura Digital y Agentes de IA</title>
+    <meta
+      name="description"
+      content="Diagnóstico ejecutivo para diseño de Agentes de IA, automatización inteligente, documentos corporativos y gestión empresarial de Interpres Digital."
+    />
+
+    <!-- Open Graph / WhatsApp / Facebook / LinkedIn / Telegram -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Interpres Digital" />
+    <meta property="og:locale" content="es_MX" />
+    <meta property="og:title" content="Interpres Digital | Infraestructura Digital y Agentes de IA" />
+    <meta
+      property="og:description"
+      content="Diagnóstico ejecutivo para diseño de Agentes de IA, automatización inteligente, documentos corporativos y gestión empresarial."
+    />
+    <meta
+      property="og:image"
+      content="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/agentes%20ia.jpg"
+    />
+    <meta
+      property="og:image:secure_url"
+      content="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/agentes%20ia.jpg"
+    />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="960" />
+    <meta property="og:image:height" content="640" />
+    <meta property="og:image:alt" content="Interpres Digital — Infraestructura Digital y Agentes de IA" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Interpres Digital | Infraestructura Digital y Agentes de IA" />
+    <meta
+      name="twitter:description"
+      content="Diagnóstico ejecutivo para diseño de Agentes de IA, automatización inteligente, documentos corporativos y gestión empresarial."
+    />
+    <meta
+      name="twitter:image"
+      content="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/agentes%20ia.jpg"
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png?v=20261112" />
+    <link rel="shortcut icon" type="image/png" href="/favicon.png?v=20261112" />
+    <link rel="apple-touch-icon" href="/icon-192.png?v=20261112" />
+    <meta name="theme-color" content="#0f172a" />
+    <script>
+      // Bloquear cualquier aviso emergente de instalación PWA en dispositivos móviles
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+      });
+    </script>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+      // Si esta ventana es un popup de OAuth redireccionado desde Google, notificar a la ventana principal y cerrar de inmediato
+      if (window.opener) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const hasHashToken = window.location.hash.includes('access_token=');
+        
+        if (code) {
+          try {
+            window.opener.postMessage({
+              type: 'GOOGLE_OAUTH_CODE',
+              code: code
+            }, '*');
+            window.close();
+          } catch (e) {
+            console.error("Error enviando respuesta de OAuth (code) al opener:", e);
+          }
+        } else if (hasHashToken) {
+          try {
+            window.opener.postMessage({
+              type: 'GOOGLE_OAUTH_RESPONSE',
+              hash: window.location.hash
+            }, '*');
+            window.close();
+          } catch (e) {
+            console.error("Error enviando respuesta de OAuth (token) al opener:", e);
+          }
+        }
+      }
+    </script>
+    <script>
+      // Capturar errores de carga de chunks o de javascript para auto-recuperación y diagnóstico visual
+      window.addEventListener('error', (e) => {
+        // Ignorar errores que no pertenezcan al contexto de ejecución de JavaScript global (ej. fallos al cargar recursos estáticos)
+        if (e.target && e.target !== window) {
+          return;
+        }
+
+        const msg = e.message || '';
+        // 1. Si es un fallo de chunk o caché de versión (al actualizar la app), recargar la página automáticamente
+        if (
+          msg.includes('dynamically imported module') || 
+          msg.includes('Importing a module script failed') || 
+          msg.includes('Failed to fetch imported') || 
+          msg.includes('Failed to fetch dynamically imported module') ||
+          msg.includes("Unexpected token '<'") ||
+          msg.includes('Unexpected token')
+        ) {
+          console.warn('Fallo de versión desactualizada detectado. Recargando app...', e);
+          window.location.reload();
+          return;
+        }
+
+        // 2. Si es otro error de ejecución y el body ya cargó o se puede pintar, mostrar alerta de diagnóstico
+        try {
+          const errorDiv = document.createElement('div');
+          errorDiv.id = 'vite-runtime-error-overlay';
+          errorDiv.style.position = 'fixed';
+          errorDiv.style.top = '0';
+          errorDiv.style.left = '0';
+          errorDiv.style.width = '100%';
+          errorDiv.style.height = '100%';
+          errorDiv.style.background = '#1e293b';
+          errorDiv.style.color = '#f87171';
+          errorDiv.style.padding = '30px';
+          errorDiv.style.zIndex = '999999';
+          errorDiv.style.fontFamily = 'monospace';
+          errorDiv.style.fontSize = '14px';
+          errorDiv.style.overflow = 'auto';
+          errorDiv.style.lineHeight = '1.6';
+          
+          errorDiv.innerHTML = `
+            <div style="max-width: 800px; margin: 50px auto; background: #0f172a; padding: 25px; border-radius: 12px; border: 1px solid #334155; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5)">
+              <h1 style="color: #ef4444; font-size: 20px; margin-top: 0; margin-bottom: 10px; border-b: 1px solid #334155; padding-bottom: 10px; font-family: sans-serif;">🚨 Error de Ejecución Detectado</h1>
+              <p style="color: #94a3b8; font-size: 13px; font-family: sans-serif;">La plataforma no pudo cargar correctamente debido al siguiente error de JavaScript:</p>
+              <pre style="background: #1e293b; color: #f87171; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; margin: 15px 0; font-family: monospace;">${msg}\n\nStack:\n${e.error ? e.error.stack : 'No stack trace available'}</pre>
+              <button onclick="window.location.reload(true)" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-family: sans-serif; font-size: 13px;">Recargar Página</button>
+            </div>
+          `;
+          if (document.body) {
+            document.body.appendChild(errorDiv);
+          } else {
+            window.addEventListener('DOMContentLoaded', () => {
+              document.body.appendChild(errorDiv);
+            });
+          }
+        } catch (err) {
+          console.error("Error al pintar el overlay de diagnóstico:", err);
+        }
+      }, true);
+    </script>
+    <script>
+      // Desregistrar cualquier Service Worker previo para evitar avisos de instalación PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            registrations.forEach((reg) => reg.unregister());
+          });
+        });
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            animation: {
+              'fade-in': 'fadeIn 0.2s ease-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'scale(0.95)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              }
+            },
+            colors: {
+              primary: {
+                50: '#eff6ff',
+                100: '#dbeafe',
+                200: '#bfdbfe',
+                300: '#93c5fd',
+                400: '#60a5fa',
+                500: '#2563eb', // Azul corporativo oscuro
+                600: '#1d4ed8',
+                700: '#1e40af',
+                800: '#1e3a8a',
+                900: '#172554',
+                950: '#0f172a',
+              },
+              dark: {
+                bg: '#0f172a', // Slate 900
+                surface: '#1e293b', // Slate 800
+                border: '#334155', // Slate 700
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      body {
+        font-family: 'Inter', sans-serif;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      /* Custom scrollbar for webkit */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      .dark ::-webkit-scrollbar-thumb {
+        background: #475569;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+
+      /* Print Styles for PDF Export */
+      @media print {
+        @page {
+          margin: 0.5cm;
+          size: landscape;
+        }
+        
+        body {
+          min-width: 1024px !important;
+          width: 1024px !important;
+          background-color: white !important;
+        }
+
+        html, #root, main {
+          height: auto !important;
+          overflow: visible !important;
+          background-color: white !important;
+          color: black !important;
+          display: block !important;
+        }
+
+        main > div {
+          height: auto !important;
+          overflow: visible !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          display: block !important;
+        }
+
+        .card-print-border {
+          break-inside: avoid;
+          page-break-inside: avoid;
+          border: 1px solid #e2e8f0 !important;
+          box-shadow: none !important;
+          margin-bottom: 20px !important;
+          display: block !important;
+          background-color: white !important;
+        }
+        
+        .recharts-responsive-container {
+             width: 1000px !important;
+             height: 350px !important;
+             max-width: 100%;
+             display: block !important;
+             overflow: hidden;
+        }
+        
+        .recharts-tooltip-wrapper {
+          display: none !important;
+        }
+
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        aside, 
+        button, 
+        .no-print, 
+        header,
+        ::-webkit-scrollbar {
+          display: none !important;
+        }
+        
+        .print\:hidden {
+          display: none !important;
+        }
+
+        .print\:block {
+          display: block !important;
+        }
+        
+        .text-white {
+          color: black !important;
+        }
+        .bg-gray-900, .bg-dark-surface {
+          background-color: white !important;
+          color: black !important;
+        }
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.574.0",
+    "clsx": "https://esm.sh/clsx@^2.1.1",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "jspdf": "https://esm.sh/jspdf@^4.1.0",
+    "jspdf-autotable": "https://esm.sh/jspdf-autotable@^5.0.7",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-50 text-gray-900 dark:bg-dark-bg dark:text-gray-100 transition-colors duration-200">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

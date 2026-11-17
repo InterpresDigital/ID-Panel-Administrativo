@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "interpres-digital"
+  },
+  "targets": {
+    "interpres-digital": {
+      "hosting": {
+        "panel": [
+          "interpres-panel"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

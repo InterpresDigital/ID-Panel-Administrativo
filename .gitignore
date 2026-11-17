@@ -1,0 +1,48 @@
+# Dependencias
+node_modules/
+functions/node_modules/
+
+# Compilados regenerables automáticamente (public/ NO se ignora porque contiene activos estáticos editables)
+dist/
+dist-ssr/
+functions/lib/
+
+# Cachés y logs de Firebase / Node
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Variables de entorno y credenciales sensibles (NUNCA subir a Git)
+.env
+.env.*
+*.env
+*.local
+pages/.env
+*service-account*.json
+*adminsdk*.json
+google-services.json
+firebase-applet-config.json
+secret.json
+secrets.json
+*.pem
+*.key
+
+# Archivos temporales de sistema operativo y editores
+.DS_Store
+Thumbs.db
+~$*
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
