@@ -116,6 +116,7 @@ export class AiVoiceBriefingSession {
   private resumptionHandle: string | null = null;
   private autoReconnectCount = 0;
   private reconnecting = false;
+  private pendingGoAwayRotation = false;
   private keepAliveTimer: number | null = null;
   private pendingFinishSummary: string | null = null;
   private postFinishTurnCompleted = false;
@@ -162,6 +163,7 @@ export class AiVoiceBriefingSession {
     this.resumptionHandle = null;
     this.autoReconnectCount = 0;
     this.reconnecting = false;
+    this.pendingGoAwayRotation = false;
     this.latestAnswers = sanitizeLegacyAnswers(currentAnswers);
     this.spokeInCurrentModelTurn = false;
     this.speechGateOpenUntilMs = 0;
@@ -285,24 +287,28 @@ export class AiVoiceBriefingSession {
             this.callbacks.onInterviewFinished(msgSummary);
             return;
           }
-          // Reconexión automática transparente (hasta 2 intentos) si hubo microcorte o timeout del socket
+          // Reconexión automática transparente (hasta 4 intentos consecutivos) ante rotación de socket o microcorte
           if (
             !this.isPaused &&
-            !this.reconnecting &&
-            this.autoReconnectCount < 2 &&
-            this.currentBriefingId &&
+            !this.currentBriefingId === false &&
             (typeof navigator === "undefined" || navigator.onLine !== false)
           ) {
-            console.info("Reconectando sesión de voz automáticamente tras microcorte...", ev?.code);
-            this.attemptSilentReconnect();
-            return;
+            if (this.reconnecting) {
+              // Ya hay una rotación transparente en curso (ej. por GoAway preventivo)
+              return;
+            }
+            if (this.autoReconnectCount < 4) {
+              console.info("Renovando canal de voz automáticamente sin corte...", ev?.code);
+              this.attemptSilentReconnect();
+              return;
+            }
           }
 
           console.warn("WebSocket Gemini Live cerrado:", ev?.code, ev?.reason);
           this.cleanupAudio();
           this.callbacks.onStatusChange(
             "error",
-            "La señal de audio tuvo una pausa. Tu avance está guardado; toca Reanudar para seguir en tu etapa actual."
+            "La señal de internet se desconectó. Tu avance está guardado; toca Reanudar cuando recuperes conexión."
           );
         },
       },
@@ -315,9 +321,10 @@ export class AiVoiceBriefingSession {
 
     this.session = session;
     this.reconnecting = false;
+    this.pendingGoAwayRotation = false;
     this.callbacks.onStatusChange("connected");
 
-    // Si es primera conexión (o reconexión sin handle previo), detonar el turno correspondiente
+    // Si es primera conexión (o reconexión de respaldo sin handle previo), detonar el turno correspondiente
     if (!isSilentReconnect || !this.resumptionHandle) {
       try {
         const hasProgress = hasAnySectionProgress(this.latestAnswers);
@@ -330,7 +337,7 @@ export class AiVoiceBriefingSession {
         this.echoGuardUntilMs = Date.now() + 1800;
 
         const guestIntro = isSilentReconnect
-          ? `Continúa exactamente en la pregunta actual sin repetir el saludo.`
+          ? `Continúa exactamente en la pregunta en curso con brevedad ejecutiva, sin repetir el saludo.`
           : hasProgress
           ? `Hola Nexia${who ? `, soy ${who}` : ""}. Ya estoy listo para retomar donde nos quedamos.`
           : `Hola Nexia${who ? `, soy ${who}` : ""}. Estoy listo para iniciar por primera vez.`;
@@ -354,6 +361,21 @@ export class AiVoiceBriefingSession {
     }
   }
 
+  private rotateSocketSmoothly() {
+    if (this.closed || this.isPaused || this.reconnecting || this.pendingFinishSummary !== null) {
+      return;
+    }
+    this.pendingGoAwayRotation = false;
+    const oldSession = this.session;
+    this.reconnecting = true;
+    this.session = null;
+    try {
+      oldSession?.close();
+    } catch {}
+    this.reconnecting = false;
+    this.attemptSilentReconnect();
+  }
+
   private async attemptSilentReconnect() {
     if (this.closed || this.reconnecting || !this.currentBriefingId) return;
     this.reconnecting = true;
@@ -363,15 +385,36 @@ export class AiVoiceBriefingSession {
     try {
       const tokenData = await requestEphemeralVoiceToken(this.currentBriefingId);
       if (this.closed) return;
-      await this.connectSocketSession(tokenData.token, tokenData.model, true);
+      try {
+        await this.connectSocketSession(tokenData.token, tokenData.model, true);
+      } catch (resumeErr) {
+        // Si el handle previo caducó, abrir socket limpio conservando 100% de respuestas sin cortar al usuario
+        if (this.resumptionHandle && !this.closed) {
+          console.warn("Handle previo caducado; renovando canal limpio con estado completo...", resumeErr);
+          this.resumptionHandle = null;
+          const freshToken = await requestEphemeralVoiceToken(this.currentBriefingId);
+          if (this.closed) return;
+          await this.connectSocketSession(freshToken.token, freshToken.model, true);
+        } else {
+          throw resumeErr;
+        }
+      }
     } catch (err) {
-      console.warn("Fallo reconexión silenciosa:", err);
+      console.warn("Intento de reconexión silenciosa falló:", err);
       this.reconnecting = false;
+      if (!this.closed && !this.isPaused && this.autoReconnectCount < 4) {
+        window.setTimeout(() => {
+          if (!this.closed && !this.isPaused) {
+            this.attemptSilentReconnect();
+          }
+        }, 800);
+        return;
+      }
       if (!this.closed) {
         this.cleanupAudio();
         this.callbacks.onStatusChange(
           "error",
-          "La conexión de voz se interrumpió momentáneamente. Tu avance está guardado; toca Reanudar en tu etapa actual."
+          "La señal de internet se desconectó. Tu avance está guardado; toca Reanudar cuando recuperes conexión."
         );
       }
     }
@@ -476,6 +519,15 @@ export class AiVoiceBriefingSession {
         this.resumptionHandle = newHandle;
       }
 
+      // Rotación preventiva transparente cuando Gemini avisa GoAway (~60s antes de expirar socket)
+      if ((msg as any).goAway) {
+        this.pendingGoAwayRotation = true;
+        if (!this.isPaused && this.activeSources.size === 0 && !this.spokeInCurrentModelTurn) {
+          this.rotateSocketSmoothly();
+          return;
+        }
+      }
+
       // 1. Si hubo interrupción mientras no estaba pausado
       if (msg.serverContent?.interrupted) {
         this.stopPlaybackQueue();
@@ -509,6 +561,10 @@ export class AiVoiceBriefingSession {
         this.spokeInCurrentModelTurn = false;
         if (!this.isPaused && this.activeSources.size === 0) {
           this.callbacks.onStatusChange("connected");
+          if (this.pendingGoAwayRotation && this.pendingFinishSummary === null) {
+            this.rotateSocketSmoothly();
+            return;
+          }
         }
         if (this.pendingFinishSummary !== null) {
           this.postFinishTurnCompleted = true;
@@ -631,10 +687,10 @@ export class AiVoiceBriefingSession {
                 guidanceNote: this.spokeInCurrentModelTurn
                   ? "Datos guardados. Si ya hablaste en este turno, NO generes otro turno de voz seguido; espera en silencio al cliente."
                   : requestedFocus
-                  ? `Pantalla posicionada en Etapa ${requestedFocus} (${focusedSecMeta?.shortTitle || ""}). Atiende con total naturalidad lo que el cliente desea profundizar o ajustar aquí; cuando te indique que está listo para seguir adelante, retoma la Etapa ${guidance.stage}: "${guidance.nextQuestion}".`
+                  ? `Pantalla en Etapa ${requestedFocus} (${focusedSecMeta?.shortTitle || ""}). Atiende de forma breve y natural (máx. 2 frases) lo que el cliente desea profundizar o ajustar aquí; cuando esté listo para seguir, retoma Etapa ${guidance.stage}: "${guidance.nextQuestion}".`
                   : guidance.stage10ReadyToClose
                   ? guidance.nextQuestion
-                  : `Datos guardados. Si el cliente pidió profundizar, volver a otro punto o hizo una consulta, respóndele con total naturalidad; si fue una respuesta normal de avance, confirma brevemente y pasa de forma natural a la Etapa ${guidance.stage}: "${guidance.nextQuestion}". Después espera en silencio su respuesta.`,
+                  : `Datos guardados. CERO ROLLO: si fue una respuesta normal, di SOLO 2 o 3 palabras de acuse + la pregunta de Etapa ${guidance.stage}: "${guidance.nextQuestion}" (máx. 18 palabras en total, sin repetir lo dicho por el cliente). Solo si el cliente hizo una pregunta abierta o pidió regresar, responde en máx. 2 frases breves. Espera en silencio.`,
               },
             };
           }
@@ -781,6 +837,9 @@ export class AiVoiceBriefingSession {
           this.scheduleGracefulFinish(900);
         } else if (!this.isPaused) {
           this.callbacks.onStatusChange("connected");
+          if (this.pendingGoAwayRotation && !this.spokeInCurrentModelTurn && this.pendingFinishSummary === null) {
+            this.rotateSocketSmoothly();
+          }
         }
       }
     };

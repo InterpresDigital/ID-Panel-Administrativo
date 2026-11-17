@@ -11,7 +11,7 @@ const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 const DEFAULT_LIVE_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025";
 const TEXT_MODEL = "gemini-2.5-flash";
-const MAX_VOICE_SESSIONS_PER_BRIEFING = 15;
+const MAX_VOICE_SESSIONS_PER_BRIEFING = 40;
 
 // Trigger interno por Firestore: compatible 100% con políticas corporativas de Google Workspace
 // (no requiere exponer endpoints HTTP públicos con allUsers ni lidiar con CORS).
@@ -67,7 +67,9 @@ export const onAiRequest = functions
 
         const liveModel = DEFAULT_LIVE_MODEL;
         const now = Date.now();
-        const expireTime = new Date(now + 20 * 60 * 1000).toISOString();
+        // 2 horas de vigencia de sesión activa para que Gemini jamás corte llamadas largas,
+        // manteniendo 3 minutos de ventana de arranque único (uses: 1) por seguridad.
+        const expireTime = new Date(now + 120 * 60 * 1000).toISOString();
         const newSessionExpireTime = new Date(now + 3 * 60 * 1000).toISOString();
 
         const tokenResponse = await ai.authTokens.create({
