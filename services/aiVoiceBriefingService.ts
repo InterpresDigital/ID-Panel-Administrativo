@@ -14,6 +14,7 @@ import {
   buildVoiceConsultantSystemPrompt,
   finishVoiceInterviewTool,
   getNextQuestionGuidance,
+  hasAnySectionProgress,
   isSectionFilled,
   isSectionPartial,
   resolveResumeSection,
@@ -108,6 +109,11 @@ export class AiVoiceBriefingSession {
   private isPaused = false;
   private closed = false;
   private latestAnswers: AiBriefingAnswers = { ...INITIAL_AI_BRIEFING_ANSWERS };
+  private currentBriefingId = "";
+  private resumptionHandle: string | null = null;
+  private autoReconnectCount = 0;
+  private reconnecting = false;
+  private keepAliveTimer: number | null = null;
   private pendingFinishSummary: string | null = null;
   private postFinishTurnCompleted = false;
   private finishRequestedAtMs = 0;
@@ -149,6 +155,10 @@ export class AiVoiceBriefingSession {
   public async start(briefingId: string, currentAnswers: AiBriefingAnswers): Promise<void> {
     this.closed = false;
     this.isPaused = false;
+    this.currentBriefingId = briefingId;
+    this.resumptionHandle = null;
+    this.autoReconnectCount = 0;
+    this.reconnecting = false;
     this.latestAnswers = sanitizeLegacyAnswers(currentAnswers);
     this.spokeInCurrentModelTurn = false;
     this.speechGateOpenUntilMs = 0;
@@ -186,110 +196,141 @@ export class AiVoiceBriefingSession {
       }
 
       this.micStream = micStream;
-      const { token, model } = tokenData;
+      await this.connectSocketSession(tokenData.token, tokenData.model, false);
+      this.startKeepAliveWatchdog();
+    } catch (error: any) {
+      this.cleanupAudio();
+      const friendly =
+        error?.name === "NotAllowedError"
+          ? "Permiso de micrófono denegado. Actívalo en tu navegador o continúa en modo manual."
+          : error?.message || "No fue posible iniciar la entrevista por voz.";
+      this.callbacks.onStatusChange("error", friendly);
+    }
+  }
 
+  private async connectSocketSession(
+    token: string,
+    model?: string,
+    isSilentReconnect = false
+  ): Promise<void> {
+    if (this.closed || !this.playbackCtx) return;
+
+    if (!isSilentReconnect) {
       this.callbacks.onStatusChange("connecting");
-      this.nextPlaybackTime = this.playbackCtx.currentTime;
+    }
+    this.nextPlaybackTime = this.playbackCtx.currentTime;
 
-      const ai = new GoogleGenAI({
-        apiKey: token,
-        httpOptions: { apiVersion: "v1alpha" },
-      });
+    const ai = new GoogleGenAI({
+      apiKey: token,
+      httpOptions: { apiVersion: "v1alpha" },
+    });
 
-      const session = await ai.live.connect({
-        model: model || "gemini-2.5-flash-native-audio-preview-12-2025",
-        config: {
-          responseModalities: [Modality.AUDIO],
-          thinkingConfig: {
-            thinkingBudget: 0,
-          },
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: "Aoede",
-              },
-            },
-          },
-          // Configuración oficial anti-eco y anti-autorespuesta:
-          // - Sensibilidad baja evita que ruidos de teclado, ventilador o eco del altavoz disparen turnos falsos
-          // - silenceDurationMs da margen natural (1.15s) para que el cliente piense sin que Nexia lo corte
-          // - NO_INTERRUPTION evita que el eco del propio altavoz interrumpa o encadene respuestas fantasma
-          realtimeInputConfig: {
-            automaticActivityDetection: {
-              startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
-              endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
-              prefixPaddingMs: 250,
-              silenceDurationMs: 1150,
-            },
-            activityHandling: ActivityHandling.NO_INTERRUPTION,
-            turnCoverage: TurnCoverage.TURN_INCLUDES_ONLY_ACTIVITY,
-          },
-          systemInstruction: buildVoiceConsultantSystemPrompt(this.latestAnswers),
-          tools: [{ functionDeclarations: [updateRfiFieldsTool, finishVoiceInterviewTool] }],
-          inputAudioTranscription: {},
-          outputAudioTranscription: {},
+    const session = await ai.live.connect({
+      model: model || "gemini-2.5-flash-native-audio-preview-12-2025",
+      config: {
+        responseModalities: [Modality.AUDIO],
+        thinkingConfig: {
+          thinkingBudget: 0,
         },
-        callbacks: {
-          onopen: () => {
-            // La sesión queda lista al resolver ai.live.connect
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: "Aoede",
+            },
           },
-          onmessage: (msg: LiveServerMessage) => {
-            this.handleServerMessage(msg);
+        },
+        // Compresión deslizante de ventana: elimina el corte automático de 10 minutos (~600s) de Gemini Live Audio
+        contextWindowCompression: {
+          slidingWindow: {},
+        },
+        // Soporte nativo de reanudación de sesión ante microcortes de red
+        sessionResumption: this.resumptionHandle ? { handle: this.resumptionHandle } : {},
+        realtimeInputConfig: {
+          automaticActivityDetection: {
+            startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
+            endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
+            prefixPaddingMs: 250,
+            silenceDurationMs: 1150,
           },
-          onerror: (err: any) => {
-            console.error("Error en Gemini Live:", err);
-            if (!this.closed) {
-              this.callbacks.onStatusChange(
-                "error",
-                "La conexión de voz tuvo una interrupción de red. Tus avances están guardados; toca Reanudar Voz para seguir justo donde te quedaste."
-              );
-            }
-          },
-          onclose: (ev: any) => {
-            if (!this.closed) {
-              if (this.pendingFinishSummary !== null) {
-                const msgSummary = this.pendingFinishSummary;
-                this.pendingFinishSummary = null;
-                this.callbacks.onInterviewFinished(msgSummary);
-              } else {
-                console.warn("WebSocket Gemini Live cerrado:", ev?.code, ev?.reason);
-                this.callbacks.onStatusChange(
-                  "error",
-                  "La llamada de voz se pausó por inactividad o cambio de señal. Tu avance está guardado; toca Reanudar para continuar en la misma etapa."
-                );
-              }
-            }
+          activityHandling: ActivityHandling.NO_INTERRUPTION,
+          turnCoverage: TurnCoverage.TURN_INCLUDES_ONLY_ACTIVITY,
+        },
+        systemInstruction: buildVoiceConsultantSystemPrompt(this.latestAnswers),
+        tools: [{ functionDeclarations: [updateRfiFieldsTool, finishVoiceInterviewTool] }],
+        inputAudioTranscription: {},
+        outputAudioTranscription: {},
+      },
+      callbacks: {
+        onopen: () => {
+          this.autoReconnectCount = 0;
+        },
+        onmessage: (msg: LiveServerMessage) => {
+          this.handleServerMessage(msg);
+        },
+        onerror: (err: any) => {
+          console.warn("Aviso de red en Gemini Live:", err);
+        },
+        onclose: (ev: any) => {
+          if (this.closed) {
             this.cleanupAudio();
-          },
+            return;
+          }
+          if (this.pendingFinishSummary !== null) {
+            const msgSummary = this.pendingFinishSummary;
+            this.pendingFinishSummary = null;
+            this.cleanupAudio();
+            this.callbacks.onInterviewFinished(msgSummary);
+            return;
+          }
+          // Reconexión automática transparente (hasta 2 intentos) si hubo microcorte o timeout del socket
+          if (
+            !this.isPaused &&
+            !this.reconnecting &&
+            this.autoReconnectCount < 2 &&
+            this.currentBriefingId &&
+            (typeof navigator === "undefined" || navigator.onLine !== false)
+          ) {
+            console.info("Reconectando sesión de voz automáticamente tras microcorte...", ev?.code);
+            this.attemptSilentReconnect();
+            return;
+          }
+
+          console.warn("WebSocket Gemini Live cerrado:", ev?.code, ev?.reason);
+          this.cleanupAudio();
+          this.callbacks.onStatusChange(
+            "error",
+            "La señal de audio tuvo una pausa. Tu avance está guardado; toca Reanudar para seguir en tu etapa actual."
+          );
         },
-      });
+      },
+    });
 
-      if (this.closed) {
-        session.close();
-        return;
-      }
+    if (this.closed) {
+      session.close();
+      return;
+    }
 
-      this.session = session;
-      this.callbacks.onStatusChange("connected");
+    this.session = session;
+    this.reconnecting = false;
+    this.callbacks.onStatusChange("connected");
 
-      // Enviar un saludo natural de cliente (SIN instrucciones de sistema en role:"user" para evitar confusión de rol)
+    // Si es primera conexión (o reconexión sin handle previo), detonar el turno correspondiente
+    if (!isSilentReconnect || !this.resumptionHandle) {
       try {
-        const resumeStage = resolveResumeSection(this.latestAnswers);
-        const hasProgress =
-          resumeStage > 1 ||
-          AI_RFI_SECTIONS.some((sec) => isSectionFilled(this.latestAnswers, sec.number));
+        const hasProgress = hasAnySectionProgress(this.latestAnswers);
         const who = this.latestAnswers.contactName
           ? `${this.latestAnswers.contactName}${
               this.latestAnswers.companyName ? ` de ${this.latestAnswers.companyName}` : ""
             }`
           : "";
 
-        // Bloquear entrada de micrófono durante el arranque inicial para no capturar clics/ruido al iniciar
         this.echoGuardUntilMs = Date.now() + 1800;
 
-        const guestIntro = hasProgress
-          ? `Hola Nexia${who ? `, soy ${who}` : ""}. Ya estoy listo para continuar donde nos quedamos.`
-          : `Hola Nexia${who ? `, soy ${who}` : ""}. Estoy listo para comenzar.`;
+        const guestIntro = isSilentReconnect
+          ? `Continúa exactamente en la pregunta actual sin repetir el saludo.`
+          : hasProgress
+          ? `Hola Nexia${who ? `, soy ${who}` : ""}. Ya estoy listo para retomar donde nos quedamos.`
+          : `Hola Nexia${who ? `, soy ${who}` : ""}. Estoy listo para iniciar por primera vez.`;
 
         this.session.sendClientContent({
           turns: [
@@ -303,17 +344,47 @@ export class AiVoiceBriefingSession {
       } catch (e) {
         console.warn("No se pudo enviar turno inicial:", e);
       }
-
-      // Iniciar captura de micrófono con protección anti-eco de altavoz móvil
-      this.startMicrophoneStreaming();
-    } catch (error: any) {
-      this.cleanupAudio();
-      const friendly =
-        error?.name === "NotAllowedError"
-          ? "Permiso de micrófono denegado. Actívalo en tu navegador o continúa en modo manual."
-          : error?.message || "No fue posible iniciar la entrevista por voz.";
-      this.callbacks.onStatusChange("error", friendly);
     }
+
+    if (!this.captureCtx) {
+      this.startMicrophoneStreaming();
+    }
+  }
+
+  private async attemptSilentReconnect() {
+    if (this.closed || this.reconnecting || !this.currentBriefingId) return;
+    this.reconnecting = true;
+    this.autoReconnectCount += 1;
+    this.session = null;
+
+    try {
+      const tokenData = await requestEphemeralVoiceToken(this.currentBriefingId);
+      if (this.closed) return;
+      await this.connectSocketSession(tokenData.token, tokenData.model, true);
+    } catch (err) {
+      console.warn("Fallo reconexión silenciosa:", err);
+      this.reconnecting = false;
+      if (!this.closed) {
+        this.cleanupAudio();
+        this.callbacks.onStatusChange(
+          "error",
+          "La conexión de voz se interrumpió momentáneamente. Tu avance está guardado; toca Reanudar en tu etapa actual."
+        );
+      }
+    }
+  }
+
+  private startKeepAliveWatchdog() {
+    if (this.keepAliveTimer) window.clearInterval(this.keepAliveTimer);
+    this.keepAliveTimer = window.setInterval(() => {
+      if (this.closed || this.isPaused) return;
+      if (this.playbackCtx && this.playbackCtx.state === "suspended") {
+        this.playbackCtx.resume().catch(() => {});
+      }
+      if (this.captureCtx && this.captureCtx.state === "suspended") {
+        this.captureCtx.resume().catch(() => {});
+      }
+    }, 4000);
   }
 
   private startMicrophoneStreaming() {
@@ -394,6 +465,12 @@ export class AiVoiceBriefingSession {
 
   private handleServerMessage(msg: LiveServerMessage) {
     if (this.closed) return;
+
+    // Guardar handle de reanudación continua provisto por Gemini Live
+    const newHandle = (msg as any).sessionResumptionUpdate?.newHandle;
+    if (typeof newHandle === "string" && newHandle.trim()) {
+      this.resumptionHandle = newHandle;
+    }
 
     // 1. Si hubo interrupción mientras no estaba pausado
     if (msg.serverContent?.interrupted) {
@@ -678,6 +755,10 @@ export class AiVoiceBriefingSession {
   }
 
   private cleanupAudio() {
+    if (this.keepAliveTimer) {
+      window.clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
+    }
     if (this.finishTimer) {
       window.clearTimeout(this.finishTimer);
       this.finishTimer = null;

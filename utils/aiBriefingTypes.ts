@@ -586,14 +586,14 @@ export const getNextQuestionGuidance = (
         return {
           stage,
           stageTitle: stageMeta.shortTitle,
-          nextQuestion: "¿Cuál es el principal problema o necesidad de negocio que buscan resolver con este agente de IA?",
+          nextQuestion: "¿Qué proceso o problema principal de tu operación buscas automatizar o resolver con IA?",
           stage10ReadyToClose: false,
         };
       }
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿Qué resultado concreto esperan lograr (por ejemplo, ahorro de tiempo, atención continua o mayor conversión)?",
+        nextQuestion: "¿Qué resultado concreto esperas lograr, como ahorrar tiempo operativo, atender 24/7 o vender más?",
         stage10ReadyToClose: false,
       };
 
@@ -602,14 +602,14 @@ export const getNextQuestionGuidance = (
         return {
           stage,
           stageTitle: stageMeta.shortTitle,
-          nextQuestion: "¿Cómo funciona hoy el puesto o proceso actual que desean automatizar?",
+          nextQuestion: "¿Cómo llevan a cabo hoy ese proceso o puesto de forma manual?",
           stage10ReadyToClose: false,
         };
       }
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿Cuáles son las tareas diarias o frecuentes que realiza hoy esa persona o área?",
+        nextQuestion: "¿Cuáles son las tareas repetitivas o frecuentes que más tiempo les consumen hoy?",
         stage10ReadyToClose: false,
       };
 
@@ -618,14 +618,14 @@ export const getNextQuestionGuidance = (
         return {
           stage,
           stageTitle: stageMeta.shortTitle,
-          nextQuestion: "¿Qué funciones específicas deberá ejecutar el agente y qué tareas quedarían fuera de su alcance?",
+          nextQuestion: "¿Qué acciones específicas te gustaría que ejecute la automatización o el agente, y qué quedaría fuera?",
           stage10ReadyToClose: false,
         };
       }
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿Prefieren que opere de forma 100% autónoma, en esquema híbrido escalando casos especiales a un humano, o como copiloto?",
+        nextQuestion: "¿Prefieres que opere 100% autónomo, híbrido escalando casos complejos a tu equipo, o como copiloto?",
         stage10ReadyToClose: false,
       };
 
@@ -634,7 +634,7 @@ export const getNextQuestionGuidance = (
         return {
           stage,
           stageTitle: stageMeta.shortTitle,
-          nextQuestion: "¿Quiénes interactuarán con el agente: sus clientes finales, su equipo interno o proveedores?",
+          nextQuestion: "¿Quiénes usarán o se beneficiarán de esta solución: tus clientes finales, tu equipo interno o proveedores?",
           stage10ReadyToClose: false,
         };
       }
@@ -642,14 +642,14 @@ export const getNextQuestionGuidance = (
         return {
           stage,
           stageTitle: stageMeta.shortTitle,
-          nextQuestion: "¿Qué volumen aproximado de conversaciones o interacciones esperan tener por día o por semana?",
+          nextQuestion: "¿Qué volumen aproximado de operaciones, registros o mensajes manejan al día o por semana?",
           stage10ReadyToClose: false,
         };
       }
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿En qué horario deberá operar el agente (por ejemplo, 24/7 o en horario laboral)?",
+        nextQuestion: "¿En qué horario necesita operar esta solución, 24/7 o en horario laboral?",
         stage10ReadyToClose: false,
       };
 
@@ -658,14 +658,14 @@ export const getNextQuestionGuidance = (
         return {
           stage,
           stageTitle: stageMeta.shortTitle,
-          nextQuestion: "¿Por qué canales deberá atender el agente (por ejemplo, WhatsApp, chat web, correo, teléfono o Teams)?",
+          nextQuestion: "¿En qué canales operará, por ejemplo WhatsApp, web, correo, Telegram o panel interno?",
           stage10ReadyToClose: false,
         };
       }
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿Con qué sistemas, CRM, ERP o calendario necesita integrarse y saben si cuentan con APIs disponibles?",
+        nextQuestion: "¿Con qué herramientas necesita conectarse (CRM, Stripe, Excel, ERP, calendario) y saben si tienen API?",
         stage10ReadyToClose: false,
       };
 
@@ -674,14 +674,14 @@ export const getNextQuestionGuidance = (
         return {
           stage,
           stageTitle: stageMeta.shortTitle,
-          nextQuestion: "¿Con qué manuales, catálogos o documentos alimentaremos la base de conocimiento del agente?",
+          nextQuestion: "¿Qué información, catálogos, reglas o documentos necesita consultar el sistema para operar?",
           stage10ReadyToClose: false,
         };
       }
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿Dónde tienen alojada hoy esa información (por ejemplo, Drive, PDFs o base de datos) y quién la mantendrá al día?",
+        nextQuestion: "¿Dónde tienen guardada hoy esa información y quién se encargará de actualizarla?",
         stage10ReadyToClose: false,
       };
 
@@ -689,7 +689,7 @@ export const getNextQuestionGuidance = (
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿El agente manejará datos sensibles o confidenciales que requieran alguna política especial de privacidad?",
+        nextQuestion: "¿Manejará datos sensibles o financieros que requieran algún cuidado especial de privacidad?",
         stage10ReadyToClose: false,
       };
 
@@ -698,14 +698,14 @@ export const getNextQuestionGuidance = (
         return {
           stage,
           stageTitle: stageMeta.shortTitle,
-          nextQuestion: "¿Para qué fecha ideal buscan tener el agente en marcha y quién aprobará el proyecto?",
+          nextQuestion: "¿Para cuándo te gustaría tenerlo operando y quién aprueba el proyecto?",
           stage10ReadyToClose: false,
         };
       }
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿Cuentan con un rango estimado de inversión para el proyecto? También puedes tocar una opción en pantalla si prefieres.",
+        nextQuestion: "¿Tienen algún rango estimado de inversión, o prefieres seleccionarlo con un toque en pantalla?",
         stage10ReadyToClose: false,
       };
 
@@ -713,7 +713,7 @@ export const getNextQuestionGuidance = (
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿Cómo medirán que el agente es un éxito a los 3 y 6 meses de operación?",
+        nextQuestion: "¿Qué resultado concreto a los 3 y 6 meses te haría decir que esta automatización fue un éxito?",
         stage10ReadyToClose: false,
       };
 
@@ -724,14 +724,14 @@ export const getNextQuestionGuidance = (
         return {
           stage: 10,
           stageTitle: stageMeta.shortTitle,
-          nextQuestion: "Para cerrar con la Etapa 10, ¿deseas dejar alguna observación o comentario adicional antes de revisar tu resumen?",
+          nextQuestion: "Para cerrar, ¿quieres dejar alguna observación adicional antes de revisar tu resumen?",
           stage10ReadyToClose: false,
         };
       }
       return {
         stage: 10,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "Agradece cordialmente de parte de Interpres Digital, invita al cliente a revisar su resumen en pantalla y presionar Enviar RFI, e invoca finishVoiceInterview.",
+        nextQuestion: "Agradece brevemente de parte de Interpres Digital, invítalo a revisar su resumen en pantalla y presionar Enviar RFI, e invoca finishVoiceInterview.",
         stage10ReadyToClose: true,
       };
     }
@@ -816,17 +816,31 @@ export const finishVoiceInterviewTool: FunctionDeclaration = {
   },
 };
 
+export const hasAnySectionProgress = (rawAnswers?: Partial<AiBriefingAnswers> | null): boolean => {
+  if (!rawAnswers) return false;
+  const answers = sanitizeLegacyAnswers(rawAnswers);
+  return AI_RFI_SECTIONS.some(
+    (s) =>
+      isSectionFilled(answers, s.number) ||
+      isSectionPartial(answers, s.number) ||
+      (answers.pendingSections || []).includes(s.number)
+  );
+};
+
 export const buildVoiceConsultantSystemPrompt = (rawAnswers: AiBriefingAnswers): string => {
   const answers = sanitizeLegacyAnswers(rawAnswers);
   const guidance = getNextQuestionGuidance(answers);
   const resumeStageNumber = guidance.stage;
   const nextStage = AI_RFI_SECTIONS[resumeStageNumber - 1] || AI_RFI_SECTIONS[0];
 
-  const existingEntries = Object.fromEntries(
+  // Excluir campos de portada (companyName, contactName, etc.) para detectar con 100% de exactitud si es PRIMERA VEZ
+  const existingSectionEntries = Object.fromEntries(
     Object.entries(answers).filter(
       ([k, v]) =>
         ![
           "requestDate",
+          "companyName",
+          "contactName",
           "contactEmail",
           "contactPhone",
           "responseDeadline",
@@ -841,42 +855,58 @@ export const buildVoiceConsultantSystemPrompt = (rawAnswers: AiBriefingAnswers):
     )
   );
 
-  const hasPriorProgress = resumeStageNumber > 1 || Object.keys(existingEntries).length > 0;
+  const isResumingExistingSession =
+    resumeStageNumber > 1 || Object.keys(existingSectionEntries).length > 0;
   const firstName = (answers.contactName || "").trim().split(/\s+/)[0] || "";
 
   const greetingInstruction =
-    resumeStageNumber === 10
-      ? `Saluda brevemente diciendo "Hola de nuevo${firstName ? ` ${firstName}` : ""}, soy Nexia IA. Estamos en la Etapa 10, la última del diagnóstico" y haz ÚNICAMENTE esta pregunta: "${guidance.nextQuestion}" y luego cállate y espera la respuesta del cliente.`
-      : hasPriorProgress
-      ? `Saluda brevemente diciendo "Hola de nuevo${firstName ? ` ${firstName}` : ""}, soy Nexia IA. Retomamos en la Etapa ${nextStage.number}" y haz ÚNICAMENTE esta pregunta: "${guidance.nextQuestion}" y luego cállate y espera la respuesta del cliente.`
-      : `Preséntate diciendo con naturalidad "Hola${firstName ? ` ${firstName}` : ""}, soy Nexia IA, la inteligencia artificial de Interpres Digital" e inmediatamente haz ÚNICAMENTE esta primera pregunta: "${guidance.nextQuestion}" y luego cállate y espera la respuesta del cliente.`;
+    resumeStageNumber === 10 && isResumingExistingSession
+      ? `ES UNA REANUDACIÓN en la Etapa 10. Di únicamente: "Hola de nuevo${firstName ? ` ${firstName}` : ""}, retomamos en la Etapa 10. ${guidance.nextQuestion}" y espera en silencio.`
+      : isResumingExistingSession
+      ? `ES UNA REANUDACIÓN en la Etapa ${nextStage.number}. Di únicamente: "Hola de nuevo${firstName ? ` ${firstName}` : ""}, retomamos en la Etapa ${nextStage.number}. ${guidance.nextQuestion}" y espera en silencio.`
+      : `ES LA PRIMERA VEZ que hablas con este cliente (PROHIBIDO decir "Hola de nuevo"). Di únicamente: "Hola${firstName ? ` ${firstName}` : ""}, soy Nexia IA de Interpres Digital. ${guidance.nextQuestion}" y espera en silencio.`;
 
   return `
-Te llamas **Nexia IA**, la Inteligencia Artificial entrevistadora de Interpres Digital.
-Conduces una entrevista ejecutiva por VOZ en español mexicano con ${answers.contactName || "el cliente"} de "${answers.companyName || "su empresa"}".
+Te llamas **Nexia IA**, Consultora Ejecutiva de Automatización e Inteligencia Artificial de **Interpres Digital** (INTERPRES S.A. de C.V.).
+Conversas por VOZ en español mexicano con ${answers.contactName || "el cliente"} de "${answers.companyName || "su empresa"}".
 
-REGLA #0 ABSOLUTA — PROHIBIDO RESPONDERTE SOLA O SIMULAR AL CLIENTE:
-- Tú eres EXCLUSIVAMENTE Nexia IA (quien pregunta). El usuario real al micrófono es ${answers.contactName || "el cliente"} (quien responde).
-- JAMÁS simules, inventes ni contestes tus propias preguntas como si fueras el cliente.
-- JAMÁS generes dos turnos seguidos por tu cuenta. Después de formular UNA sola pregunta breve, CÁLLATE POR COMPLETO y permanece en silencio hasta que el cliente responda con claridad.
-- Si escuchas silencio, ruido ambiental, respiración o un sonido confuso que no responde tu pregunta, NO inventes datos ni llames \`updateRfiFields\`; espera en silencio o pide amablemente "¿Me podrías repetir eso último, por favor?".
-- Cuando recibas la respuesta de la herramienta \`updateRfiFields\`, sigue al pie de la letra el campo \`nextQuestion\` que te devuelve el sistema para no perder jamás el hilo de la entrevista.
+REGLA #0 ABSOLUTA — CERO AUTORESPUESTA Y CERO ROLLO:
+- Tú eres EXCLUSIVAMENTE Nexia IA (quien entrevista y asesora). El usuario al micrófono es ${answers.contactName || "el cliente"}.
+- JAMÁS simules ser el cliente, JAMÁS respondas tus propias preguntas y JAMÁS generes dos turnos seguidos.
+- **CERO ROLLO / ULTRA CONCISA:** La gente se desespera con discursos largos. En turnos normales de avance usa **máximo 15 a 22 palabras en total** (confirmación de 2 a 4 palabras como "Perfecto, anotado." + la siguiente pregunta directa, sin repetir lo que dijo el cliente).
+- Después de hacer tu pregunta, CÁLLATE POR COMPLETO y espera en silencio la voz del cliente. Si solo hay silencio o ruido ambiental, espera en silencio sin inventar datos.
 
-PRESENTACIÓN AL CONECTAR:
+SALUDO AL CONECTAR:
 - ${greetingInstruction}
 
-REGLA #1 — UNA SOLA PREGUNTA BREVE POR TURNO (6 A 12 SEGUNDOS MÁXIMO):
-- Confirma lo anterior en máximo 5 palabras ("Perfecto, queda registrado.") y formula ÚNICAMENTE la siguiente pregunta indicada por el sistema.
-- PROHIBIDO hacer 2 o más preguntas en la misma intervención.
+ENFOQUE CONSULTIVO Y LABOR DE VENTA PERSUASIVA (AUTOMATIZACIONES + AGENTES DE IA):
+- Este diagnóstico abarca **tanto Agentes de IA como todo tipo de Automatizaciones de Procesos, Integraciones entre Sistemas y Software a Medida**.
+- Cuando el cliente comparta un dolor operativo o pregunte *"¿eso se puede hacer?"* / *"¿qué me recomiendan?"*:
+  1. Respóndele con seguridad consultiva y persuasiva en **1 sola frase ágil** explicando qué tipo de solución podemos implementar en Interpres Digital (por ejemplo: automatización automática vía webhooks/APIs entre su CRM, pagos y WhatsApp; un Agente Back-Office para correos, lectura OCR de facturas o alertas en Telegram; o un panel operativo central *Intentional Systems*), resaltando el beneficio directo (eliminar captura manual, operar 24/7 sin errores y ser dueños de sus propios datos).
+  2. Aclara siempre con naturalidad que **un especialista de Interpres Digital aterrizará con ellos el alcance y arquitectura exacta**, y enseguida enlaza con la pregunta actual del diagnóstico.
 
-REGLA #2 — GUARDADO PRECISO CON \`updateRfiFields\` Y CIERRE EN ETAPA 10:
-- Cada vez que el cliente responda claramente una pregunta, llama a \`updateRfiFields\` SOLO con los datos que el cliente acaba de expresar.
-- En \`targetUsers\` y \`channels\`, envía siempre un arreglo JSON de strings (ej. \`["WhatsApp Business"]\`).
-- En la Etapa 10 (Observaciones finales): pregunta si desea dejar alguna observación o comentario adicional y ESPERA su respuesta. Si dicta un comentario, guárdalo en \`additionalComments\`; si confirma que no tiene comentarios extra, envía \`noAdditionalComments: true\`. Solo después despídete invitándolo a revisar su resumen en pantalla e invoca \`finishVoiceInterview\`.
+CONOCIMIENTO OFICIAL DE INTERPRES DIGITAL (PARA RESPONDER SI PREGUNTAN SOBRE LA EMPRESA O SERVICIOS):
+- **Quiénes somos:** Estudio de desarrollo tecnológico e infraestructura digital con sede en San Miguel de Allende, Guanajuato, México. NO somos agencia tradicional de redes sociales; construimos activos tecnológicos propios para empresas (código y base de datos propiedad del cliente, sin comisiones por venta).
+- **Nuestras líneas de solución:**
+  1. **Nexia IA & Automatización Inteligente:** Agentes autónomos y automatizaciones operativas 24/7:
+     - *Front-Office:* Atención y ventas en WhatsApp/Web en <3 seg, calificación de prospectos, agendamiento con recordatorios y registro en CRM.
+     - *Back-Office:* *Inbox AI* (gestión inteligente de Gmail/Outlook), alertas operativas en tiempo real por Telegram/WhatsApp, y automatización de flujos conectando Stripe, CRMs, ERPs, Google Sheets, calendarios y bases de datos vía APIs/Webhooks.
+     - *Administración y BI:* Consultas financieras por voz/texto en Telegram, lectura OCR automática de facturas/PDFs hacia Excel/ERP, y seguimiento automatizado de cobranza.
+  2. **Intentional Systems (Software a Medida):** Sistemas operativos empresariales, paneles centrales, portales de clientes, control de personal/comisiones e inventarios cuando las hojas de cálculo o el software genérico quedan cortos.
+  3. **Intentional Web:** Sitios web estratégicos de alta conversión, catálogos y tiendas e-commerce ultrarrápidas desarrolladas a medida.
+  4. **Boost Apps:** Aplicaciones PWA de fidelización con QR, puntos/sellos y notificaciones push ilimitadas sin comisiones.
+  5. **System 360:** Ecosistema integral unificado (Web + App PWA de lealtad + Agente IA + Reservas + Automatización de seguimiento).
+  6. **Plataformas SaaS propias:** *Lúmina Core* (estéticas, clínicas y spas), *TKD Register* (gestión deportiva y torneos) y *Wedding Calm Studio*.
+- **PROHIBIDO DAR PRECIOS O COSTOS:** Nunca menciones precios ni tarifas. Si preguntan por costos o desean atención directa, indícales que la inversión se cotiza exactamente a la medida de este diagnóstico con un especialista de Interpres Digital (pueden agendar videollamada en panel.interpresdigital.com/#/book, escribir por WhatsApp al +52 415 179 0204 o al correo admin@interpresdigital.com).
 
-ESTADO ACTUAL DEL EXPEDIENTE:
+REGLA DE GUARDADO CON updateRfiFields Y CIERRE EN ETAPA 10:
+- En cada respuesta del cliente llama a updateRfiFields con lo que expresó y haz ÚNICAMENTE la nextQuestion que te devuelva la herramienta.
+- En targetUsers y channels envía siempre un arreglo JSON de strings (ej. ["WhatsApp Business"]).
+- En Etapa 10: pregunta si desea dejar alguna observación adicional y ESPERA su respuesta. Regístrala con additionalComments o noAdditionalComments: true, despídete brevemente invitándolo a revisar su resumen en pantalla y presionar Enviar RFI, e invoca finishVoiceInterview.
+
+ESTADO ACTUAL:
 - Etapa activa: Etapa ${nextStage.number} de 10 (${nextStage.shortTitle}).
-- Siguiente pregunta exacta a realizar: "${guidance.nextQuestion}"
-- Respuestas previas ya guardadas (NO las repitas): ${JSON.stringify(existingEntries)}
+- Siguiente pregunta exacta: "${guidance.nextQuestion}"
+- Datos ya capturados en etapas previas (NO los repitas): ${JSON.stringify(existingSectionEntries)}
 `;
 };

@@ -52,6 +52,7 @@ import {
   CHANNEL_OPTIONS,
   INITIAL_AI_BRIEFING_ANSWERS,
   TARGET_USER_OPTIONS,
+  hasAnySectionProgress,
   isSectionFilled,
   isSectionPartial,
   resolveResumeSection,
@@ -126,6 +127,13 @@ const PublicAiBriefing: React.FC = () => {
   useEffect(() => {
     activeSectionRef.current = activeSection;
   }, [activeSection]);
+
+  // Posicionar siempre en la parte superior al entrar al workspace o activar el micrófono de Voz IA
+  useEffect(() => {
+    if (step === "workspace") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [step, activeMode]);
 
   const saveLocalSnapshot = useCallback((id: string | null, nextAnswers: AiBriefingAnswers) => {
     if (!id) return;
@@ -547,7 +555,8 @@ const PublicAiBriefing: React.FC = () => {
     let targetId = briefingId;
     let baseAnswers = answers;
 
-    // Si abrieron el enlace limpio sin ?draft= (ej. desde otro navegador o tras limpiar caché), buscar borrador activo por correo
+    // Si abrieron el enlace limpio sin ?draft= y existe un borrador previo con avance real para este correo,
+    // preguntar al usuario si desea retomarlo o iniciar un diagnóstico nuevo desde cero (evita decir "Hola de nuevo" por error)
     if (!targetId) {
       try {
         const normalizedEmail = answers.contactEmail.trim().toLowerCase();
@@ -559,7 +568,11 @@ const PublicAiBriefing: React.FC = () => {
         const matchingDrafts: Array<{ id: string; data: any }> = [];
         snapByEmail.forEach((d) => {
           const dData = d.data();
-          if (dData.briefingType === "ai-agent" && dData.status === "draft") {
+          if (
+            dData.briefingType === "ai-agent" &&
+            dData.status === "draft" &&
+            hasAnySectionProgress(dData.answers)
+          ) {
             matchingDrafts.push({ id: d.id, data: dData });
           }
         });
@@ -570,12 +583,18 @@ const PublicAiBriefing: React.FC = () => {
             return tB - tA;
           });
           const best = matchingDrafts[0];
-          targetId = best.id;
-          setBriefingId(best.id);
-          briefingIdRef.current = best.id;
-          accumulatedVoiceSecondsRef.current = Number(best.data.voiceDurationSeconds) || 0;
-          if (best.data.answers) {
-            const recovered = sanitizeLegacyAnswers(best.data.answers);
+          const recovered = sanitizeLegacyAnswers(best.data.answers);
+          const stagePrev = resolveResumeSection(recovered);
+          const wantsToResume = window.confirm(
+            `Encontramos un diagnóstico previo en curso para "${
+              best.data.companyName || answers.companyName
+            }" (Etapa ${stagePrev} de 10).\n\n¿Deseas retomarlo donde te quedaste?\n(Presiona Cancelar si prefieres iniciar un diagnóstico nuevo desde cero).`
+          );
+          if (wantsToResume) {
+            targetId = best.id;
+            setBriefingId(best.id);
+            briefingIdRef.current = best.id;
+            accumulatedVoiceSecondsRef.current = Number(best.data.voiceDurationSeconds) || 0;
             baseAnswers = {
               ...recovered,
               companyName: answers.companyName.trim() || recovered.companyName,
@@ -590,7 +609,7 @@ const PublicAiBriefing: React.FC = () => {
       }
     }
 
-    const resumeSec = resolveResumeSection(baseAnswers);
+    const resumeSec = targetId ? resolveResumeSection(baseAnswers) : 1;
     const stampedAnswers: AiBriefingAnswers = {
       ...baseAnswers,
       privacyConsentAccepted: true,
@@ -610,6 +629,9 @@ const PublicAiBriefing: React.FC = () => {
       "draft",
       chosenMode === "voice" ? "voice" : "manual"
     );
+
+    // Subir inmediatamente al tope de la página para que el usuario vea de frente el micrófono de Nexia IA
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
 
     if (chosenMode === "voice") {
       setUsedVoiceOnce(true);
@@ -881,6 +903,7 @@ const PublicAiBriefing: React.FC = () => {
     if (typeof nextSec === "number") {
       setActiveSection(nextSec);
       activeSectionRef.current = nextSec;
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
     await persistDraft(nextAns, briefingId, "draft");
   };
@@ -1050,12 +1073,13 @@ const PublicAiBriefing: React.FC = () => {
 
           <div className="space-y-2">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-tight">
-              Diagnóstico Ejecutivo para{" "}
-              <span className="text-indigo-300">Diseño de Agentes de IA</span>
+              <span className="block">Diagnóstico Ejecutivo para</span>
+              <span className="block text-indigo-300">Diseño de Agentes de IA</span>
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-              Completa este levantamiento <strong className="text-white">conversando por voz con Nexia IA</strong> (6–8 min) o{" "}
-              <strong className="text-white">por escrito paso a paso</strong>. Tu avance se guarda automáticamente.
+              Abarca tanto <strong className="text-white">automatizaciones de procesos e integraciones entre sistemas</strong> como{" "}
+              <strong className="text-white">agentes autónomos de IA</strong>. Complétalo{" "}
+              <strong className="text-indigo-200">conversando por voz con Nexia IA</strong> o por escrito paso a paso; tu avance se guarda automáticamente.
             </p>
           </div>
 
