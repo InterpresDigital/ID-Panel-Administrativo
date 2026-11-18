@@ -76,15 +76,43 @@ export interface AiBriefingAnswers {
   pendingSections: number[];
 }
 
+export interface AiPricingPackageOption {
+  tierName: string;
+  subtitle: string;
+  setupPriceMxn: number;
+  monthlyRetainerMxn: number;
+  estimatedWeeks: string;
+  idealFor: string;
+  deliverables: string[];
+}
+
+export interface AiSuggestedQuoteItem {
+  concept: string;
+  details: string;
+  priceMxn: number;
+  billingType: "once" | "monthly";
+}
+
 export interface AiPreDiagnostic {
   complexityLevel: "Baja" | "Media" | "Alta" | "Enterprise";
   executiveSummary: string;
+  budgetFitStatus?: string;
+  budgetVsNeedsAnalysis?: string;
+  whatCanBeDone?: string[];
+  recommendedInterpresLines?: string[];
+  commercialPitchAndHowToOffer?: string;
+  roiArgument?: string;
   recommendedArchitecture: string;
+  stepByStepIntegrationPlan?: string[];
+  pricingPackagesMxn?: AiPricingPackageOption[];
+  suggestedQuoteItems?: AiSuggestedQuoteItem[];
+  paymentStructureRecommendation?: string;
   criticalRisks: string[];
   mvpScope: string[];
   phase2Scope: string[];
   followUpQuestions: string[];
   estimatedImplementationWeeks: string;
+  customNotesUsed?: string;
   generatedAt: string;
 }
 

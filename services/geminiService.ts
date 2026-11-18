@@ -118,7 +118,8 @@ export const requestEphemeralVoiceToken = async (
 };
 
 export const generateAiRfiPreDiagnostic = async (
-  briefing: AiBriefingRecord
+  briefing: AiBriefingRecord,
+  customGuidance?: string
 ): Promise<AiPreDiagnostic> => {
   const data = await callSecureAiAction<{ diagnostic: AiPreDiagnostic }>(
     "analyze-rfi",
@@ -126,7 +127,9 @@ export const generateAiRfiPreDiagnostic = async (
       briefingId: briefing.id,
       companyName: briefing.companyName,
       answers: briefing.answers,
-    }
+      customGuidance: customGuidance ? customGuidance.trim() : "",
+    },
+    115000
   );
   return data.diagnostic;
 };

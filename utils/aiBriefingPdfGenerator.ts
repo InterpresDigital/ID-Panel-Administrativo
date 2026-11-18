@@ -178,17 +178,6 @@ export const generateAiBriefingPDF = async (briefing: AiBriefingRecord): Promise
     ],
   ]);
 
-  if (briefing.aiPreDiagnostic) {
-    const diag = briefing.aiPreDiagnostic;
-    addSectionTable("Anexo Interno — Pre-Diagnóstico IA (Interpres Digital)", [
-      ["Complejidad estimada", `${diag.complexityLevel} (${diag.estimatedImplementationWeeks || "Por definir"})`],
-      ["Resumen ejecutivo", diag.executiveSummary],
-      ["Arquitectura sugerida", diag.recommendedArchitecture],
-      ["Riesgos críticos detectados", toStringArray(diag.criticalRisks).join(" • ")],
-      ["Alcance MVP sugerido", toStringArray(diag.mvpScope).join(" • ")],
-    ]);
-  }
-
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -207,4 +196,162 @@ export const generateAiBriefingPDF = async (briefing: AiBriefingRecord): Promise
     .replace(/[^a-zA-Z0-9_-]/g, "_")
     .slice(0, 40);
   doc.save(`RFI_Agente_IA_${safeName}.pdf`);
+};
+
+const formatMxnPdf = (amount?: number): string => {
+  const n = Number(amount) || 0;
+  return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MXN`;
+};
+
+export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord): Promise<void> => {
+  if (!briefing.aiPreDiagnostic) return;
+  const diag = briefing.aiPreDiagnostic;
+  const a = sanitizeLegacyAnswers(briefing.answers);
+
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  doc.setFillColor(...COLORS.headerBg);
+  doc.rect(0, 0, pageWidth, 38, "F");
+
+  const logo = await loadPdfLogo("white");
+  drawProportionalLogo(doc, logo, {
+    x: 14,
+    boxTopY: 0,
+    boxHeight: 38,
+    maxWidth: 52,
+    maxHeight: 14,
+    fallbackText: "INTERPRES DIGITAL",
+    fallbackColor: [255, 255, 255],
+  });
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("PRE-DIAGNÓSTICO ESTRATÉGICO Y COTIZADOR IA (USO INTERNO)", pageWidth - 14, 15, {
+    align: "right",
+  });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(199, 210, 254);
+  doc.text(
+    `Prospecto: ${a.companyName || briefing.companyName || "N/A"}  |  Contacto: ${a.contactName || briefing.clientName || "N/A"}`,
+    pageWidth - 14,
+    22,
+    { align: "right" }
+  );
+  doc.text(
+    `Complejidad: ${safeStr(diag.complexityLevel)}  |  Tiempo est.: ${safeStr(diag.estimatedImplementationWeeks)}  |  Presupuesto cliente: ${safeStr(a.estimatedBudget || "Por definir")}`,
+    pageWidth - 14,
+    28.5,
+    { align: "right" }
+  );
+
+  let currentY = 46;
+
+  const addBlockTable = (title: string, rows: [string, string][]) => {
+    if (currentY > pageHeight - 36) {
+      doc.addPage();
+      currentY = 18;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...COLORS.accent);
+    doc.text(title.toUpperCase(), 14, currentY);
+    currentY += 3;
+
+    autoTable(doc, {
+      startY: currentY,
+      margin: { left: 14, right: 14 },
+      theme: "grid",
+      headStyles: { fillColor: COLORS.accent, fontSize: 8.5 },
+      bodyStyles: { fontSize: 8.5, textColor: COLORS.textDark, cellPadding: 3 },
+      alternateRowStyles: { fillColor: COLORS.stripe },
+      columnStyles: {
+        0: { cellWidth: 50, fontStyle: "bold" },
+        1: { cellWidth: pageWidth - 78 },
+      },
+      body: rows.map(([k, v]) => [k, safeStr(v).trim() || "—"]),
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 7;
+  };
+
+  addBlockTable("1. Diagnóstico e Interpretación Presupuesto vs. Alcance", [
+    ["Diagnóstico ejecutivo", safeStr(diag.executiveSummary)],
+    ["Ajuste presupuestal", safeStr(diag.budgetFitStatus || "Evaluado")],
+    ["Análisis de presupuesto vs. necesidades", safeStr(diag.budgetVsNeedsAnalysis)],
+    ["Qué se puede hacer", toStringArray(diag.whatCanBeDone).map((x) => `• ${x}`).join("\n")],
+  ]);
+
+  addBlockTable("2. Qué Ofrecer y Estrategia Comercial de Cierre", [
+    ["Líneas Interpres recomendadas", toStringArray(diag.recommendedInterpresLines).join("  |  ")],
+    ["Cómo presentarlo y venderlo", safeStr(diag.commercialPitchAndHowToOffer)],
+    ["Argumento de ROI para el cliente", safeStr(diag.roiArgument)],
+    ["Esquema de cobro sugerido", safeStr(diag.paymentStructureRecommendation)],
+  ]);
+
+  if (Array.isArray(diag.pricingPackagesMxn) && diag.pricingPackagesMxn.length > 0) {
+    if (currentY > pageHeight - 45) {
+      doc.addPage();
+      currentY = 18;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...COLORS.accent);
+    doc.text("3. ESCENARIOS DE COTIZACIÓN SUGERIDOS (MXN + IVA)", 14, currentY);
+    currentY += 3;
+
+    autoTable(doc, {
+      startY: currentY,
+      margin: { left: 14, right: 14 },
+      theme: "grid",
+      head: [["Opción / Paquete", "Implementación (Único)", "Póliza Mensual", "Tiempo", "Entregables Clave"]],
+      headStyles: { fillColor: COLORS.headerBg, textColor: [255, 255, 255], fontSize: 8 },
+      bodyStyles: { fontSize: 8, textColor: COLORS.textDark, cellPadding: 2.8 },
+      alternateRowStyles: { fillColor: COLORS.stripe },
+      body: diag.pricingPackagesMxn.map((pkg) => [
+        `${safeStr(pkg.tierName)}\n(${safeStr(pkg.subtitle)})`,
+        formatMxnPdf(pkg.setupPriceMxn),
+        `${formatMxnPdf(pkg.monthlyRetainerMxn)}/mes`,
+        safeStr(pkg.estimatedWeeks),
+        toStringArray(pkg.deliverables).map((d) => `• ${d}`).join("\n"),
+      ]),
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 7;
+  }
+
+  addBlockTable("4. Arquitectura Técnica y Cómo Integrarlo", [
+    ["Arquitectura recomendada", safeStr(diag.recommendedArchitecture)],
+    ["Ruta de integración paso a paso", toStringArray(diag.stepByStepIntegrationPlan).join("\n")],
+    ["Alcance Fase 1 (MVP)", toStringArray(diag.mvpScope).map((x) => `• ${x}`).join("\n")],
+    ["Alcance Fase 2 (Escalamiento)", toStringArray(diag.phase2Scope).map((x) => `• ${x}`).join("\n")],
+  ]);
+
+  addBlockTable("5. Riesgos Críticos y Preguntas para Reunión de Cierre", [
+    ["Riesgos y dependencias a cuidar", toStringArray(diag.criticalRisks).map((x) => `• ${x}`).join("\n")],
+    ["Preguntas clave para el cliente", toStringArray(diag.followUpQuestions).map((x) => `• ${x}`).join("\n")],
+  ]);
+
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(150);
+    doc.text(
+      `CONFIDENCIAL INTERNO — Interpres Digital | Estrategia y Cotizador IA | Página ${i} de ${totalPages}`,
+      pageWidth / 2,
+      pageHeight - 8,
+      { align: "center" }
+    );
+  }
+
+  const safeName = (a.companyName || briefing.companyName || "Cliente")
+    .replace(/[^a-zA-Z0-9_-]/g, "_")
+    .slice(0, 40);
+  doc.save(`Prediagnostico_Cotizador_IA_${safeName}.pdf`);
 };

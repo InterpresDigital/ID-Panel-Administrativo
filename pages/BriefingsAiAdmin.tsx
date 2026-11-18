@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { db } from "../services/firebase";
 import {
   collection,
@@ -9,9 +10,11 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { useData } from "../context/DataContext";
+import { Quotation, QuoteItem } from "../types";
 import { getAppBaseUrl } from "../utils/urlUtils";
 import {
   AiBriefingRecord,
+  AiPricingPackageOption,
   AI_RFI_SECTIONS,
   isSectionFilled,
   formatVoiceDuration,
@@ -20,7 +23,10 @@ import {
   toAttachmentArray,
   toStringArray,
 } from "../utils/aiBriefingTypes";
-import { generateAiBriefingPDF } from "../utils/aiBriefingPdfGenerator";
+import {
+  generateAiBriefingPDF,
+  generateAiDiagnosticInternalPDF,
+} from "../utils/aiBriefingPdfGenerator";
 import { generateAiRfiPreDiagnostic } from "../services/geminiService";
 import {
   Sparkles,
@@ -38,11 +44,23 @@ import {
   AlertTriangle,
   Cpu,
   Download,
+  DollarSign,
+  TrendingUp,
+  Layers,
+  HelpCircle,
+  ArrowRight,
+  Check,
 } from "lucide-react";
 import clsx from "clsx";
 
+const formatMxn = (val?: number): string => {
+  const n = Number(val) || 0;
+  return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MXN`;
+};
+
 const BriefingsAiAdmin: React.FC = () => {
-  const { clients, companyInfo } = useData();
+  const navigate = useNavigate();
+  const { clients, companyInfo, addQuotation } = useData();
   const [briefings, setBriefings] = useState<AiBriefingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBriefing, setSelectedBriefing] = useState<AiBriefingRecord | null>(null);
@@ -53,8 +71,12 @@ const BriefingsAiAdmin: React.FC = () => {
   const [selectedClientForLink, setSelectedClientForLink] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [generatingDiagPdf, setGeneratingDiagPdf] = useState(false);
   const [generatingDiag, setGeneratingDiag] = useState(false);
+  const [customGuidance, setCustomGuidance] = useState("");
   const [diagError, setDiagError] = useState<string | null>(null);
+  const [createdQuoteId, setCreatedQuoteId] = useState<string | null>(null);
+  const [creatingQuote, setCreatingQuote] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "briefings"), orderBy("createdAt", "desc"));
@@ -113,19 +135,187 @@ const BriefingsAiAdmin: React.FC = () => {
     }
   };
 
+  const handleDownloadDiagnosticPdf = async (b: AiBriefingRecord) => {
+    setGeneratingDiagPdf(true);
+    try {
+      await generateAiDiagnosticInternalPDF(b);
+    } finally {
+      setGeneratingDiagPdf(false);
+    }
+  };
+
   const handleRunDiagnostic = async (b: AiBriefingRecord) => {
     setGeneratingDiag(true);
     setDiagError(null);
+    setCreatedQuoteId(null);
     try {
-      const diag = await generateAiRfiPreDiagnostic(b);
+      const diag = await generateAiRfiPreDiagnostic(b, customGuidance);
       setSelectedBriefing({ ...b, aiPreDiagnostic: diag });
     } catch (err: any) {
       setDiagError(
         err?.message ||
-          "Para ejecutar el pre-diagnóstico automático despliega Cloud Functions con tu secreto GEMINI_API_KEY."
+          "No fue posible generar el pre-diagnóstico en este momento. Intenta nuevamente en unos segundos."
       );
     } finally {
       setGeneratingDiag(false);
+    }
+  };
+
+  const handleCreateQuotationFromPackage = async (
+    b: AiBriefingRecord,
+    pkg: AiPricingPackageOption
+  ) => {
+    setCreatingQuote(true);
+    try {
+      const setup = Math.max(0, Number(pkg.setupPriceMxn) || 0);
+      const monthly = Math.max(0, Number(pkg.monthlyRetainerMxn) || 0);
+      const items: QuoteItem[] = [
+        {
+          description: `${safeStr(pkg.tierName)} — ${b.answers.companyName || b.companyName || "Proyecto IA"}`,
+          details: [safeStr(pkg.subtitle), ...toStringArray(pkg.deliverables).map((d) => `• ${d}`)].join("\n"),
+          quantity: 1,
+          price: setup,
+          billingType: "once",
+        },
+      ];
+      if (monthly > 0) {
+        items.push({
+          description: "Póliza Mensual de Infraestructura, Soporte y Consumo IA",
+          details: "Monitoreo continuo, servidor seguro, ajustes evolutivos y bolsa operativa de procesamiento IA.",
+          quantity: 1,
+          price: monthly,
+          billingType: "monthly",
+        });
+      }
+
+      const validDate = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const totalOnceWithIva = Math.round(setup * 1.16 * 100) / 100;
+      const totalMonthlyWithIva = Math.round(monthly * 1.16 * 100) / 100;
+
+      const matchedClient = clients.find(
+        (c) =>
+          c.id === b.clientId ||
+          (b.email && c.email?.toLowerCase() === b.email.toLowerCase())
+      );
+
+      const newQuote: Quotation = {
+        id: `QT-${Date.now()}`,
+        clientId: matchedClient?.id || b.clientId || "",
+        clientName: b.answers.contactName || b.clientName || matchedClient?.name || "Cliente",
+        clientCompanyName: b.answers.companyName || b.companyName || matchedClient?.companyName || "",
+        clientEmail: b.answers.contactEmail || b.email || matchedClient?.email || "",
+        items,
+        subtotal: setup,
+        total: totalOnceWithIva,
+        subtotalMonthly: monthly,
+        totalMonthly: totalMonthlyWithIva,
+        hasIva: true,
+        deliveryTime: safeStr(pkg.estimatedWeeks || b.aiPreDiagnostic?.estimatedImplementationWeeks || "3 a 5 semanas"),
+        paymentMilestones: setup > 0
+          ? [
+              {
+                concept: "Anticipo de inicio de arquitectura y desarrollo",
+                percentage: 50,
+                amount: Math.round((totalOnceWithIva * 0.5) * 100) / 100,
+                timeframe: "Al autorizar propuesta",
+              },
+              {
+                concept: "Liquidación contra entrega, pruebas e implementación en vivo",
+                percentage: 50,
+                amount: Math.round((totalOnceWithIva * 0.5) * 100) / 100,
+                timeframe: "Contra entrega en producción",
+              },
+            ]
+          : [],
+        notes: safeStr(
+          b.aiPreDiagnostic?.paymentStructureRecommendation ||
+            "Propuesta generada a partir del Diagnóstico Ejecutivo de Automatización y Agentes de IA. Precios expresados en Pesos Mexicanos (MXN)."
+        ),
+        createdAt: new Date().toISOString(),
+        validUntil: validDate,
+        status: "Pendiente",
+      };
+
+      await addQuotation(newQuote);
+      setCreatedQuoteId(newQuote.id);
+    } finally {
+      setCreatingQuote(false);
+    }
+  };
+
+  const handleCreateQuotationFromSuggestedItems = async (b: AiBriefingRecord) => {
+    const rawItems = b.aiPreDiagnostic?.suggestedQuoteItems;
+    if (!Array.isArray(rawItems) || rawItems.length === 0) return;
+
+    setCreatingQuote(true);
+    try {
+      const items: QuoteItem[] = rawItems.map((it) => ({
+        description: safeStr(it.concept || "Partida de implementación IA"),
+        details: safeStr(it.details),
+        quantity: 1,
+        price: Math.max(0, Number(it.priceMxn) || 0),
+        billingType: it.billingType === "monthly" ? "monthly" : "once",
+      }));
+
+      const setup = items
+        .filter((i) => i.billingType !== "monthly")
+        .reduce((acc, i) => acc + i.price * i.quantity, 0);
+      const monthly = items
+        .filter((i) => i.billingType === "monthly")
+        .reduce((acc, i) => acc + i.price * i.quantity, 0);
+
+      const totalOnceWithIva = Math.round(setup * 1.16 * 100) / 100;
+      const totalMonthlyWithIva = Math.round(monthly * 1.16 * 100) / 100;
+      const validDate = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+      const matchedClient = clients.find(
+        (c) =>
+          c.id === b.clientId ||
+          (b.email && c.email?.toLowerCase() === b.email.toLowerCase())
+      );
+
+      const newQuote: Quotation = {
+        id: `QT-${Date.now()}`,
+        clientId: matchedClient?.id || b.clientId || "",
+        clientName: b.answers.contactName || b.clientName || matchedClient?.name || "Cliente",
+        clientCompanyName: b.answers.companyName || b.companyName || matchedClient?.companyName || "",
+        clientEmail: b.answers.contactEmail || b.email || matchedClient?.email || "",
+        items,
+        subtotal: setup,
+        total: totalOnceWithIva,
+        subtotalMonthly: monthly,
+        totalMonthly: totalMonthlyWithIva,
+        hasIva: true,
+        deliveryTime: safeStr(b.aiPreDiagnostic?.estimatedImplementationWeeks || "4 a 5 semanas"),
+        paymentMilestones: setup > 0
+          ? [
+              {
+                concept: "Anticipo de inicio de proyecto",
+                percentage: 50,
+                amount: Math.round((totalOnceWithIva * 0.5) * 100) / 100,
+                timeframe: "Al autorizar propuesta",
+              },
+              {
+                concept: "Liquidación contra entrega y salida en vivo",
+                percentage: 50,
+                amount: Math.round((totalOnceWithIva * 0.5) * 100) / 100,
+                timeframe: "Contra entrega",
+              },
+            ]
+          : [],
+        notes: safeStr(
+          b.aiPreDiagnostic?.paymentStructureRecommendation ||
+            "Propuesta técnica y económica derivada del Diagnóstico Ejecutivo de IA y Automatización."
+        ),
+        createdAt: new Date().toISOString(),
+        validUntil: validDate,
+        status: "Pendiente",
+      };
+
+      await addQuotation(newQuote);
+      setCreatedQuoteId(newQuote.id);
+    } finally {
+      setCreatingQuote(false);
     }
   };
 
@@ -322,7 +512,7 @@ const BriefingsAiAdmin: React.FC = () => {
                 <div className="text-sm font-black text-gray-900 dark:text-white">
                   {selectedBriefing.voiceSessionsCount ||
                     ((selectedBriefing.voiceDurationSeconds || 0) > 0 ? 1 : 0)}{" "}
-                  <span className="text-xs font-medium text-gray-500">/ 15 máx.</span>
+                  <span className="text-xs font-medium text-gray-500">/ 40 máx.</span>
                 </div>
               </div>
 
@@ -495,99 +685,453 @@ const BriefingsAiAdmin: React.FC = () => {
               </div>
             </div>
           ) : (
-            /* PRE-DIAGNOSTIC TAB */
-            <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 md:p-8 border border-gray-100 dark:border-dark-border space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-500" />
-                    Arquitectura y Pre-Diagnóstico para Cotización
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Análisis interno exclusivo para Interpres Digital generado sobre las 10 respuestas del cliente.
-                  </p>
+            /* PRE-DIAGNOSTIC & AI QUOTER TAB */
+            <div className="space-y-6">
+              {/* Top Action & Custom Guidance Card */}
+              <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 md:p-7 border border-gray-100 dark:border-dark-border space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-indigo-500" />
+                      Agente de Pre-Diagnóstico Estratégico, Arquitectura y Cotizador IA
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Interpreta las necesidades y el presupuesto del cliente, define qué ofrecer, cómo venderlo, cómo integrarlo paso a paso y arma los paquetes en MXN listos para mandar a Cotizaciones.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {selectedBriefing.aiPreDiagnostic && (
+                      <button
+                        onClick={() => handleDownloadDiagnosticPdf(selectedBriefing)}
+                        disabled={generatingDiagPdf}
+                        className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold flex items-center gap-2 transition-all"
+                      >
+                        {generatingDiagPdf ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Download className="w-4 h-4 text-indigo-500" />
+                        )}
+                        <span>Descargar PDF Interno</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => handleRunDiagnostic(selectedBriefing)}
+                      disabled={generatingDiag}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-indigo-600/20 transition-all"
+                    >
+                      {generatingDiag ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4" />
+                      )}
+                      <span>
+                        {generatingDiag
+                          ? "Analizando RFI y calculando propuesta..."
+                          : selectedBriefing.aiPreDiagnostic
+                          ? "Recalcular Pre-Diagnóstico y Cotizador"
+                          : "Generar Pre-Diagnóstico y Cotización con IA"}
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => handleRunDiagnostic(selectedBriefing)}
-                  disabled={generatingDiag}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2"
-                >
-                  {generatingDiag ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4" />
-                  )}
-                  <span>
-                    {selectedBriefing.aiPreDiagnostic
-                      ? "Regenerar Pre-Diagnóstico"
-                      : "Generar Pre-Diagnóstico con IA"}
-                  </span>
-                </button>
+                {/* Optional Director Guidance Input */}
+                <div className="bg-gray-50 dark:bg-dark-bg/70 rounded-xl p-3.5 border border-gray-200/80 dark:border-dark-border space-y-1.5">
+                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Directriz comercial o ajuste opcional antes de generar / recalcular:
+                  </label>
+                  <input
+                    type="text"
+                    value={customGuidance}
+                    onChange={(e) => setCustomGuidance(e.target.value)}
+                    placeholder="Ej. 'Ajusta la Opción 1 a un tope de $25,000 MXN', 'Prioriza WhatsApp API + Google Sheets', 'Incluye panel web propio en Opción 2'..."
+                    className="w-full px-3.5 py-2 rounded-lg bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border text-xs text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                {diagError && (
+                  <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span>{diagError}</span>
+                  </div>
+                )}
+
+                {createdQuoteId && (
+                  <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/35 border border-emerald-300 dark:border-emerald-700 text-xs text-emerald-900 dark:text-emerald-100 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 font-bold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      <span>
+                        ¡Borrador de cotización ({createdQuoteId}) creado con éxito en tu módulo de Cotizaciones!
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => navigate("/quotations")}
+                      className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold inline-flex items-center gap-1.5"
+                    >
+                      <span>Ir a Cotizaciones para revisar / enviar</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
-
-              {diagError && (
-                <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                  <span>{diagError}</span>
-                </div>
-              )}
 
               {selectedBriefing.aiPreDiagnostic ? (
                 <div className="space-y-6 text-sm">
-                  <div className="flex flex-wrap gap-3">
-                    <span className="px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 text-xs font-bold">
-                      Complejidad: {selectedBriefing.aiPreDiagnostic.complexityLevel}
-                    </span>
-                    <span className="px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-300 text-xs font-bold">
-                      Tiempo estimado: {selectedBriefing.aiPreDiagnostic.estimatedImplementationWeeks}
-                    </span>
+                  {/* 1. Badges & Executive Interpretation + Budget Analysis */}
+                  <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 border border-gray-100 dark:border-dark-border space-y-5">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-extrabold">
+                        Complejidad: {selectedBriefing.aiPreDiagnostic.complexityLevel}
+                      </span>
+                      <span className="px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold">
+                        Implementación estimada: {selectedBriefing.aiPreDiagnostic.estimatedImplementationWeeks}
+                      </span>
+                      <span className="px-3.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-extrabold">
+                        Presupuesto declarado cliente: {selectedBriefing.answers.estimatedBudget || "Por definir"}
+                      </span>
+                      {selectedBriefing.aiPreDiagnostic.budgetFitStatus && (
+                        <span className="px-3.5 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-xs font-extrabold">
+                          Semáforo Presupuesto: {selectedBriefing.aiPreDiagnostic.budgetFitStatus}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                      <div className="p-4 rounded-xl bg-gray-50 dark:bg-dark-bg/60 border border-gray-100 dark:border-dark-border space-y-1.5">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                          1. Diagnóstico e Interpretación del Caso
+                        </h4>
+                        <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
+                          {selectedBriefing.aiPreDiagnostic.executiveSummary}
+                        </p>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/50 space-y-1.5">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                          <DollarSign className="w-4 h-4" />
+                          <span>Análisis Presupuesto vs. Alcance Solicitado</span>
+                        </h4>
+                        <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
+                          {selectedBriefing.aiPreDiagnostic.budgetVsNeedsAnalysis ||
+                            "Regenera el pre-diagnóstico para obtener el cruce detallado entre el presupuesto del cliente y el alcance técnico."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {toStringArray(selectedBriefing.aiPreDiagnostic.whatCanBeDone).length > 0 && (
+                      <div className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 space-y-2">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                          Qué SÍ se puede hacer y automatizar de inmediato con su operación actual
+                        </h4>
+                        <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-200">
+                          {toStringArray(selectedBriefing.aiPreDiagnostic.whatCanBeDone).map((item, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
-                  <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">Resumen Ejecutivo</h4>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      {selectedBriefing.aiPreDiagnostic.executiveSummary}
-                    </p>
-                  </div>
+                  {/* 2. Commercial Strategy: What to Offer, How to Sell It & ROI */}
+                  {(selectedBriefing.aiPreDiagnostic.commercialPitchAndHowToOffer ||
+                    toStringArray(selectedBriefing.aiPreDiagnostic.recommendedInterpresLines).length > 0) && (
+                    <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 border border-gray-100 dark:border-dark-border space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 dark:border-dark-border pb-3">
+                        <h4 className="text-sm font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4" />
+                          <span>2. Qué Ofrecer, Cómo Presentarlo y Argumento de Cierre (ROI)</span>
+                        </h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {toStringArray(selectedBriefing.aiPreDiagnostic.recommendedInterpresLines).map(
+                            (line, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2.5 py-1 rounded-lg bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold"
+                              >
+                                {line}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
 
-                  <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white mb-1">
-                      Arquitectura Recomendada
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <div>
+                          <div className="text-[11px] font-bold uppercase text-gray-400 mb-1">
+                            Cómo ofrecerlo y estructurar la venta con el cliente
+                          </div>
+                          <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
+                            {selectedBriefing.aiPreDiagnostic.commercialPitchAndHowToOffer}
+                          </p>
+                        </div>
+                        <div>
+                          <div className="text-[11px] font-bold uppercase text-gray-400 mb-1">
+                            Argumento de Retorno de Inversión (ROI) para justificar precio
+                          </div>
+                          <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
+                            {selectedBriefing.aiPreDiagnostic.roiArgument}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. AI Quoter: 3 Comparative Pricing Packages in MXN */}
+                  {Array.isArray(selectedBriefing.aiPreDiagnostic.pricingPackagesMxn) &&
+                    selectedBriefing.aiPreDiagnostic.pricingPackagesMxn.length > 0 && (
+                      <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 border border-gray-100 dark:border-dark-border space-y-5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                              <DollarSign className="w-4 h-4" />
+                              <span>3. Cotizador Estratégico Sugerido (3 Escenarios en MXN + IVA)</span>
+                            </h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              Elige cualquiera de los paquetes para enviarlo directo como borrador editable a tu módulo de Cotizaciones.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                          {selectedBriefing.aiPreDiagnostic.pricingPackagesMxn.map((pkg, idx) => {
+                            const isRecommended = idx === 1;
+                            return (
+                              <div
+                                key={idx}
+                                className={clsx(
+                                  "rounded-2xl p-5 border flex flex-col justify-between space-y-4 transition-all",
+                                  isRecommended
+                                    ? "bg-indigo-50/50 dark:bg-indigo-950/30 border-2 border-indigo-500 shadow-lg shadow-indigo-500/10"
+                                    : "bg-gray-50/70 dark:bg-dark-bg/70 border-gray-200 dark:border-dark-border"
+                                )}
+                              >
+                                <div className="space-y-3">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <h5 className="font-black text-gray-900 dark:text-white text-sm">
+                                        {pkg.tierName}
+                                      </h5>
+                                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                        {pkg.subtitle}
+                                      </p>
+                                    </div>
+                                    {isRecommended && (
+                                      <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold uppercase flex-shrink-0">
+                                        Recomendada
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="pt-2 border-t border-gray-200/70 dark:border-dark-border">
+                                    <div className="text-[10px] font-bold uppercase text-gray-400">
+                                      Implementación Inicial (Pago Único)
+                                    </div>
+                                    <div className="text-xl font-black text-gray-900 dark:text-white">
+                                      {formatMxn(pkg.setupPriceMxn)}{" "}
+                                      <span className="text-[10px] font-semibold text-gray-400">+ IVA</span>
+                                    </div>
+                                    <div className="text-xs font-bold text-indigo-600 dark:text-indigo-300 mt-1">
+                                      + Póliza mensual: {formatMxn(pkg.monthlyRetainerMxn)}/mes
+                                    </div>
+                                    <div className="text-[11px] text-gray-500 mt-0.5">
+                                      Entrega estimada: <strong>{pkg.estimatedWeeks}</strong>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-1.5 pt-1">
+                                    <div className="text-[10px] font-bold uppercase text-gray-400">
+                                      Qué incluye:
+                                    </div>
+                                    <ul className="space-y-1 text-xs text-gray-700 dark:text-gray-200">
+                                      {toStringArray(pkg.deliverables).map((d, dIdx) => (
+                                        <li key={dIdx} className="flex items-start gap-1.5">
+                                          <Check className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0 mt-0.5" />
+                                          <span>{d}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={() => handleCreateQuotationFromPackage(selectedBriefing, pkg)}
+                                  disabled={creatingQuote}
+                                  className={clsx(
+                                    "w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all",
+                                    isRecommended
+                                      ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                                      : "bg-white dark:bg-dark-surface hover:bg-indigo-50 dark:hover:bg-slate-800 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
+                                  )}
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  <span>Crear Borrador en Cotizaciones</span>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Suggested Itemized Breakdown */}
+                        {Array.isArray(selectedBriefing.aiPreDiagnostic.suggestedQuoteItems) &&
+                          selectedBriefing.aiPreDiagnostic.suggestedQuoteItems.length > 0 && (
+                            <div className="pt-4 border-t border-gray-100 dark:border-dark-border space-y-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                  <h5 className="text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-200">
+                                    Partidas Desglosadas Sugeridas (Propuesta Recomendada)
+                                  </h5>
+                                  {selectedBriefing.aiPreDiagnostic.paymentStructureRecommendation && (
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                      {selectedBriefing.aiPreDiagnostic.paymentStructureRecommendation}
+                                    </p>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleCreateQuotationFromSuggestedItems(selectedBriefing)}
+                                  disabled={creatingQuote}
+                                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  <span>Enviar Partidas Desglosadas a Cotizaciones</span>
+                                </button>
+                              </div>
+
+                              <div className="divide-y divide-gray-100 dark:divide-dark-border rounded-xl border border-gray-200 dark:border-dark-border overflow-hidden">
+                                {selectedBriefing.aiPreDiagnostic.suggestedQuoteItems.map((it, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="p-3.5 bg-gray-50/50 dark:bg-dark-bg/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                                  >
+                                    <div>
+                                      <div className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <span>{it.concept}</span>
+                                        <span
+                                          className={clsx(
+                                            "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase",
+                                            it.billingType === "monthly"
+                                              ? "bg-violet-100 text-violet-700 dark:bg-violet-950/70 dark:text-violet-300"
+                                              : "bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300"
+                                          )}
+                                        >
+                                          {it.billingType === "monthly" ? "Mensual" : "Pago Único"}
+                                        </span>
+                                      </div>
+                                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                        {it.details}
+                                      </p>
+                                    </div>
+                                    <div className="text-sm font-black text-gray-900 dark:text-white whitespace-nowrap">
+                                      {formatMxn(it.priceMxn)}
+                                      {it.billingType === "monthly" ? "/mes" : ""}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                    )}
+
+                  {/* 4. Technical Architecture & Step-by-Step Integration Plan */}
+                  <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 border border-gray-100 dark:border-dark-border space-y-4">
+                    <h4 className="text-sm font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-2 border-b border-gray-100 dark:border-dark-border pb-3">
+                      <Layers className="w-4 h-4" />
+                      <span>4. Arquitectura Técnica y Cómo Integrarlo Paso a Paso</span>
                     </h4>
-                    <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-                      {selectedBriefing.aiPreDiagnostic.recommendedArchitecture}
-                    </p>
+
+                    <div>
+                      <div className="text-[11px] font-bold uppercase text-gray-400 mb-1">
+                        Stack y Arquitectura Recomendada
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
+                        {selectedBriefing.aiPreDiagnostic.recommendedArchitecture}
+                      </p>
+                    </div>
+
+                    {toStringArray(selectedBriefing.aiPreDiagnostic.stepByStepIntegrationPlan).length > 0 && (
+                      <div className="p-4 rounded-xl bg-gray-50 dark:bg-dark-bg/70 border border-gray-200/70 dark:border-dark-border space-y-2">
+                        <div className="text-[11px] font-bold uppercase text-indigo-600 dark:text-indigo-300">
+                          Ruta de Implementación e Integración Técnica
+                        </div>
+                        <ul className="space-y-1.5 text-xs text-gray-700 dark:text-gray-200">
+                          {toStringArray(selectedBriefing.aiPreDiagnostic.stepByStepIntegrationPlan).map(
+                            (stepText, i) => (
+                              <li key={i} className="leading-relaxed">
+                                {stepText}
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                      <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40">
+                        <h5 className="font-bold text-emerald-700 dark:text-emerald-300 mb-2 text-xs uppercase">
+                          Alcance Sugerido Fase 1 (MVP)
+                        </h5>
+                        <ul className="list-disc pl-4 space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                          {toStringArray(selectedBriefing.aiPreDiagnostic.mvpScope).map((m, i) => (
+                            <li key={i}>{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40">
+                        <h5 className="font-bold text-indigo-700 dark:text-indigo-300 mb-2 text-xs uppercase">
+                          Alcance Sugerido Fase 2 (Escalamiento)
+                        </h5>
+                        <ul className="list-disc pl-4 space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                          {toStringArray(selectedBriefing.aiPreDiagnostic.phase2Scope).map((p, i) => (
+                            <li key={i}>{p}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-900/40">
-                      <h4 className="font-bold text-rose-700 dark:text-rose-300 mb-2 text-xs uppercase">
-                        Riesgos Críticos / Dependencias
+                  {/* 5. Critical Risks & Specialist Follow-up Questions */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 border border-rose-200/70 dark:border-rose-900/40 space-y-2.5">
+                      <h4 className="font-black text-rose-700 dark:text-rose-300 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span>Riesgos Críticos y Dependencias a Cuidar en Contrato</span>
                       </h4>
-                      <ul className="list-disc pl-4 space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                      <ul className="list-disc pl-4 space-y-1.5 text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                         {toStringArray(selectedBriefing.aiPreDiagnostic.criticalRisks).map((r, i) => (
                           <li key={i}>{r}</li>
                         ))}
                       </ul>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40">
-                      <h4 className="font-bold text-emerald-700 dark:text-emerald-300 mb-2 text-xs uppercase">
-                        Alcance Sugerido Fase 1 (MVP)
+                    <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 border border-indigo-200/70 dark:border-indigo-900/40 space-y-2.5">
+                      <h4 className="font-black text-indigo-700 dark:text-indigo-300 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <HelpCircle className="w-4 h-4" />
+                        <span>Preguntas Clave para la Reunión con el Especialista</span>
                       </h4>
-                      <ul className="list-disc pl-4 space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                        {toStringArray(selectedBriefing.aiPreDiagnostic.mvpScope).map((m, i) => (
-                          <li key={i}>{m}</li>
+                      <ul className="list-disc pl-4 space-y-1.5 text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {toStringArray(selectedBriefing.aiPreDiagnostic.followUpQuestions).map((q, i) => (
+                          <li key={i}>{q}</li>
                         ))}
                       </ul>
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Haz clic en "Generar Pre-Diagnóstico con IA" para obtener arquitectura recomendada, riesgos de APIs y alcance sugerido para tu cotización.
-                </p>
+                <div className="bg-white dark:bg-dark-surface rounded-2xl p-8 border border-gray-100 dark:border-dark-border text-center space-y-3">
+                  <Sparkles className="w-8 h-8 text-indigo-500 mx-auto" />
+                  <p className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                    Este briefing aún no tiene su Pre-Diagnóstico y Cotización generados
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xl mx-auto">
+                    Haz clic arriba en <strong>"Generar Pre-Diagnóstico y Cotización con IA"</strong> para que el agente analice el presupuesto y las 10 etapas del cliente, te proponga qué ofrecer, cómo venderlo, cómo integrarlo y te arme los 3 escenarios en pesos mexicanos listos para cotizar.
+                  </p>
+                </div>
               )}
             </div>
           )}

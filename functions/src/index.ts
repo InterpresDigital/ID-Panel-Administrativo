@@ -20,8 +20,8 @@ export const onAiRequest = functions
   .runWith({
     secrets: [geminiApiKey],
     serviceAccount: "firebase-adminsdk-fbsvc@interpres-digital.iam.gserviceaccount.com",
-    memory: "256MB",
-    timeoutSeconds: 60
+    memory: "512MB",
+    timeoutSeconds: 120
   })
   .firestore.document("ai_requests/{requestId}")
   .onCreate(async (snap) => {
@@ -101,30 +101,112 @@ export const onAiRequest = functions
       }
 
       if (action === "analyze-rfi") {
-        const { briefingId, companyName, answers } = payload;
+        const { briefingId, companyName, answers, customGuidance } = payload;
         if (!briefingId || !answers) {
           throw new Error("Faltan datos del RFI para analizar.");
         }
 
         const ai = new GoogleGenAI({ apiKey });
         const prompt = `
-Eres un Arquitecto Senior de Soluciones de IA y Automatización en Interpres Digital.
-Analiza el siguiente RFI completado por la empresa "${companyName || "Cliente"}" para cotizarle la implementación de automatizaciones y agentes de IA.
+Eres el **Director de Arquitectura de Soluciones y Estrategia Comercial de Interpres Digital** (INTERPRES S.A. de C.V., estudio de infraestructura digital, software a medida y agentes de IA en México).
+Tu misión es entregar un **Pre-Diagnóstico Técnico, Estratégico y Cotizador en Pesos Mexicanos (MXN)** exclusivo para el equipo directivo de Interpres Digital sobre el RFI llenado por "${companyName || answers.companyName || "el cliente"}".
 
-RESPUESTAS DEL RFI:
+PORTAFOLIO Y FILOSOFÍA DE INTERPRES DIGITAL (ÚSALO PARA ESTRUCTURAR QUÉ OFRECER Y CÓMO VENDERLO):
+1. **Nexia IA & Automatización Inteligente:**
+   - *Agentes Front-Office (WhatsApp Business API, Webchat, Voz):* Atención/ventas 24/7 en <3 seg, calificación de leads, cotización automática desde catálogos/inventarios, agendamiento y pase híbrido a humano.
+   - *Agentes Back-Office & Automatización de Procesos:* Conexión vía APIs/Webhooks/Cloud Functions/n8n entre CRMs (HubSpot, GoHighLevel, etc.), ERPs, Google Sheets/Excel, Stripe, Gmail/Outlook (*Inbox AI*), alertas ejecutivas en Telegram y lectura OCR de documentos/facturas.
+2. **Intentional Systems (Software / Paneles a Medida):** Sistemas centrales web/cloud propietarios cuando el cliente opera en hojas de cálculo frágiles y requiere control real de inventario, cotizaciones, clientes, comisiones o permisos.
+3. **Intentional Web / Boost Apps (PWA Lealtad) / System 360:** Ecosistemas digitales completos de captación, conversión y recurrencia sin comisiones por transacción; el cliente es dueño de su infraestructura y datos.
+4. **Modelo Comercial Recomendado en México (MXN, antes de IVA):**
+   - Cobro de **Implementación Inicial (Pago Único / Setup)** dividido por hitos + **Póliza Mensual Recurrente (Retainer)** que cubre mantenimiento evolutivo, monitoreo, servidor/infraestructura y consumo estimado de IA/APIs.
+   - Si el presupuesto declarado por el cliente es bajo o ajustado frente a todo lo que pide (ej. $5,000 - $20,000 MXN para algo grande), NO descartes la venta: diseña una **Opción 1 (MVP / Fase Semilla ultra enfocada)** ajustada cerca de su presupuesto quitando integraciones pesadas, una **Opción 2 (Solución Integral Recomendada)** con el valor real de mercado en México, y una **Opción 3 (Escalamiento / Sistema Completo)**.
+
+${customGuidance ? `DIRECTRIZ ESPECÍFICA DEL DIRECTOR COMERCIAL PARA ESTA COTIZACIÓN:\n"${customGuidance}"\n(Respeta prioritariamente esta directriz al armar precios, alcance y estrategia).\n` : ""}
+
+RESPUESTAS COMPLETAS DEL CLIENTE EN EL RFI:
 ${JSON.stringify(answers, null, 2)}
 
-Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown) con esta estructura exacta:
+Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, todo en ESPAÑOL claro, directo y accionable) con esta estructura exacta:
 {
   "complexityLevel": "Baja" | "Media" | "Alta" | "Enterprise",
-  "executiveSummary": "Resumen ejecutivo de 3 a 4 líneas para el cotizador.",
-  "recommendedArchitecture": "Arquitectura técnica y stack recomendado (modelos, orquestación, canales, base vectorial/RAG, seguridad).",
-  "criticalRisks": ["Lista de 3 a 5 riesgos técnicos, legales o de APIs faltantes detectados"],
-  "mvpScope": ["3 a 5 entregables recomendados para Fase 1 (MVP rápido)"],
-  "phase2Scope": ["2 a 4 entregables para Fase 2 de escalamiento"],
-  "followUpQuestions": ["3 a 5 preguntas clave que faltan aclarar antes de cerrar el precio final"],
-  "estimatedImplementationWeeks": "Ej. 3 a 5 semanas"
+  "estimatedImplementationWeeks": "Ej. 3 a 5 semanas",
+  "budgetFitStatus": "Óptimo" | "Ajustado — Requiere entrar con MVP (Fase 1)" | "Por definir — Anclar con 3 opciones" | "Bajo para alcance total — Recortar a Piloto",
+  "executiveSummary": "Diagnóstico integral de 4 a 6 líneas: qué dolor real tiene el negocio, qué impacto operativo/económico está sufriendo hoy y cuál es la verdadera solución que necesita.",
+  "budgetVsNeedsAnalysis": "Análisis franco del presupuesto declarado vs. la complejidad técnica solicitada: explica si su presupuesto alcanza, qué sí cubriría, qué conviene separar a Fase 2 y cómo manejar la conversación de precio sin perder el cierre.",
+  "whatCanBeDone": [
+    "4 a 6 puntos concretos y aterrizados de lo que SÍ se puede construir y automatizar con su operación y datos actuales"
+  ],
+  "recommendedInterpresLines": [
+    "Líneas de Interpres Digital que encajan (ej. 'Nexia IA Front-Office + Automatización API', 'Intentional Systems (Panel Web Central)', etc.)"
+  ],
+  "commercialPitchAndHowToOffer": "Guía práctica de cómo ofrecerlo y venderlo en la reunión de cierre: qué ángulo persuasivo usar con el tomador de decisión, cómo justificar la inversión y por qué empezar por la opción recomendada.",
+  "roiArgument": "Argumento cuantitativo o práctico de Retorno de Inversión (ROI) basado en el volumen, tiempo perdido o ventas no atendidas que reportó el cliente.",
+  "recommendedArchitecture": "Arquitectura técnica detallada: canales (ej. WhatsApp Cloud API / Web), motor de orquestación (Cloud Functions / Webhooks / n8n), modelo LLM y consulta de conocimiento (RAG / lectura estructurada de Sheets o BD SQL/Firestore), panel de supervisión humana y medidas de seguridad/privacidad LFPDPPP.",
+  "stepByStepIntegrationPlan": [
+    "Paso 1: ...",
+    "Paso 2: ...",
+    "Paso 3: ...",
+    "Paso 4: ...",
+    "Paso 5: ..."
+  ],
+  "pricingPackagesMxn": [
+    {
+      "tierName": "Opción 1 — MVP / Piloto de Entrada",
+      "subtitle": "Arranque rápido enfocado en el dolor #1 y adaptado al presupuesto inicial",
+      "setupPriceMxn": 18000,
+      "monthlyRetainerMxn": 2500,
+      "estimatedWeeks": "2 a 3 semanas",
+      "idealFor": "Validar resultados rápidos con mínima fricción presupuestal",
+      "deliverables": ["Entregable concreto 1", "Entregable concreto 2", "Entregable concreto 3"]
+    },
+    {
+      "tierName": "Opción 2 — Solución Integral Recomendada",
+      "subtitle": "Automatización y agente completo para su operación actual",
+      "setupPriceMxn": 38000,
+      "monthlyRetainerMxn": 4200,
+      "estimatedWeeks": "4 a 5 semanas",
+      "idealFor": "Resolver de raíz el proceso completo con supervisión híbrida e integraciones clave",
+      "deliverables": ["Entregable concreto 1", "Entregable concreto 2", "Entregable concreto 3", "Entregable concreto 4"]
+    },
+    {
+      "tierName": "Opción 3 — Ecosistema Completo / Escalamiento",
+      "subtitle": "Infraestructura propia + Panel central + Automatización total",
+      "setupPriceMxn": 68000,
+      "monthlyRetainerMxn": 6500,
+      "estimatedWeeks": "6 a 8 semanas",
+      "idealFor": "Sustituir hojas de cálculo por un sistema propio escalable y control ejecutivo total",
+      "deliverables": ["Entregable concreto 1", "Entregable concreto 2", "Entregable concreto 3", "Entregable concreto 4"]
+    }
+  ],
+  "suggestedQuoteItems": [
+    {
+      "concept": "Concepto de partida para cotización (Opción Recomendada)",
+      "details": "Descripción clara y comercial del entregable para el documento de cotización del cliente",
+      "priceMxn": 20000,
+      "billingType": "once"
+    },
+    {
+      "concept": "Póliza Mensual de Infraestructura, Soporte y Consumo IA",
+      "details": "Monitoreo operativo, servidor seguro, ajustes continuos de prompt/reglas y bolsa base de procesamiento IA",
+      "priceMxn": 4200,
+      "billingType": "monthly"
+    }
+  ],
+  "paymentStructureRecommendation": "Esquema de cobro recomendado (ej. 50% anticipo al firmar acuerdo, 50% contra entrega y pruebas en vivo + inicio de póliza mensual al salir a producción; precios más IVA).",
+  "criticalRisks": [
+    "3 a 5 riesgos técnicos, operativos, de calidad de datos (ej. Excel desordenado) o falta de APIs a cuidar en el contrato"
+  ],
+  "mvpScope": [
+    "3 a 5 entregables exactos sugeridos para Fase 1"
+  ],
+  "phase2Scope": [
+    "2 a 4 módulos de crecimiento para vender después en Fase 2"
+  ],
+  "followUpQuestions": [
+    "4 a 6 preguntas estratégicas y técnicas que el especialista de Interpres Digital debe hacerle al cliente en la videollamada de cierre"
+  ]
 }
+(IMPORTANTE: Los montos numéricos de ejemplo arriba son solo ilustrativos de formato JSON; calcula montos REALISTAS en pesos mexicanos MXN acordes al tamaño, volumen, integraciones y presupuesto específico de este cliente).
 `;
 
         const response = await ai.models.generateContent({
@@ -135,9 +217,12 @@ Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown) con esta es
           }
         });
 
-        const parsed = JSON.parse(response.text || "{}");
+        let rawText = (response.text || "{}").trim();
+        rawText = rawText.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+        const parsed = JSON.parse(rawText);
         const diagnostic = {
           ...parsed,
+          customNotesUsed: customGuidance ? String(customGuidance).trim() : "",
           generatedAt: new Date().toISOString()
         };
 
