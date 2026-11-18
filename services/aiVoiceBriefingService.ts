@@ -20,7 +20,7 @@ import {
   hasAnySectionProgress,
   isSectionFilled,
   isSectionPartial,
-  resolveResumeSection,
+  navigateToStageTool,
   safeStr,
   sanitizeLegacyAnswers,
   toStringArray,
@@ -103,12 +103,18 @@ export class AiVoiceBriefingSession {
   private micStream: MediaStream | null = null;
   private captureCtx: AudioContext | null = null;
   private playbackCtx: AudioContext | null = null;
+  private micSource: MediaStreamAudioSourceNode | null = null;
+  private silentGain: GainNode | null = null;
   private scriptProcessor: ScriptProcessorNode | null = null;
+  private lastMicProcessAtMs = 0;
   private nextPlaybackTime = 0;
   private activeSources: Set<AudioBufferSourceNode> = new Set();
   private echoGuardUntilMs = 0;
-  private speechGateOpenUntilMs = 0;
   private spokeInCurrentModelTurn = false;
+  private agentTextInCurrentTurn = "";
+  private waitingQuestionAfterTool = false;
+  private audioAfterToolResponse = false;
+  private postToolNudgeTimer: number | null = null;
   private isMuted = false;
   private isPaused = false;
   private closed = false;
@@ -176,7 +182,10 @@ export class AiVoiceBriefingSession {
     this.prefetchingToken = false;
     this.latestAnswers = sanitizeLegacyAnswers(currentAnswers);
     this.spokeInCurrentModelTurn = false;
-    this.speechGateOpenUntilMs = 0;
+    this.agentTextInCurrentTurn = "";
+    this.waitingQuestionAfterTool = false;
+    this.audioAfterToolResponse = false;
+    this.lastMicProcessAtMs = 0;
     this.pendingFinishSummary = null;
     this.postFinishTurnCompleted = false;
     this.finishRequestedAtMs = 0;
@@ -264,16 +273,24 @@ export class AiVoiceBriefingSession {
         sessionResumption: {},
         realtimeInputConfig: {
           automaticActivityDetection: {
-            startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
+            startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
             endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
             prefixPaddingMs: 250,
-            silenceDurationMs: 1150,
+            silenceDurationMs: 850,
           },
           activityHandling: ActivityHandling.NO_INTERRUPTION,
           turnCoverage: TurnCoverage.TURN_INCLUDES_ONLY_ACTIVITY,
         },
         systemInstruction: buildVoiceConsultantSystemPrompt(this.latestAnswers),
-        tools: [{ functionDeclarations: [updateRfiFieldsTool, finishVoiceInterviewTool] }],
+        tools: [
+          {
+            functionDeclarations: [
+              updateRfiFieldsTool,
+              navigateToStageTool,
+              finishVoiceInterviewTool,
+            ],
+          },
+        ],
         inputAudioTranscription: {},
         outputAudioTranscription: {},
       },
@@ -406,7 +423,7 @@ export class AiVoiceBriefingSession {
           this.activeSources.size === 0 &&
           this.modelTurnFinished &&
           !this.awaitingAgentReply &&
-          Date.now() > this.speechGateOpenUntilMs
+          !this.waitingQuestionAfterTool
         ) {
           this.rotateSocketSmoothly();
         }
@@ -499,7 +516,38 @@ export class AiVoiceBriefingSession {
       if (this.captureCtx && this.captureCtx.state === "suspended") {
         this.captureCtx.resume().catch(() => {});
       }
-    }, 4000);
+      // Si el navegador recolectó o pausó el nodo de captura de audio (~2 min en móvil/Chrome), re-enlazar al instante
+      if (
+        this.session &&
+        this.micStream &&
+        this.lastMicProcessAtMs > 0 &&
+        Date.now() - this.lastMicProcessAtMs > 3500
+      ) {
+        console.info("Reactivando flujo continuo de micrófono...");
+        this.rebuildMicrophoneStreaming();
+      }
+    }, 3500);
+  }
+
+  private rebuildMicrophoneStreaming() {
+    if (this.closed || !this.micStream || !this.session) return;
+    try {
+      this.micSource?.disconnect();
+    } catch {}
+    try {
+      this.scriptProcessor?.disconnect();
+    } catch {}
+    try {
+      this.silentGain?.disconnect();
+    } catch {}
+    if (this.captureCtx) {
+      this.captureCtx.close().catch(() => {});
+      this.captureCtx = null;
+    }
+    this.micSource = null;
+    this.scriptProcessor = null;
+    this.silentGain = null;
+    this.startMicrophoneStreaming();
   }
 
   private startMicrophoneStreaming() {
@@ -515,20 +563,23 @@ export class AiVoiceBriefingSession {
     }
 
     const actualRate = this.captureCtx.sampleRate || 16000;
-    const source = this.captureCtx.createMediaStreamSource(this.micStream);
+    // Guardar referencias en la instancia para impedir que el Garbage Collector del navegador apague el micrófono
+    this.micSource = this.captureCtx.createMediaStreamSource(this.micStream);
     this.scriptProcessor = this.captureCtx.createScriptProcessor(4096, 1, 1);
+    this.silentGain = this.captureCtx.createGain();
+    this.silentGain.gain.value = 0;
+    this.lastMicProcessAtMs = Date.now();
 
     this.scriptProcessor.onaudioprocess = (event) => {
+      this.lastMicProcessAtMs = Date.now();
       if (this.closed || this.isPaused || !this.session) return;
 
       const rawInput = event.inputBuffer.getChannelData(0);
       const inputData = downsampleTo16kHz(rawInput, actualRate);
       const now = Date.now();
 
-      // Protección anti-eco reforzada (laptops y altavoces móviles):
-      // Mientras Nexia IA habla (+ margen completo de latencia de hardware y reverberación de sala),
-      // enviamos silencio digital puro (ceros) para mantener estable el piso de ruido del VAD del servidor
-      // sin que jamás escuche su propia voz de regreso.
+      // Protección anti-eco: únicamente mientras Nexia IA reproduce voz (+ margen corto de altavoz)
+      // enviamos ceros para que jamás se escuche a sí misma; apenas termina, el micrófono queda 100% abierto.
       if (this.isMuted || this.activeSources.size > 0 || now < this.echoGuardUntilMs) {
         this.callbacks.onAudioLevel(this.activeSources.size > 0 ? 0.08 : 0);
         const silenceBase64 = floatTo16BitPCMBase64(new Float32Array(inputData.length));
@@ -548,19 +599,10 @@ export class AiVoiceBriefingSession {
         sum += inputData[i] * inputData[i];
       }
       const rawRms = Math.sqrt(sum / inputData.length);
-      const uiLevel = Math.min(1, rawRms * 6);
+      const uiLevel = Math.min(1, rawRms * 7);
       this.callbacks.onAudioLevel(uiLevel);
 
-      // Compuerta de ruido suave (Noise Gate con 750ms de cola natural):
-      // Evita que el zumbido del ventilador, aire acondicionado o ruido de escritorio haga que Gemini
-      // alucine palabras cuando el cliente está callado pensando.
-      if (rawRms >= 0.01) {
-        this.speechGateOpenUntilMs = now + 750;
-      }
-
-      const pcmToSend =
-        now <= this.speechGateOpenUntilMs ? inputData : new Float32Array(inputData.length);
-      const base64Audio = floatTo16BitPCMBase64(pcmToSend);
+      const base64Audio = floatTo16BitPCMBase64(inputData);
 
       try {
         this.session.sendRealtimeInput({
@@ -574,8 +616,9 @@ export class AiVoiceBriefingSession {
       }
     };
 
-    source.connect(this.scriptProcessor);
-    this.scriptProcessor.connect(this.captureCtx.destination);
+    this.micSource.connect(this.scriptProcessor);
+    this.scriptProcessor.connect(this.silentGain);
+    this.silentGain.connect(this.captureCtx.destination);
   }
 
   private handleServerMessage(msg: LiveServerMessage) {
@@ -618,6 +661,7 @@ export class AiVoiceBriefingSession {
       const inTx = msg.serverContent?.inputTranscription?.text;
       if (inTx && inTx.trim()) {
         this.spokeInCurrentModelTurn = false;
+        this.agentTextInCurrentTurn = "";
         this.awaitingAgentReply = true;
         this.callbacks.onTranscriptUpdate("user", inTx);
       }
@@ -625,6 +669,7 @@ export class AiVoiceBriefingSession {
       if (outTx && outTx.trim()) {
         this.modelTurnFinished = false;
         this.awaitingAgentReply = false;
+        this.agentTextInCurrentTurn += ` ${outTx}`;
         this.callbacks.onTranscriptUpdate("agent", outTx);
       }
 
@@ -644,6 +689,22 @@ export class AiVoiceBriefingSession {
         this.spokeInCurrentModelTurn = false;
         this.modelTurnFinished = true;
         this.awaitingAgentReply = false;
+
+        // Candado anti-bloqueo ("se traba"): si Gemini guardó datos con updateRfiFields
+        // pero cerró el turno sin hacer la siguiente pregunta en voz alta, destrabar de inmediato
+        if (
+          this.waitingQuestionAfterTool &&
+          !this.audioAfterToolResponse &&
+          !this.agentTextInCurrentTurn.includes("?") &&
+          this.pendingFinishSummary === null &&
+          !this.isPaused
+        ) {
+          this.triggerMissingQuestionNudge();
+          return;
+        }
+        this.waitingQuestionAfterTool = false;
+        this.agentTextInCurrentTurn = "";
+
         if (!this.isPaused && this.activeSources.size === 0) {
           this.callbacks.onStatusChange("connected");
           if (this.pendingGoAwayRotation && this.pendingFinishSummary === null) {
@@ -659,27 +720,48 @@ export class AiVoiceBriefingSession {
         }
       }
 
-      // 4. Ejecución flexible y segura de Tool Calls en vivo (Autollenado + Orden Secuencial Estricto)
+      // 4. Ejecución segura de Tool Calls en vivo (Autollenado + Orden Secuencial Estricto + Navegación bajo pedido)
       if (msg.toolCall?.functionCalls && msg.toolCall.functionCalls.length > 0) {
         const allowedStrings = new Set<string>(ALLOWED_STRING_RFI_FIELDS as string[]);
         const currentSequentialStage = getFirstIncompleteSection(this.latestAnswers);
+        let shouldWatchForNextQuestion = false;
 
         const responses = msg.toolCall.functionCalls.map((fc) => {
           const args = (fc.args && typeof fc.args === "object" ? fc.args : {}) as Record<string, any>;
+
+          if (fc.name === "navigateToStage") {
+            const targetStage = clampSection(args.stageNumber, currentSequentialStage);
+            this.latestAnswers = {
+              ...this.latestAnswers,
+              lastActiveSection: targetStage,
+            };
+            this.callbacks.onFieldsUpdated({ lastActiveSection: targetStage });
+            const secMeta = AI_RFI_SECTIONS[targetStage - 1];
+            const snapshot = secMeta
+              ? Object.fromEntries(secMeta.fields.map((f) => [f, (this.latestAnswers as any)[f]]))
+              : {};
+            const guidance = getNextQuestionGuidance(this.latestAnswers);
+            return {
+              id: fc.id,
+              name: fc.name,
+              response: {
+                status: "stage_focused",
+                focusedStageOnScreen: targetStage,
+                stageTitle: secMeta?.shortTitle || "",
+                currentDataInStage: snapshot,
+                nextPendingStageWhenDone: guidance.stage,
+                instruction: `Pantalla posicionada en la Etapa ${targetStage} (${secMeta?.shortTitle || ""}). Escucha o responde con brevedad lo que el cliente desea ajustar aquí, guárdalo con updateRfiFields({ appendMode: true, ... }) y, al terminar, retoma la Etapa ${guidance.stage}: "${guidance.nextQuestion}".`,
+              },
+            };
+          }
 
           if (fc.name === "updateRfiFields") {
             const {
               markSectionPending,
               noAdditionalComments,
-              focusSection,
               appendMode,
               ...fieldUpdates
             } = args;
-
-            const requestedFocus =
-              typeof focusSection === "number" && Number.isFinite(focusSection)
-                ? clampSection(focusSection)
-                : undefined;
 
             const cleaned: Partial<AiBriefingAnswers> = {};
             const useAppend = Boolean(appendMode);
@@ -712,8 +794,7 @@ export class AiVoiceBriefingSession {
                 if (
                   isGenericNegative &&
                   ownerSection &&
-                  ownerSection > currentSequentialStage &&
-                  requestedFocus !== ownerSection
+                  ownerSection > currentSequentialStage
                 ) {
                   continue;
                 }
@@ -743,10 +824,6 @@ export class AiVoiceBriefingSession {
               cleaned.observationsConfirmed = true;
             }
 
-            if (requestedFocus) {
-              cleaned.lastActiveSection = requestedFocus;
-            }
-
             const candidateAnswers = sanitizeLegacyAnswers({
               ...this.latestAnswers,
               ...cleaned,
@@ -766,36 +843,28 @@ export class AiVoiceBriefingSession {
               );
             }
 
+            const nextGuidance = getNextQuestionGuidance(candidateAnswers);
+            candidateAnswers.lastActiveSection = nextGuidance.stage;
+
             this.latestAnswers = candidateAnswers;
             this.callbacks.onFieldsUpdated(cleaned, validPendingSec);
 
-            const guidance = getNextQuestionGuidance(this.latestAnswers);
-            const focusedSecMeta = requestedFocus
-              ? AI_RFI_SECTIONS[requestedFocus - 1]
-              : undefined;
-            const focusedSnapshot = focusedSecMeta
-              ? Object.fromEntries(
-                  focusedSecMeta.fields.map((f) => [f, (this.latestAnswers as any)[f]])
-                )
-              : undefined;
+            if (!nextGuidance.stage10ReadyToClose) {
+              shouldWatchForNextQuestion = true;
+            }
 
             return {
               id: fc.id,
               name: fc.name,
               response: {
                 status: "saved",
-                focusedStageOnScreen: requestedFocus || guidance.stage,
-                ...(focusedSnapshot ? { currentDataInFocusedStage: focusedSnapshot } : {}),
-                suggestedNextStage: guidance.stage,
-                suggestedStageTitle: guidance.stageTitle,
-                suggestedNextQuestion: guidance.nextQuestion,
-                guidanceNote: this.spokeInCurrentModelTurn
-                  ? "Datos guardados. Si ya hablaste en este turno, NO generes otro turno de voz seguido; espera en silencio al cliente."
-                  : requestedFocus
-                  ? `Pantalla en Etapa ${requestedFocus} (${focusedSecMeta?.shortTitle || ""}). Atiende de forma breve y natural (máx. 2 frases) lo que el cliente desea profundizar o ajustar aquí; cuando esté listo para seguir, retoma Etapa ${guidance.stage}: "${guidance.nextQuestion}".`
-                  : guidance.stage10ReadyToClose
-                  ? guidance.nextQuestion
-                  : `Datos guardados. CERO ROLLO: si fue una respuesta normal, di SOLO 2 o 3 palabras de acuse + la pregunta de Etapa ${guidance.stage}: "${guidance.nextQuestion}" (máx. 18 palabras en total, sin repetir lo dicho por el cliente). Solo si el cliente hizo una pregunta abierta o pidió regresar, responde en máx. 2 frases breves. Espera en silencio.`,
+                activeStageOnScreen: nextGuidance.stage,
+                suggestedNextStage: nextGuidance.stage,
+                suggestedStageTitle: nextGuidance.stageTitle,
+                suggestedNextQuestion: nextGuidance.nextQuestion,
+                guidanceNote: nextGuidance.stage10ReadyToClose
+                  ? nextGuidance.nextQuestion
+                  : `Datos guardados en pantalla. Si aún no has formulado en voz alta la pregunta de la Etapa ${nextGuidance.stage}, hazla AHORA MISMO en voz alta (2 palabras de acuse + "${nextGuidance.nextQuestion}", máx. 18 palabras) y después espera la respuesta del cliente.`,
               },
             };
           }
@@ -849,6 +918,11 @@ export class AiVoiceBriefingSession {
         });
 
         try {
+          if (shouldWatchForNextQuestion) {
+            this.waitingQuestionAfterTool = true;
+            this.audioAfterToolResponse = false;
+            this.schedulePostToolSilenceWatchdog();
+          }
           this.session?.sendToolResponse({ functionResponses: responses });
         } catch (e) {
           console.warn("Error enviando respuesta de toolCall:", e);
@@ -856,6 +930,56 @@ export class AiVoiceBriefingSession {
       }
     } catch (err) {
       console.error("Error controlado procesando mensaje de Gemini Live:", err);
+    }
+  }
+
+  private schedulePostToolSilenceWatchdog() {
+    if (this.postToolNudgeTimer) {
+      window.clearTimeout(this.postToolNudgeTimer);
+    }
+    this.postToolNudgeTimer = window.setTimeout(() => {
+      this.postToolNudgeTimer = null;
+      if (
+        !this.closed &&
+        !this.isPaused &&
+        this.session &&
+        this.waitingQuestionAfterTool &&
+        !this.audioAfterToolResponse &&
+        this.activeSources.size === 0 &&
+        !this.agentTextInCurrentTurn.includes("?") &&
+        this.pendingFinishSummary === null
+      ) {
+        this.triggerMissingQuestionNudge();
+      }
+    }, 2400);
+  }
+
+  private triggerMissingQuestionNudge() {
+    if (this.closed || this.isPaused || !this.session || this.pendingFinishSummary !== null) return;
+    if (this.postToolNudgeTimer) {
+      window.clearTimeout(this.postToolNudgeTimer);
+      this.postToolNudgeTimer = null;
+    }
+    this.waitingQuestionAfterTool = false;
+    this.agentTextInCurrentTurn = "";
+    const g = getNextQuestionGuidance(this.latestAnswers);
+    this.echoGuardUntilMs = Date.now() + 1200;
+    try {
+      this.session.sendClientContent({
+        turns: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `Continúa ahora haciendo en voz alta la pregunta de la Etapa ${g.stage}: "${g.nextQuestion}"`,
+              },
+            ],
+          },
+        ],
+        turnComplete: true,
+      });
+    } catch (e) {
+      console.warn("No se pudo enviar recordatorio de pregunta:", e);
     }
   }
 
@@ -915,12 +1039,21 @@ export class AiVoiceBriefingSession {
     source.buffer = audioBuffer;
     source.connect(this.playbackCtx.destination);
 
+    if (this.waitingQuestionAfterTool) {
+      this.audioAfterToolResponse = true;
+      this.waitingQuestionAfterTool = false;
+      if (this.postToolNudgeTimer) {
+        window.clearTimeout(this.postToolNudgeTimer);
+        this.postToolNudgeTimer = null;
+      }
+    }
+
     const hwLatencyMs = Math.round(
-      (((this.playbackCtx as any).outputLatency || 0.12) +
-        ((this.playbackCtx as any).baseLatency || 0.05)) *
+      (((this.playbackCtx as any).outputLatency || 0.08) +
+        ((this.playbackCtx as any).baseLatency || 0.04)) *
         1000
     );
-    const tailGuardMs = hwLatencyMs + 780;
+    const tailGuardMs = Math.min(450, hwLatencyMs + 260);
 
     const startTime = Math.max(this.playbackCtx.currentTime, this.nextPlaybackTime);
     source.start(startTime);
@@ -972,6 +1105,10 @@ export class AiVoiceBriefingSession {
   }
 
   private cleanupAudio() {
+    if (this.postToolNudgeTimer) {
+      window.clearTimeout(this.postToolNudgeTimer);
+      this.postToolNudgeTimer = null;
+    }
     if (this.socketRotationTimer) {
       window.clearTimeout(this.socketRotationTimer);
       this.socketRotationTimer = null;
@@ -985,12 +1122,20 @@ export class AiVoiceBriefingSession {
       this.finishTimer = null;
     }
     this.stopPlaybackQueue();
+    try {
+      this.micSource?.disconnect();
+    } catch {}
+    this.micSource = null;
     if (this.scriptProcessor) {
       try {
         this.scriptProcessor.disconnect();
       } catch {}
       this.scriptProcessor = null;
     }
+    try {
+      this.silentGain?.disconnect();
+    } catch {}
+    this.silentGain = null;
     if (this.captureCtx) {
       this.captureCtx.close().catch(() => {});
       this.captureCtx = null;

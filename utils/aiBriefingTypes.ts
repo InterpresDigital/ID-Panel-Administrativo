@@ -785,11 +785,6 @@ export const updateRfiFieldsTool: FunctionDeclaration = {
         description:
           "En la Etapa 10, ponlo en true únicamente cuando el cliente confirme explícitamente que NO tiene observaciones ni comentarios adicionales que agregar.",
       },
-      focusSection: {
-        type: Type.NUMBER,
-        description:
-          "Número de etapa (1 al 10) a la que el cliente pidió regresar, profundizar o revisar en pantalla (ej. si dice 'regresemos a la pregunta 4', envía focusSection=4).",
-      },
       appendMode: {
         type: Type.BOOLEAN,
         description:
@@ -801,6 +796,22 @@ export const updateRfiFieldsTool: FunctionDeclaration = {
           "Úsalo ÚNICAMENTE si el cliente dice explícitamente 'no lo sé' o 'lo revisará TI después' respecto a una sección (1 al 9).",
       },
     },
+  },
+};
+
+export const navigateToStageTool: FunctionDeclaration = {
+  name: "navigateToStage",
+  description:
+    "Invócala ÚNICAMENTE cuando el cliente pida explícitamente con sus propias palabras regresar, revisar o profundizar en un número de pregunta/etapa específico (ej. 'regresemos a la pregunta 4'). PROHIBIDO usarla durante el avance normal de la entrevista.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      stageNumber: {
+        type: Type.NUMBER,
+        description: "Número de etapa (1 al 10) a la que el cliente solicitó ir.",
+      },
+    },
+    required: ["stageNumber"],
   },
 };
 
@@ -915,10 +926,12 @@ MAPA SECUENCIAL OBLIGATORIO DE LAS 10 ETAPAS (PROHIBIDO SALTARSE ETAPAS):
 10. Observaciones finales y cierre (preguntar si desea agregar algún comentario extra antes de cerrar).
 
 REGLA ESTRICTA DE ORDEN SECUENCIAL Y GUARDADO EN CADA TURNO CON updateRfiFields:
-- **GUARDADO OBLIGATORIO ANTES DE AVANZAR:** CADA VEZ que el cliente responda una pregunta, DEBES invocar \`updateRfiFields\` en ese mismo turno antes de hacer la siguiente pregunta. JAMÁS avances de pregunta de memoria sin guardar primero con \`updateRfiFields\`.
-- **PROHIBIDO BRINCARSE ETAPAS:** Avanza estrictamente en orden **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10** siguiendo \`suggestedNextStage\` y \`suggestedNextQuestion\` que te devuelve \`updateRfiFields\`. NUNCA saltes de la etapa 2 o 3 a la 6, 7 u 8 por tu cuenta. Si el cliente menciona de paso un dato de una etapa futura (ej. Excel o WhatsApp), guárdalo, pero **quédate en la etapa actual** hasta completarla.
+- **FLUJO DE CADA TURNO (JAMÁS QUEDARTE EN SILENCIO TRAS GUARDAR):** Cada vez que el cliente responda:
+  1) Invoca primero \`updateRfiFields\` en silencio (sin decir "Perfecto" antes de la herramienta; espera a recibir el resultado de \`updateRfiFields\`).
+  2) En cuanto recibas la respuesta de \`updateRfiFields\`, di en un solo bloque fluido tus 2 palabras de acuse ("Perfecto, anotado.") + la pregunta exacta \`suggestedNextQuestion\` en voz alta. **PROHIBIDO quedarte callada sin hacer la siguiente pregunta después de guardar.**
+- **PROHIBIDO BRINCARSE ETAPAS:** Avanza estrictamente en orden **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10** siguiendo \`suggestedNextStage\` y \`suggestedNextQuestion\`. NUNCA saltes de etapa por tu cuenta.
 - **PROHIBIDO INVENTAR "NINGUNO" EN ETAPAS FUTURAS:** Guarda únicamente lo que el cliente haya dicho explícitamente; nunca rellenes "Ninguno" o "No aplica" en etapas que aún no le has preguntado.
-- **FLEXIBILIDAD CUANDO EL CLIENTE LO PIDA:** Si el cliente te pide explícitamente regresar, corregir o profundizar en una pregunta específica (ej. *"regresemos a la pregunta 4"*), llama a \`updateRfiFields({ focusSection: N, appendMode: true })\`, atiéndelo con naturalidad y, al terminar ese ajuste, retoma exactamente en \`suggestedNextStage\` para no dejar huecos sin responder.
+- **FLEXIBILIDAD CUANDO EL CLIENTE LO PIDA:** SOLO si el cliente te pide explícitamente regresar o ir a una pregunta específica (ej. *"regresemos a la pregunta 4"*), invoca \`navigateToStage({ stageNumber: 4 })\`, guarda sus complementos con \`updateRfiFields({ appendMode: true, ... })\` y, al terminar, retoma en \`suggestedNextStage\`.
 - En \`targetUsers\` y \`channels\` envía siempre un arreglo JSON de strings (ej. \`["WhatsApp Business"]\`).
 - En Etapa 10: pregunta si desea dejar alguna observación adicional y ESPERA su respuesta. Regístrala con \`additionalComments\` o \`noAdditionalComments: true\`, despídete brevemente invitándolo a revisar su resumen en pantalla y presionar Enviar RFI, e invoca \`finishVoiceInterview\`.
 
