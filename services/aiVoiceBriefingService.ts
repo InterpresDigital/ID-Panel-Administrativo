@@ -1,5 +1,4 @@
 import {
-  ActivityHandling,
   EndSensitivity,
   GoogleGenAI,
   LiveServerMessage,
@@ -275,10 +274,9 @@ export class AiVoiceBriefingSession {
           automaticActivityDetection: {
             startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
             endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
-            prefixPaddingMs: 250,
+            prefixPaddingMs: 500,
             silenceDurationMs: 850,
           },
-          activityHandling: ActivityHandling.NO_INTERRUPTION,
           turnCoverage: TurnCoverage.TURN_INCLUDES_ONLY_ACTIVITY,
         },
         systemInstruction: buildVoiceConsultantSystemPrompt(this.latestAnswers),
@@ -565,7 +563,7 @@ export class AiVoiceBriefingSession {
     const actualRate = this.captureCtx.sampleRate || 16000;
     // Guardar referencias en la instancia para impedir que el Garbage Collector del navegador apague el micrófono
     this.micSource = this.captureCtx.createMediaStreamSource(this.micStream);
-    this.scriptProcessor = this.captureCtx.createScriptProcessor(4096, 1, 1);
+    this.scriptProcessor = this.captureCtx.createScriptProcessor(2048, 1, 1);
     this.silentGain = this.captureCtx.createGain();
     this.silentGain.gain.value = 0;
     this.lastMicProcessAtMs = Date.now();
@@ -741,6 +739,7 @@ export class AiVoiceBriefingSession {
               ? Object.fromEntries(secMeta.fields.map((f) => [f, (this.latestAnswers as any)[f]]))
               : {};
             const guidance = getNextQuestionGuidance(this.latestAnswers);
+            shouldWatchForNextQuestion = true;
             return {
               id: fc.id,
               name: fc.name,
@@ -750,7 +749,7 @@ export class AiVoiceBriefingSession {
                 stageTitle: secMeta?.shortTitle || "",
                 currentDataInStage: snapshot,
                 nextPendingStageWhenDone: guidance.stage,
-                instruction: `Pantalla posicionada en la Etapa ${targetStage} (${secMeta?.shortTitle || ""}). Escucha o responde con brevedad lo que el cliente desea ajustar aquí, guárdalo con updateRfiFields({ appendMode: true, ... }) y, al terminar, retoma la Etapa ${guidance.stage}: "${guidance.nextQuestion}".`,
+                instruction: `Pantalla posicionada en la Etapa ${targetStage} (${secMeta?.shortTitle || ""}). Confirma en voz alta al cliente que ya estás en la Etapa ${targetStage} y pregúntale brevemente qué detalle desea agregar o ajustar.`,
               },
             };
           }
@@ -849,7 +848,8 @@ export class AiVoiceBriefingSession {
             this.latestAnswers = candidateAnswers;
             this.callbacks.onFieldsUpdated(cleaned, validPendingSec);
 
-            if (!nextGuidance.stage10ReadyToClose) {
+            const alreadyAskedQuestionInTurn = this.agentTextInCurrentTurn.includes("?");
+            if (!nextGuidance.stage10ReadyToClose && !alreadyAskedQuestionInTurn) {
               shouldWatchForNextQuestion = true;
             }
 
@@ -864,7 +864,9 @@ export class AiVoiceBriefingSession {
                 suggestedNextQuestion: nextGuidance.nextQuestion,
                 guidanceNote: nextGuidance.stage10ReadyToClose
                   ? nextGuidance.nextQuestion
-                  : `Datos guardados en pantalla. Si aún no has formulado en voz alta la pregunta de la Etapa ${nextGuidance.stage}, hazla AHORA MISMO en voz alta (2 palabras de acuse + "${nextGuidance.nextQuestion}", máx. 18 palabras) y después espera la respuesta del cliente.`,
+                  : alreadyAskedQuestionInTurn
+                  ? "Datos guardados en pantalla. Como ya formulaste la pregunta en voz alta en este turno, NO la repitas; espera la respuesta del cliente."
+                  : `Datos guardados en pantalla. Haz AHORA MISMO en voz alta únicamente 1 palabra breve ("Excelente." o "Perfecto.") + la pregunta de la Etapa ${nextGuidance.stage}: "${nextGuidance.nextQuestion}" y espera al cliente.`,
               },
             };
           }
