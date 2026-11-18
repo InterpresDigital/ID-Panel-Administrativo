@@ -10,8 +10,30 @@ const db = admin.firestore();
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 const DEFAULT_LIVE_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025";
-const TEXT_MODEL = "gemini-2.5-flash";
+const TEXT_MODELS = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-pro"];
 const MAX_VOICE_SESSIONS_PER_BRIEFING = 40;
+
+async function generateTextWithFallback(
+  ai: GoogleGenAI,
+  contents: string,
+  jsonMode = false
+): Promise<string> {
+  let lastErr: any = null;
+  for (const modelName of TEXT_MODELS) {
+    try {
+      const res = await ai.models.generateContent({
+        model: modelName,
+        contents,
+        ...(jsonMode ? { config: { responseMimeType: "application/json" } } : {})
+      });
+      return res.text || "";
+    } catch (err: any) {
+      console.warn(`Modelo ${modelName} no disponible, probando respaldo:`, err?.message);
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error("No se pudo obtener respuesta del modelo de IA.");
+}
 
 // Trigger interno por Firestore: compatible 100% con políticas corporativas de Google Workspace
 // (no requiere exponer endpoints HTTP públicos con allUsers ni lidiar con CORS).
@@ -209,15 +231,9 @@ Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, todo en ESP
 (IMPORTANTE: Los montos numéricos de ejemplo arriba son solo ilustrativos de formato JSON; calcula montos REALISTAS en pesos mexicanos MXN acordes al tamaño, volumen, integraciones y presupuesto específico de este cliente).
 `;
 
-        const response = await ai.models.generateContent({
-          model: TEXT_MODEL,
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json"
-          }
-        });
+        const responseText = await generateTextWithFallback(ai, prompt, true);
 
-        let rawText = (response.text || "{}").trim();
+        let rawText = (responseText || "{}").trim();
         rawText = rawText.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
         const parsed = JSON.parse(rawText);
         const diagnostic = {
@@ -241,14 +257,14 @@ Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, todo en ESP
       if (action === "business-insights") {
         const { totalClients, activeClients, recentTransactions } = payload;
         const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-          model: TEXT_MODEL,
-          contents: `Eres un consultor de negocios experto para Interpres Digital. Responde en ESPAÑOL como HTML válido con etiquetas <ul> y <li> (3 puntos clave y 1 recomendación). Total clientes: ${totalClients}, Activos: ${activeClients}, Transacciones: ${JSON.stringify(recentTransactions || [])}`
-        });
+        const html = await generateTextWithFallback(
+          ai,
+          `Eres un consultor de negocios experto para Interpres Digital. Responde en ESPAÑOL como HTML válido con etiquetas <ul> y <li> (3 puntos clave y 1 recomendación). Total clientes: ${totalClients}, Activos: ${activeClients}, Transacciones: ${JSON.stringify(recentTransactions || [])}`
+        );
 
         await snap.ref.update({
           status: "completed",
-          result: { html: response.text || "" },
+          result: { html: html || "" },
           completedAt: admin.firestore.FieldValue.serverTimestamp()
         });
         return;
@@ -257,14 +273,14 @@ Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, todo en ESP
       if (action === "client-email") {
         const { clientName, companyName, purpose } = payload;
         const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-          model: TEXT_MODEL,
-          contents: `Redacta en ESPAÑOL solo el cuerpo de un correo cálido y ejecutivo para ${clientName} (${companyName}) sobre: "${purpose}". Sin asunto.`
-        });
+        const text = await generateTextWithFallback(
+          ai,
+          `Redacta en ESPAÑOL solo el cuerpo de un correo cálido y ejecutivo para ${clientName} (${companyName}) sobre: "${purpose}". Sin asunto.`
+        );
 
         await snap.ref.update({
           status: "completed",
-          result: { text: response.text || "" },
+          result: { text: text || "" },
           completedAt: admin.firestore.FieldValue.serverTimestamp()
         });
         return;
