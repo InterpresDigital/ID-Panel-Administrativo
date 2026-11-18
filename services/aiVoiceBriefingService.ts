@@ -15,6 +15,7 @@ import {
   buildVoiceConsultantSystemPrompt,
   clampSection,
   finishVoiceInterviewTool,
+  getFirstIncompleteSection,
   getNextQuestionGuidance,
   hasAnySectionProgress,
   isSectionFilled,
@@ -117,6 +118,11 @@ export class AiVoiceBriefingSession {
   private autoReconnectCount = 0;
   private reconnecting = false;
   private pendingGoAwayRotation = false;
+  private awaitingAgentReply = false;
+  private modelTurnFinished = true;
+  private prefetchedToken: { token: string; model?: string; fetchedAt: number } | null = null;
+  private prefetchingToken = false;
+  private socketRotationTimer: number | null = null;
   private keepAliveTimer: number | null = null;
   private pendingFinishSummary: string | null = null;
   private postFinishTurnCompleted = false;
@@ -164,6 +170,10 @@ export class AiVoiceBriefingSession {
     this.autoReconnectCount = 0;
     this.reconnecting = false;
     this.pendingGoAwayRotation = false;
+    this.awaitingAgentReply = false;
+    this.modelTurnFinished = true;
+    this.prefetchedToken = null;
+    this.prefetchingToken = false;
     this.latestAnswers = sanitizeLegacyAnswers(currentAnswers);
     this.spokeInCurrentModelTurn = false;
     this.speechGateOpenUntilMs = 0;
@@ -216,7 +226,8 @@ export class AiVoiceBriefingSession {
   private async connectSocketSession(
     token: string,
     model?: string,
-    isSilentReconnect = false
+    isSilentReconnect = false,
+    promptContinuationAfterDrop = false
   ): Promise<void> {
     if (this.closed || !this.playbackCtx) return;
 
@@ -229,6 +240,8 @@ export class AiVoiceBriefingSession {
       apiKey: token,
       httpOptions: { apiVersion: "v1alpha" },
     });
+
+    let thisSocketRef: any = null;
 
     const session = await ai.live.connect({
       model: model || "gemini-2.5-flash-native-audio-preview-12-2025",
@@ -244,12 +257,11 @@ export class AiVoiceBriefingSession {
             },
           },
         },
-        // Compresión deslizante de ventana: elimina el corte automático de 10 minutos (~600s) de Gemini Live Audio
+        // Compresión deslizante de ventana: evita el límite de contexto de audio de 10 minutos
         contextWindowCompression: {
           slidingWindow: {},
         },
-        // Soporte nativo de reanudación de sesión ante microcortes de red
-        sessionResumption: this.resumptionHandle ? { handle: this.resumptionHandle } : {},
+        sessionResumption: {},
         realtimeInputConfig: {
           automaticActivityDetection: {
             startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
@@ -270,12 +282,17 @@ export class AiVoiceBriefingSession {
           this.autoReconnectCount = 0;
         },
         onmessage: (msg: LiveServerMessage) => {
+          if (thisSocketRef && this.session && this.session !== thisSocketRef) return;
           this.handleServerMessage(msg);
         },
         onerror: (err: any) => {
           console.warn("Aviso de red en Gemini Live:", err);
         },
         onclose: (ev: any) => {
+          // Ignorar cierre asíncrono de un socket anterior ya reemplazado
+          if (thisSocketRef && this.session && this.session !== thisSocketRef) {
+            return;
+          }
           if (this.closed) {
             this.cleanupAudio();
             return;
@@ -287,19 +304,23 @@ export class AiVoiceBriefingSession {
             this.callbacks.onInterviewFinished(msgSummary);
             return;
           }
-          // Reconexión automática transparente (hasta 4 intentos consecutivos) ante rotación de socket o microcorte
-          if (
-            !this.isPaused &&
-            !this.currentBriefingId === false &&
-            (typeof navigator === "undefined" || navigator.onLine !== false)
-          ) {
+
+          const wasMidInteraction =
+            this.activeSources.size > 0 ||
+            !this.modelTurnFinished ||
+            this.spokeInCurrentModelTurn ||
+            this.awaitingAgentReply;
+
+          this.stopPlaybackQueue();
+
+          // Reconexión automática transparente (hasta 5 intentos con espera progresiva ante microcortes de internet)
+          if (!this.isPaused && this.currentBriefingId) {
             if (this.reconnecting) {
-              // Ya hay una rotación transparente en curso (ej. por GoAway preventivo)
               return;
             }
-            if (this.autoReconnectCount < 4) {
-              console.info("Renovando canal de voz automáticamente sin corte...", ev?.code);
-              this.attemptSilentReconnect();
+            if (this.autoReconnectCount < 5) {
+              console.info("Renovando canal de voz tras microcorte o rotación...", ev?.code);
+              this.attemptSilentReconnect(wasMidInteraction);
               return;
             }
           }
@@ -314,6 +335,8 @@ export class AiVoiceBriefingSession {
       },
     });
 
+    thisSocketRef = session;
+
     if (this.closed) {
       session.close();
       return;
@@ -322,12 +345,16 @@ export class AiVoiceBriefingSession {
     this.session = session;
     this.reconnecting = false;
     this.pendingGoAwayRotation = false;
+    this.modelTurnFinished = true;
+    this.schedulePreventiveSocketRotation();
     this.callbacks.onStatusChange("connected");
 
-    // Si es primera conexión (o reconexión de respaldo sin handle previo), detonar el turno correspondiente
-    if (!isSilentReconnect || !this.resumptionHandle) {
+    // Primera conexión: saludo inicial. Reconexión tras corte a mitad de frase/turno: retomar pregunta sin saludar.
+    // Rotación preventiva en silencio entre turnos: no interrumpir ni repetir pregunta; seguir escuchando.
+    if (!isSilentReconnect || promptContinuationAfterDrop) {
       try {
         const hasProgress = hasAnySectionProgress(this.latestAnswers);
+        const guidance = getNextQuestionGuidance(this.latestAnswers);
         const who = this.latestAnswers.contactName
           ? `${this.latestAnswers.contactName}${
               this.latestAnswers.companyName ? ` de ${this.latestAnswers.companyName}` : ""
@@ -335,9 +362,10 @@ export class AiVoiceBriefingSession {
           : "";
 
         this.echoGuardUntilMs = Date.now() + 1800;
+        this.awaitingAgentReply = false;
 
         const guestIntro = isSilentReconnect
-          ? `Continúa exactamente en la pregunta en curso con brevedad ejecutiva, sin repetir el saludo.`
+          ? `Retoma directamente con la pregunta actual de la Etapa ${guidance.stage}: "${guidance.nextQuestion}" sin volver a saludar ni presentarte.`
           : hasProgress
           ? `Hola Nexia${who ? `, soy ${who}` : ""}. Ya estoy listo para retomar donde nos quedamos.`
           : `Hola Nexia${who ? `, soy ${who}` : ""}. Estoy listo para iniciar por primera vez.`;
@@ -361,6 +389,47 @@ export class AiVoiceBriefingSession {
     }
   }
 
+  private schedulePreventiveSocketRotation() {
+    if (this.socketRotationTimer) {
+      window.clearTimeout(this.socketRotationTimer);
+    }
+    // Google rota los WebSockets de Gemini Live a los 10 min (~600s).
+    // A los 8 min 20 seg pre-cargamos un token nuevo en segundo plano y rotamos entre turnos sin 1 ms de corte.
+    this.socketRotationTimer = window.setTimeout(() => {
+      if (this.closed || this.isPaused || this.pendingFinishSummary !== null) return;
+      this.pendingGoAwayRotation = true;
+      this.prefetchNextToken().then(() => {
+        if (
+          !this.closed &&
+          !this.isPaused &&
+          this.pendingGoAwayRotation &&
+          this.activeSources.size === 0 &&
+          this.modelTurnFinished &&
+          !this.awaitingAgentReply &&
+          Date.now() > this.speechGateOpenUntilMs
+        ) {
+          this.rotateSocketSmoothly();
+        }
+      });
+    }, 500_000);
+  }
+
+  private async prefetchNextToken(): Promise<void> {
+    if (this.closed || this.prefetchingToken || !this.currentBriefingId) return;
+    if (this.prefetchedToken && Date.now() - this.prefetchedToken.fetchedAt < 120_000) return;
+    this.prefetchingToken = true;
+    try {
+      const t = await requestEphemeralVoiceToken(this.currentBriefingId);
+      if (!this.closed) {
+        this.prefetchedToken = { token: t.token, model: t.model, fetchedAt: Date.now() };
+      }
+    } catch (e) {
+      console.warn("Pre-carga preventiva de token pospuesta:", e);
+    } finally {
+      this.prefetchingToken = false;
+    }
+  }
+
   private rotateSocketSmoothly() {
     if (this.closed || this.isPaused || this.reconnecting || this.pendingFinishSummary !== null) {
       return;
@@ -373,41 +442,41 @@ export class AiVoiceBriefingSession {
       oldSession?.close();
     } catch {}
     this.reconnecting = false;
-    this.attemptSilentReconnect();
+    this.attemptSilentReconnect(false);
   }
 
-  private async attemptSilentReconnect() {
+  private async attemptSilentReconnect(promptContinuationAfterDrop = false) {
     if (this.closed || this.reconnecting || !this.currentBriefingId) return;
     this.reconnecting = true;
     this.autoReconnectCount += 1;
     this.session = null;
 
     try {
-      const tokenData = await requestEphemeralVoiceToken(this.currentBriefingId);
-      if (this.closed) return;
-      try {
-        await this.connectSocketSession(tokenData.token, tokenData.model, true);
-      } catch (resumeErr) {
-        // Si el handle previo caducó, abrir socket limpio conservando 100% de respuestas sin cortar al usuario
-        if (this.resumptionHandle && !this.closed) {
-          console.warn("Handle previo caducado; renovando canal limpio con estado completo...", resumeErr);
-          this.resumptionHandle = null;
-          const freshToken = await requestEphemeralVoiceToken(this.currentBriefingId);
-          if (this.closed) return;
-          await this.connectSocketSession(freshToken.token, freshToken.model, true);
-        } else {
-          throw resumeErr;
-        }
+      let tokenToUse: { token: string; model?: string } | null = null;
+      if (this.prefetchedToken && Date.now() - this.prefetchedToken.fetchedAt < 120_000) {
+        tokenToUse = this.prefetchedToken;
+        this.prefetchedToken = null;
+      } else {
+        this.prefetchedToken = null;
+        tokenToUse = await requestEphemeralVoiceToken(this.currentBriefingId);
       }
+      if (this.closed) return;
+      await this.connectSocketSession(
+        tokenToUse.token,
+        tokenToUse.model,
+        true,
+        promptContinuationAfterDrop
+      );
     } catch (err) {
       console.warn("Intento de reconexión silenciosa falló:", err);
       this.reconnecting = false;
-      if (!this.closed && !this.isPaused && this.autoReconnectCount < 4) {
+      if (!this.closed && !this.isPaused && this.autoReconnectCount < 5) {
+        const retryDelayMs = Math.min(4000, 900 * this.autoReconnectCount);
         window.setTimeout(() => {
           if (!this.closed && !this.isPaused) {
-            this.attemptSilentReconnect();
+            this.attemptSilentReconnect(true);
           }
-        }, 800);
+        }, retryDelayMs);
         return;
       }
       if (!this.closed) {
@@ -522,10 +591,19 @@ export class AiVoiceBriefingSession {
       // Rotación preventiva transparente cuando Gemini avisa GoAway (~60s antes de expirar socket)
       if ((msg as any).goAway) {
         this.pendingGoAwayRotation = true;
-        if (!this.isPaused && this.activeSources.size === 0 && !this.spokeInCurrentModelTurn) {
-          this.rotateSocketSmoothly();
-          return;
-        }
+        this.prefetchNextToken().then(() => {
+          if (
+            !this.closed &&
+            !this.isPaused &&
+            this.pendingGoAwayRotation &&
+            this.activeSources.size === 0 &&
+            this.modelTurnFinished &&
+            !this.awaitingAgentReply &&
+            !this.spokeInCurrentModelTurn
+          ) {
+            this.rotateSocketSmoothly();
+          }
+        });
       }
 
       // 1. Si hubo interrupción mientras no estaba pausado
@@ -540,10 +618,13 @@ export class AiVoiceBriefingSession {
       const inTx = msg.serverContent?.inputTranscription?.text;
       if (inTx && inTx.trim()) {
         this.spokeInCurrentModelTurn = false;
+        this.awaitingAgentReply = true;
         this.callbacks.onTranscriptUpdate("user", inTx);
       }
       const outTx = msg.serverContent?.outputTranscription?.text;
       if (outTx && outTx.trim()) {
+        this.modelTurnFinished = false;
+        this.awaitingAgentReply = false;
         this.callbacks.onTranscriptUpdate("agent", outTx);
       }
 
@@ -552,6 +633,8 @@ export class AiVoiceBriefingSession {
         const parts = msg.serverContent?.modelTurn?.parts || [];
         for (const part of parts) {
           if (part.inlineData?.data && part.inlineData.mimeType?.startsWith("audio/pcm")) {
+            this.modelTurnFinished = false;
+            this.awaitingAgentReply = false;
             this.enqueueAudioChunk(part.inlineData.data);
           }
         }
@@ -559,6 +642,8 @@ export class AiVoiceBriefingSession {
 
       if (msg.serverContent?.turnComplete) {
         this.spokeInCurrentModelTurn = false;
+        this.modelTurnFinished = true;
+        this.awaitingAgentReply = false;
         if (!this.isPaused && this.activeSources.size === 0) {
           this.callbacks.onStatusChange("connected");
           if (this.pendingGoAwayRotation && this.pendingFinishSummary === null) {
@@ -574,9 +659,10 @@ export class AiVoiceBriefingSession {
         }
       }
 
-      // 4. Ejecución flexible y segura de Tool Calls en vivo (Autollenado + Navegación Libre + Brújula)
+      // 4. Ejecución flexible y segura de Tool Calls en vivo (Autollenado + Orden Secuencial Estricto)
       if (msg.toolCall?.functionCalls && msg.toolCall.functionCalls.length > 0) {
         const allowedStrings = new Set<string>(ALLOWED_STRING_RFI_FIELDS as string[]);
+        const currentSequentialStage = getFirstIncompleteSection(this.latestAnswers);
 
         const responses = msg.toolCall.functionCalls.map((fc) => {
           const args = (fc.args && typeof fc.args === "object" ? fc.args : {}) as Record<string, any>;
@@ -590,11 +676,20 @@ export class AiVoiceBriefingSession {
               ...fieldUpdates
             } = args;
 
+            const requestedFocus =
+              typeof focusSection === "number" && Number.isFinite(focusSection)
+                ? clampSection(focusSection)
+                : undefined;
+
             const cleaned: Partial<AiBriefingAnswers> = {};
             const useAppend = Boolean(appendMode);
 
             for (const [key, val] of Object.entries(fieldUpdates)) {
               if (val === undefined || val === null || val === "") continue;
+
+              const ownerSection = AI_RFI_SECTIONS.find((sec) =>
+                sec.fields.includes(key as keyof AiBriefingAnswers)
+              )?.number;
 
               if (key === "targetUsers" || key === "channels") {
                 const incomingArr = toStringArray(val);
@@ -607,6 +702,21 @@ export class AiVoiceBriefingSession {
               } else if (allowedStrings.has(key)) {
                 const incomingText = safeStr(val).trim();
                 if (!incomingText) continue;
+
+                // Evitar que respuestas negativas genéricas ("No", "Ninguno") dichas en etapas tempranas
+                // marquen por error etapas futuras aún no preguntadas (ej. Etapa 7 sensitiveData)
+                const isGenericNegative =
+                  /^(no|ninguno|ninguna|nada|n\/a|na|sin\s+\w+|no aplica|pendiente|por definir)\.?$/i.test(
+                    incomingText
+                  );
+                if (
+                  isGenericNegative &&
+                  ownerSection &&
+                  ownerSection > currentSequentialStage &&
+                  requestedFocus !== ownerSection
+                ) {
+                  continue;
+                }
 
                 const prevText = safeStr((this.latestAnswers as any)[key]).trim();
                 if (
@@ -632,11 +742,6 @@ export class AiVoiceBriefingSession {
             ) {
               cleaned.observationsConfirmed = true;
             }
-
-            const requestedFocus =
-              typeof focusSection === "number" && Number.isFinite(focusSection)
-                ? clampSection(focusSection)
-                : undefined;
 
             if (requestedFocus) {
               cleaned.lastActiveSection = requestedFocus;
@@ -837,7 +942,13 @@ export class AiVoiceBriefingSession {
           this.scheduleGracefulFinish(900);
         } else if (!this.isPaused) {
           this.callbacks.onStatusChange("connected");
-          if (this.pendingGoAwayRotation && !this.spokeInCurrentModelTurn && this.pendingFinishSummary === null) {
+          if (
+            this.pendingGoAwayRotation &&
+            this.modelTurnFinished &&
+            !this.awaitingAgentReply &&
+            !this.spokeInCurrentModelTurn &&
+            this.pendingFinishSummary === null
+          ) {
             this.rotateSocketSmoothly();
           }
         }
@@ -861,6 +972,10 @@ export class AiVoiceBriefingSession {
   }
 
   private cleanupAudio() {
+    if (this.socketRotationTimer) {
+      window.clearTimeout(this.socketRotationTimer);
+      this.socketRotationTimer = null;
+    }
     if (this.keepAliveTimer) {
       window.clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = null;

@@ -53,6 +53,7 @@ import {
   INITIAL_AI_BRIEFING_ANSWERS,
   TARGET_USER_OPTIONS,
   clampSection,
+  getFirstIncompleteSection,
   hasAnySectionProgress,
   isSectionFilled,
   isSectionPartial,
@@ -347,7 +348,10 @@ const PublicAiBriefing: React.FC = () => {
           }
         } catch {}
 
-        const resumeSec = resolveResumeSection(cleaned);
+        const resumeSec =
+          data.completionMode === "manual" && typeof data.answers?.lastActiveSection === "number"
+            ? clampSection(data.answers.lastActiveSection, getFirstIncompleteSection(cleaned))
+            : resolveResumeSection(cleaned);
         const syncedAnswers: AiBriefingAnswers = {
           ...cleaned,
           lastActiveSection: resumeSec,
@@ -743,35 +747,21 @@ const PublicAiBriefing: React.FC = () => {
             pendingSections: Array.from(nextPending),
           });
 
-          // Si Nexia posicionó una etapa solicitada por el cliente (focusSection -> lastActiveSection), respetarla;
-          // de lo contrario avanzar suavemente a la siguiente etapa pendiente (1 -> ... -> 9 -> 10)
-          let computedSection = clampSection(activeSectionRef.current);
+          // Si el cliente pidió expresamente posicionar una etapa (focusSection -> lastActiveSection), respetarla;
+          // de lo contrario, usar SIEMPRE la primera etapa pendiente en estricto orden secuencial (1 → 9 → 10)
+          // para que jamás se brinque etapas cuando se capturan datos anticipados.
           const touchedSec = AI_RFI_SECTIONS.find((sec) =>
             sec.fields.some((f) => f in partial)
           );
-
-          if (typeof partial.lastActiveSection === "number") {
-            computedSection = clampSection(partial.lastActiveSection);
-            if (touchedSec) {
-              setRecentlyUpdatedSection(touchedSec.number);
-              setTimeout(() => setRecentlyUpdatedSection(null), 2800);
-            }
-          } else if (touchedSec) {
+          if (touchedSec) {
             setRecentlyUpdatedSection(touchedSec.number);
-            if (touchedSec.number === 10) {
-              computedSection = 10;
-            } else {
-              const nextOpenSec = AI_RFI_SECTIONS.find(
-                (s) =>
-                  s.number >= touchedSec.number &&
-                  s.number <= 9 &&
-                  !isSectionFilled(merged, s.number) &&
-                  !toNumberArray(merged.pendingSections).includes(s.number)
-              );
-              computedSection = nextOpenSec ? nextOpenSec.number : 10;
-            }
             setTimeout(() => setRecentlyUpdatedSection(null), 2800);
           }
+
+          const computedSection =
+            typeof partial.lastActiveSection === "number"
+              ? clampSection(partial.lastActiveSection)
+              : getFirstIncompleteSection(merged);
 
           merged.lastActiveSection = computedSection;
           answersRef.current = merged;

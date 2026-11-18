@@ -500,10 +500,7 @@ export const isSectionFilled = (
     case 7:
       return hasStr(answers.sensitiveData);
     case 8:
-      return (
-        hasStr(answers.idealLaunchDate) &&
-        (hasStr(answers.estimatedBudget) || hasStr(answers.approverAndSponsor))
-      );
+      return hasStr(answers.idealLaunchDate) && hasStr(answers.estimatedBudget);
     case 9:
       return hasStr(answers.kpis) || hasStr(answers.successAt3And6Months);
     case 10:
@@ -518,54 +515,29 @@ export const isSectionFilled = (
 };
 
 /**
+ * Devuelve SIEMPRE la primera etapa pendiente de completar en estricto orden secuencial (1 → 9, y al final 10).
+ * Aunque la IA capture de forma anticipada algún dato mencionado de paso (ej. canales o formatos de archivo),
+ * jamás se brinca las etapas intermedias que aún tengan preguntas pendientes.
+ */
+export const getFirstIncompleteSection = (
+  rawAnswers: Partial<AiBriefingAnswers> | undefined | null
+): number => {
+  if (!rawAnswers) return 1;
+  const pending = toNumberArray(rawAnswers.pendingSections);
+  const firstOpen = AI_RFI_SECTIONS.find(
+    (s) => s.number <= 9 && !isSectionFilled(rawAnswers, s.number) && !pending.includes(s.number)
+  );
+  return firstOpen ? firstOpen.number : 10;
+};
+
+/**
  * Calcula con precisión en qué etapa (1 a 10) debe posicionarse y retomar la entrevista,
- * evitando que un refresco de página o protector de pantalla regrese al usuario a la Etapa 1.
+ * garantizando avance secuencial 1 → 10 sin saltos accidentales ni reinicios a la Etapa 1.
  */
 export const resolveResumeSection = (
   answers: Partial<AiBriefingAnswers> | undefined | null
 ): number => {
-  if (!answers) return 1;
-  const pending = answers.pendingSections || [];
-
-  // Si todas las etapas 1..9 están completas o marcadas pendientes -> Etapa 10
-  const allCoreDone = AI_RFI_SECTIONS.filter((s) => s.number <= 9).every(
-    (s) => isSectionFilled(answers, s.number) || pending.includes(s.number)
-  );
-  if (allCoreDone) return 10;
-
-  // Detectar la etapa más avanzada que ya tiene respuestas registradas
-  let highestProgressed = 0;
-  for (let n = 1; n <= 10; n++) {
-    if (isSectionFilled(answers, n) || isSectionPartial(answers, n) || pending.includes(n)) {
-      highestProgressed = n;
-    }
-  }
-
-  const savedStage =
-    typeof answers.lastActiveSection === "number" &&
-    answers.lastActiveSection >= 1 &&
-    answers.lastActiveSection <= 10
-      ? answers.lastActiveSection
-      : 1;
-
-  const anchorStage = Math.max(savedStage, highestProgressed, 1);
-
-  if (anchorStage >= 10) return 10;
-
-  // Si la etapa ancla sigue en curso, retomar exactamente ahí
-  if (!isSectionFilled(answers, anchorStage) && !pending.includes(anchorStage)) {
-    return anchorStage;
-  }
-
-  // Si la etapa ancla ya quedó completa, pasar a la siguiente etapa abierta (o a la 10)
-  const nextAfterAnchor = AI_RFI_SECTIONS.find(
-    (s) =>
-      s.number > anchorStage &&
-      s.number <= 9 &&
-      !isSectionFilled(answers, s.number) &&
-      !pending.includes(s.number)
-  );
-  return nextAfterAnchor ? nextAfterAnchor.number : 10;
+  return getFirstIncompleteSection(answers);
 };
 
 export const isSectionPartial = (
@@ -930,17 +902,29 @@ CONOCIMIENTO OFICIAL DE INTERPRES DIGITAL (PARA RESPONDER SI PREGUNTAN SOBRE LA 
   6. **Plataformas SaaS propias:** *Lúmina Core* (estéticas, clínicas y spas), *TKD Register* (gestión deportiva y torneos) y *Wedding Calm Studio*.
 - **PROHIBIDO DAR PRECIOS O COSTOS:** Nunca menciones precios ni tarifas. Si preguntan por costos o desean atención directa, indícales que la inversión se cotiza exactamente a la medida de este diagnóstico con un especialista de Interpres Digital (pueden agendar videollamada en panel.interpresdigital.com/#/book, escribir por WhatsApp al +52 415 179 0204 o al correo admin@interpresdigital.com).
 
-REGLA DE FLEXIBILIDAD NATURAL, NAVEGACIÓN LIBRE Y GUARDADO CON updateRfiFields:
-- **FLEXIBILIDAD TOTAL CON EL CLIENTE:** La guía de etapas (1 a 10) es tu brújula de orden sugerido, NUNCA una camisa de fuerza rígida.
-  * Si en cualquier momento el cliente te dice *"Oye, regresemos a la pregunta 4"*, *"Quiero profundizar o agregar algo en el punto anterior"*, *"Corrige lo que te dije de canales"* o te hace una pregunta abierta: **atiéndelo de inmediato con total naturalidad**.
-  * Si pide volver o profundizar en una etapa específica (1 al 10), llama a \`updateRfiFields({ focusSection: N })\` para posicionar su pantalla en esa etapa, escúchalo, guarda el complemento usando \`appendMode: true\` (para sumar a lo ya guardado sin borrar lo anterior, o sin \`appendMode\` si pidió reemplazar/corregir un dato), pregúntale brevemente si desea detallar algo más de ese punto y, cuando esté listo, retoma con suavidad la siguiente etapa pendiente que te sugiere el sistema (\`suggestedNextStage\`).
-- Cuando el cliente simplemente responda la pregunta en curso de forma normal, guarda con \`updateRfiFields\` y avanza con naturalidad usando la brújula \`suggestedNextQuestion\` (1 sola pregunta breve a la vez, sin encadenar varias preguntas juntas).
+MAPA SECUENCIAL OBLIGATORIO DE LAS 10 ETAPAS (PROHIBIDO SALTARSE ETAPAS):
+1. Contexto y objetivo (problema a resolver y resultado esperado).
+2. Proceso actual (cómo lo hacen hoy y tareas repetitivas diarias/semanales).
+3. Funciones y autonomía (qué hará el agente/automatización y si será autónomo, híbrido o copiloto).
+4. Usuarios y volumen (quién lo usará, volumen diario/semanal y horario de operación).
+5. Canales e integraciones (canales como WhatsApp/Web/Correo y sistemas a conectar como CRM/ERP/Excel).
+6. Datos y conocimiento (documentos/catálogos que consultará y dónde viven esos datos).
+7. Seguridad y privacidad (si manejará datos sensibles o confidenciales).
+8. Tiempos e inversión (fecha ideal, responsable de aprobar y rango estimado de presupuesto).
+9. Métricas de éxito (qué resultado a 3 y 6 meses considerarán un éxito).
+10. Observaciones finales y cierre (preguntar si desea agregar algún comentario extra antes de cerrar).
+
+REGLA ESTRICTA DE ORDEN SECUENCIAL Y GUARDADO EN CADA TURNO CON updateRfiFields:
+- **GUARDADO OBLIGATORIO ANTES DE AVANZAR:** CADA VEZ que el cliente responda una pregunta, DEBES invocar \`updateRfiFields\` en ese mismo turno antes de hacer la siguiente pregunta. JAMÁS avances de pregunta de memoria sin guardar primero con \`updateRfiFields\`.
+- **PROHIBIDO BRINCARSE ETAPAS:** Avanza estrictamente en orden **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10** siguiendo \`suggestedNextStage\` y \`suggestedNextQuestion\` que te devuelve \`updateRfiFields\`. NUNCA saltes de la etapa 2 o 3 a la 6, 7 u 8 por tu cuenta. Si el cliente menciona de paso un dato de una etapa futura (ej. Excel o WhatsApp), guárdalo, pero **quédate en la etapa actual** hasta completarla.
+- **PROHIBIDO INVENTAR "NINGUNO" EN ETAPAS FUTURAS:** Guarda únicamente lo que el cliente haya dicho explícitamente; nunca rellenes "Ninguno" o "No aplica" en etapas que aún no le has preguntado.
+- **FLEXIBILIDAD CUANDO EL CLIENTE LO PIDA:** Si el cliente te pide explícitamente regresar, corregir o profundizar en una pregunta específica (ej. *"regresemos a la pregunta 4"*), llama a \`updateRfiFields({ focusSection: N, appendMode: true })\`, atiéndelo con naturalidad y, al terminar ese ajuste, retoma exactamente en \`suggestedNextStage\` para no dejar huecos sin responder.
 - En \`targetUsers\` y \`channels\` envía siempre un arreglo JSON de strings (ej. \`["WhatsApp Business"]\`).
-- En Etapa 10: pregunta si desea dejar alguna observación adicional (o complementar alguna etapa anterior) y ESPERA su respuesta. Regístrala con \`additionalComments\` o \`noAdditionalComments: true\`, despídete brevemente invitándolo a revisar su resumen en pantalla y presionar Enviar RFI, e invoca \`finishVoiceInterview\`.
+- En Etapa 10: pregunta si desea dejar alguna observación adicional y ESPERA su respuesta. Regístrala con \`additionalComments\` o \`noAdditionalComments: true\`, despídete brevemente invitándolo a revisar su resumen en pantalla y presionar Enviar RFI, e invoca \`finishVoiceInterview\`.
 
 ESTADO ACTUAL:
-- Etapa activa: Etapa ${nextStage.number} de 10 (${nextStage.shortTitle}).
-- Siguiente pregunta exacta: "${guidance.nextQuestion}"
-- Datos ya capturados en etapas previas (NO los repitas): ${JSON.stringify(existingSectionEntries)}
+- Etapa activa actual: Etapa ${nextStage.number} de 10 (${nextStage.shortTitle}).
+- Siguiente pregunta obligatoria: "${guidance.nextQuestion}"
+- Datos ya capturados (NO vuelvas a preguntarlos): ${JSON.stringify(existingSectionEntries)}
 `;
 };
