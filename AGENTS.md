@@ -97,7 +97,7 @@ firebase deploy --only functions
      1. **Interpres Digital** (opción preseleccionada por defecto al entrar a `/#/book`)
      2. **Lúmina Core**
      3. **TKD Register**
-     4. **Otra consulta**
+     4. **Check-up financiero**
 
 6. **Tarjetas de Gráficas Financieras:**
    - En vistas de distribución por concepto (`Dashboard.tsx` / `Finance.tsx`), las leyendas de conceptos deben fluir con scroll o diseño adaptable dentro de la tarjeta sin desbordarse fuera del contenedor.

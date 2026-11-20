@@ -37,7 +37,7 @@ const defaultSettings: BookingSettings = {
     { id: "p1", name: "Interpres Digital", slug: "interpres-digital", color: "#06a0a2", description: "Infraestructura Digital y Agentes de IA" },
     { id: "p2", name: "Lúmina Core", slug: "lumina-core", color: "#930687", description: "Plataforma Inteligente" },
     { id: "p3", name: "TKD Register", slug: "tkd-register", color: "#f59e0b", description: "Plataforma Deportiva" },
-    { id: "p4", name: "Otra consulta", slug: "otra-consulta", color: "#6366f1", description: "Asesoría Comercial" }
+    { id: "p4", name: "Check-up financiero", slug: "check-up-financiero", color: "#6366f1", description: "Diagnóstico Financiero" }
   ],
   zoomConfig: { accountId: "", clientId: "", clientSecret: "", enabled: false },
   telegramConfig: { botToken: "", chatId: "", enabled: false },
@@ -215,10 +215,15 @@ const PublicBooking: React.FC = () => {
         let currentSettings = defaultSettings;
         if (settingsDoc.exists()) {
           const rawData = settingsDoc.data() as BookingSettings;
+          const normalizedPlatforms = (rawData.platforms || defaultSettings.platforms).map(p =>
+            p.slug === 'otra-consulta' || p.name.toLowerCase() === 'otra consulta'
+              ? { ...p, name: 'Check-up financiero', slug: 'check-up-financiero', description: 'Diagnóstico Financiero' }
+              : p
+          );
           currentSettings = {
             ...defaultSettings,
             availability: rawData.availability || defaultSettings.availability,
-            platforms: rawData.platforms || defaultSettings.platforms,
+            platforms: normalizedPlatforms,
             blackoutDates: rawData.blackoutDates || defaultSettings.blackoutDates,
             // Mantener tokens vacíos en la memoria pública de navegación
             zoomConfig: { accountId: '', clientId: '', clientSecret: '', enabled: rawData.zoomConfig?.enabled || false },
@@ -229,7 +234,11 @@ const PublicBooking: React.FC = () => {
 
         // Match platform slug if provided; otherwise select first platform (Interpres Digital)
         if (platformSlug) {
-          const normalizedSlug = platformSlug.toLowerCase() === 'consulta-directa' ? 'otra-consulta' : platformSlug.toLowerCase();
+          const lowerSlug = platformSlug.toLowerCase();
+          const normalizedSlug =
+            lowerSlug === 'consulta-directa' || lowerSlug === 'otra-consulta'
+              ? 'check-up-financiero'
+              : lowerSlug;
           const matched = currentSettings.platforms.find(p => p.slug.toLowerCase() === normalizedSlug);
           if (matched) {
             setSelectedPlatform(matched);

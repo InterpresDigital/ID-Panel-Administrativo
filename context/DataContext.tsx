@@ -92,7 +92,7 @@ const defaultBookingSettings: BookingSettings = {
     { id: "p1", name: "Interpres Digital", slug: "interpres-digital", color: "#06a0a2", description: "Infraestructura Digital y Agentes de IA" },
     { id: "p2", name: "Lúmina Core", slug: "lumina-core", color: "#930687", description: "Plataforma Inteligente" },
     { id: "p3", name: "TKD Register", slug: "tkd-register", color: "#f59e0b", description: "Plataforma Deportiva" },
-    { id: "p4", name: "Otra consulta", slug: "otra-consulta", color: "#6366f1", description: "Asesoría Comercial" }
+    { id: "p4", name: "Check-up financiero", slug: "check-up-financiero", color: "#6366f1", description: "Diagnóstico Financiero" }
   ],
   zoomConfig: {
     accountId: "",
