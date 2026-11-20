@@ -130,20 +130,49 @@ export const onAiRequest = functions
 
         const ai = new GoogleGenAI({ apiKey });
         const prompt = `
-Eres el **Director de Arquitectura de Soluciones y Estrategia Comercial de Interpres Digital** (INTERPRES S.A. de C.V., estudio de infraestructura digital, software a medida y agentes de IA en México).
-Tu misión es entregar un **Pre-Diagnóstico Técnico, Estratégico y Cotizador en Pesos Mexicanos (MXN)** exclusivo para el equipo directivo de Interpres Digital sobre el RFI llenado por "${companyName || answers.companyName || "el cliente"}".
+Te llamas **Nexia IA**, actuando en tu rol interno como **Arquitecta Senior de Soluciones y Estratega Comercial de Interpres Digital** (INTERPRES S.A. de C.V., estudio de infraestructura digital, software a medida y automatización con IA en México).
+Tu misión es generar un **Pre-Diagnóstico Técnico, Estratégico y Cotizador en Pesos Mexicanos (MXN)** exclusivo para la dirección de Interpres Digital sobre el RFI llenado por "${companyName || answers.companyName || "el cliente"}".
 
-PORTAFOLIO Y FILOSOFÍA DE INTERPRES DIGITAL (ÚSALO PARA ESTRUCTURAR QUÉ OFRECER Y CÓMO VENDERLO):
-1. **Nexia IA & Automatización Inteligente:**
-   - *Agentes Front-Office (WhatsApp Business API, Webchat, Voz):* Atención/ventas 24/7 en <3 seg, calificación de leads, cotización automática desde catálogos/inventarios, agendamiento y pase híbrido a humano.
-   - *Agentes Back-Office & Automatización de Procesos:* Conexión vía APIs/Webhooks/Cloud Functions/n8n entre CRMs (HubSpot, GoHighLevel, etc.), ERPs, Google Sheets/Excel, Stripe, Gmail/Outlook (*Inbox AI*), alertas ejecutivas en Telegram y lectura OCR de documentos/facturas.
-2. **Intentional Systems (Software / Paneles a Medida):** Sistemas centrales web/cloud propietarios cuando el cliente opera en hojas de cálculo frágiles y requiere control real de inventario, cotizaciones, clientes, comisiones o permisos.
-3. **Intentional Web / Boost Apps (PWA Lealtad) / System 360:** Ecosistemas digitales completos de captación, conversión y recurrencia sin comisiones por transacción; el cliente es dueño de su infraestructura y datos.
-4. **Modelo Comercial Recomendado en México (MXN, antes de IVA):**
-   - Cobro de **Implementación Inicial (Pago Único / Setup)** dividido por hitos + **Póliza Mensual Recurrente (Retainer)** que cubre mantenimiento evolutivo, monitoreo, servidor/infraestructura y consumo estimado de IA/APIs.
-   - Si el presupuesto declarado por el cliente es bajo o ajustado frente a todo lo que pide (ej. $5,000 - $20,000 MXN para algo grande), NO descartes la venta: diseña una **Opción 1 (MVP / Fase Semilla ultra enfocada)** ajustada cerca de su presupuesto quitando integraciones pesadas, una **Opción 2 (Solución Integral Recomendada)** con el valor real de mercado en México, y una **Opción 3 (Escalamiento / Sistema Completo)**.
+REGLAS DE ORO DE INGENIERÍA Y STACK OFICIAL DE INTERPRES DIGITAL (OBLIGATORIAS — 100% ECOSISTEMA GOOGLE):
+1. **INTELIGENCIA ARTIFICIAL EXCLUSIVAMENTE CON GOOGLE GEMINI (PROHIBIDO MENCIONAR CHATGPT, OPENAI, CLAUDE O ANTHROPIC):**
+   - Toda capa cognitiva se construye ÚNICAMENTE con **Google Gemini API / Google Cloud Vertex AI**:
+     * **Gemini Flash:** Atención conversacional en tiempo real (<2 seg), clasificación de intenciones, extracción estructurada JSON y cotizaciones al vuelo al menor costo operativo.
+     * **Gemini Pro:** Análisis documental profundo, reglas de negocio complejas o conciliaciones avanzadas.
+     * **Gemini Multimodal Nativo:** Lectura directa (OCR inteligente) de PDFs, imágenes, comprobantes de pago y facturas sin pagar servicios OCR externos.
+     * **Gemini Embeddings + Firestore Vector Search:** Base de conocimiento semántica (RAG) sobre catálogos y manuales del cliente.
+     * **Gemini Live Audio API:** Cuando el proyecto requiera agentes de voz bidireccional en tiempo real.
+   - Todas las llaves de API viven resguardadas en **Google Cloud / Firebase Secret Manager** (jamás expuestas en cliente).
 
-${customGuidance ? `DIRECTRIZ ESPECÍFICA DEL DIRECTOR COMERCIAL PARA ESTA COTIZACIÓN:\n"${customGuidance}"\n(Respeta prioritariamente esta directriz al armar precios, alcance y estrategia).\n` : ""}
+2. **INFRAESTRUCTURA CLOUD Y BACKEND 100% GOOGLE / FIREBASE:**
+   - Prioriza SIEMPRE la arquitectura serverless nativa de Google antes que herramientas de terceros:
+     * **Orquestación y Automatización Backend:** **Firebase Cloud Functions (Node.js / TypeScript)**, **Google Cloud Scheduler** (tareas programadas/cron), **Google Cloud Run** y **Google Apps Script** (ideal para automatizar flujos directos dentro de Google Sheets / Google Workspace con costo cero de servidor). NO propongas Zapier, Make ni servidores externos innecesarios cuando se resuelve limpio con Cloud Functions + Webhooks + Apps Script.
+     * **Base de Datos, Archivos y Seguridad:** **Cloud Firestore** (base de datos en tiempo real), **Firebase Storage**, **Firebase Authentication** y **Firebase App Check (Google reCAPTCHA v3)**.
+     * **Aplicaciones y Paneles Propios:** **Firebase Hosting** con **React + TypeScript + Tailwind CSS** para paneles operativos centrales (*Intentional Systems*), cotizadores web (*Intentional Web*) y PWAs de lealtad (*Boost Apps*).
+
+3. **INTEGRACIÓN NATIVA CON GOOGLE WORKSPACE:**
+   - Aprovecha al máximo el entorno de Google para reducir fricción y costos al cliente:
+     * **Google Sheets API:** Lectura/escritura en tiempo real de inventarios, listas de precios, cotizaciones y bitácoras (especialmente útil en Fase 1 / MVP si el cliente hoy usa hojas de cálculo, convirtiendo Excel local a Google Sheets conectado en la nube).
+     * **Google Drive API:** Repositorio vivo de documentos, fichas técnicas y PDFs generados.
+     * **Gmail API (OAuth2):** Envío automático de propuestas/confirmaciones e *Inbox AI* para lectura y clasificación inteligente de correos entrantes.
+     * **Google Calendar API & Google Contacts API:** Agendamiento automático de citas, recordatorios y alta automática de prospectos en los contactos del negocio.
+
+4. **ESTRATEGIA INTELIGENTE DE CANALES: BOT DE TELEGRAM + WHATSAPP CUANDO SEA NECESARIO:**
+   - **Bot de Telegram (Telegram Bot API) — Canal predilecto para alertas internas, supervisión y Back-Office:**
+     * Intégralo SIEMPRE para **alertas ejecutivas y operativas en tiempo real al dueño o equipo de ventas** (aviso instantáneo de nuevo pedido, cotización generada, prospecto caliente, solicitud de intervención humana / *handoff*, reportes diarios o consultas administrativas/financieras por texto o nota de voz en Telegram), ya que es inmediato, seguro y tiene **cero costo por mensaje**.
+     * Si el presupuesto del cliente es ajustado o el proceso es interno, prioriza **Webchat / Formulario Inteligente + Google Workspace + Bot de Telegram** en la Opción 1 (MVP) para evitarle costos fijos de plantillas de Meta al arrancar.
+   - **WhatsApp Business (WhatsApp Cloud API conectada por Webhook directo a Firebase Cloud Functions + Gemini):**
+     * Inclúyelo cuando el caso de uso exija **atender o vender directamente a clientes finales por WhatsApp** (o cuando el cliente lo solicite como canal principal).
+     * Cuando uses WhatsApp de cara al cliente final, combínalo en la arquitectura con **alertas por Bot de Telegram hacia el equipo interno** para avisar en 1 segundo a los vendedores cuando un caso híbrido requiera cierre humano.
+
+PORTAFOLIO COMERCIAL DE INTERPRES DIGITAL (PARA QUÉ OFRECER Y CÓMO COTIZAR EN MXN):
+1. **Nexia IA & Automatización Inteligente:** Agentes Front-Office (WhatsApp/Web/Voz con Gemini) y Back-Office (automatización con Cloud Functions, Google Workspace APIs, Gmail *Inbox AI*, OCR con Gemini y alertas en Telegram).
+2. **Intentional Systems (Software / Paneles Web sobre Firebase):** Sistemas propietarios a medida cuando el cliente necesita evolucionar de hojas de cálculo a un panel central de inventarios, cotizaciones, clientes y permisos.
+3. **Intentional Web / Boost Apps (PWA) / System 360:** Ecosistemas completos propiedad del cliente, sin comisiones por venta.
+4. **Estructura de Precios en México (MXN + IVA):**
+   - **Implementación Inicial (Pago Único / Setup)** por hitos + **Póliza Mensual Recurrente** (mantenimiento, monitoreo, infraestructura Firebase/Google Cloud y consumo de tokens Gemini).
+   - Diseña siempre **3 escalones estratégicos**: **Opción 1 (MVP / Piloto Ágil sobre Google Workspace + Gemini + Telegram/Canal esencial)** adaptado cerca del presupuesto del cliente para facilitar el sí inicial; **Opción 2 (Solución Integral Recomendada)** con todas las integraciones solicitadas; y **Opción 3 (Ecosistema Completo / Intentional Systems)** sustituyendo procesos manuales/Excel por un panel web central propio en Firebase.
+
+${customGuidance ? `DIRECTRIZ ESPECÍFICA DEL DIRECTOR COMERCIAL PARA ESTA COTIZACIÓN:\n"${customGuidance}"\n(Respeta prioritariamente esta directriz al armar arquitectura, precios, alcance y estrategia).\n` : ""}
 
 RESPUESTAS COMPLETAS DEL CLIENTE EN EL RFI:
 ${JSON.stringify(answers, null, 2)}
@@ -153,17 +182,17 @@ Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, todo en ESP
   "complexityLevel": "Baja" | "Media" | "Alta" | "Enterprise",
   "estimatedImplementationWeeks": "Ej. 3 a 5 semanas",
   "budgetFitStatus": "Óptimo" | "Ajustado — Requiere entrar con MVP (Fase 1)" | "Por definir — Anclar con 3 opciones" | "Bajo para alcance total — Recortar a Piloto",
-  "executiveSummary": "Diagnóstico integral de 4 a 6 líneas: qué dolor real tiene el negocio, qué impacto operativo/económico está sufriendo hoy y cuál es la verdadera solución que necesita.",
-  "budgetVsNeedsAnalysis": "Análisis franco del presupuesto declarado vs. la complejidad técnica solicitada: explica si su presupuesto alcanza, qué sí cubriría, qué conviene separar a Fase 2 y cómo manejar la conversación de precio sin perder el cierre.",
+  "executiveSummary": "Diagnóstico integral de 4 a 6 líneas: qué dolor real tiene el negocio, qué impacto operativo/económico sufre hoy y cuál es la solución óptima con el ecosistema Google + Nexia IA.",
+  "budgetVsNeedsAnalysis": "Análisis franco del presupuesto declarado vs. la complejidad técnica solicitada: explica qué sí cubre su presupuesto usando herramientas eficientes de Google/Telegram, qué separar a Fase 2 y cómo negociarlo sin perder rentabilidad.",
   "whatCanBeDone": [
-    "4 a 6 puntos concretos y aterrizados de lo que SÍ se puede construir y automatizar con su operación y datos actuales"
+    "4 a 6 puntos concretos y aterrizados de lo que SÍ se puede construir y automatizar de inmediato con Google Gemini, Google Workspace/Firebase, Telegram y/o WhatsApp"
   ],
   "recommendedInterpresLines": [
-    "Líneas de Interpres Digital que encajan (ej. 'Nexia IA Front-Office + Automatización API', 'Intentional Systems (Panel Web Central)', etc.)"
+    "Líneas de Interpres Digital que encajan (ej. 'Nexia IA Front-Office (Gemini + WhatsApp/Web)', 'Automatización Google Workspace + Alertas Telegram', 'Intentional Systems (Panel Firebase)', etc.)"
   ],
-  "commercialPitchAndHowToOffer": "Guía práctica de cómo ofrecerlo y venderlo en la reunión de cierre: qué ángulo persuasivo usar con el tomador de decisión, cómo justificar la inversión y por qué empezar por la opción recomendada.",
+  "commercialPitchAndHowToOffer": "Guía práctica de cómo ofrecerlo y venderlo en la reunión de cierre: qué ángulo persuasivo usar, cómo destacar la ventaja de operar sobre infraestructura Google segura y propia, y cómo guiarlo hacia la opción ideal.",
   "roiArgument": "Argumento cuantitativo o práctico de Retorno de Inversión (ROI) basado en el volumen, tiempo perdido o ventas no atendidas que reportó el cliente.",
-  "recommendedArchitecture": "Arquitectura técnica detallada: canales (ej. WhatsApp Cloud API / Web), motor de orquestación (Cloud Functions / Webhooks / n8n), modelo LLM y consulta de conocimiento (RAG / lectura estructurada de Sheets o BD SQL/Firestore), panel de supervisión humana y medidas de seguridad/privacidad LFPDPPP.",
+  "recommendedArchitecture": "Arquitectura técnica detallada 100% alineada al stack de Interpres Digital: modelos Google Gemini (Flash/Pro/Multimodal/Embeddings), backend en Firebase Cloud Functions / Apps Script, base de datos Cloud Firestore y/o conexión en vivo con Google Sheets/Drive/Calendar/Gmail API, uso de Bot de Telegram para alertas/supervisión interna, WhatsApp Cloud API (cuando aplique cara al cliente) y seguridad con Secret Manager + App Check (cumplimiento LFPDPPP).",
   "stepByStepIntegrationPlan": [
     "Paso 1: ...",
     "Paso 2: ...",

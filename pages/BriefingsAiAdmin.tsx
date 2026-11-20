@@ -849,10 +849,10 @@ const BriefingsAiAdmin: React.FC = () => {
                   <div className="space-y-1">
                     <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-indigo-500" />
-                      Agente de Pre-Diagnóstico Estratégico, Arquitectura y Cotizador IA
+                      Nexia IA — Arquitecta de Soluciones y Cotizadora (Ecosistema Google)
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Interpreta las necesidades y el presupuesto del cliente, define qué ofrecer, cómo venderlo, cómo integrarlo paso a paso y arma los paquetes en MXN listos para mandar a Cotizaciones.
+                      Entrenada con el stack oficial de Interpres Digital (Google Gemini, Firebase, Google Workspace, Bot de Telegram y WhatsApp API) para diagnosticar, estructurar la arquitectura y armar tus propuestas en MXN.
                     </p>
                   </div>
 
