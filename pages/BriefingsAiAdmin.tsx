@@ -28,6 +28,7 @@ import {
   generateAiBriefingPDF,
   generateAiDiagnosticInternalPDF,
 } from "../utils/aiBriefingPdfGenerator";
+import { generateQuotationPDF } from "../utils/quotePdfGenerator";
 import { generateAiRfiPreDiagnostic } from "../services/geminiService";
 import {
   Sparkles,
@@ -51,6 +52,10 @@ import {
   HelpCircle,
   ArrowRight,
   Check,
+  Edit2,
+  Plus,
+  X,
+  Save,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -81,6 +86,20 @@ const BriefingsAiAdmin: React.FC = () => {
   const [diagError, setDiagError] = useState<string | null>(null);
   const [createdQuoteId, setCreatedQuoteId] = useState<string | null>(null);
   const [creatingQuote, setCreatingQuote] = useState(false);
+
+  // Estado del Editor Interactivo de Propuesta antes de Cotizar
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewPackageIndex, setReviewPackageIndex] = useState<number | null>(null);
+  const [reviewSourceTitle, setReviewSourceTitle] = useState("");
+  const [draftItems, setDraftItems] = useState<QuoteItem[]>([]);
+  const [draftHasIva, setDraftHasIva] = useState(true);
+  const [draftDiscount, setDraftDiscount] = useState(0);
+  const [draftDeliveryTime, setDraftDeliveryTime] = useState("");
+  const [draftValidUntil, setDraftValidUntil] = useState("");
+  const [draftUpfrontPercent, setDraftUpfrontPercent] = useState(50);
+  const [draftNotes, setDraftNotes] = useState("");
+  const [savingPackageBack, setSavingPackageBack] = useState(false);
+  const [savedPackageNotice, setSavedPackageNotice] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "briefings"), orderBy("createdAt", "desc"));
@@ -221,108 +240,203 @@ const BriefingsAiAdmin: React.FC = () => {
     return newClient;
   };
 
-  const handleCreateQuotationFromPackage = async (
+  // Abre el editor interactivo para revisar/modificar precios, conceptos, IVA y condiciones antes de crear la cotización
+  const handleOpenReviewPackage = (
     b: AiBriefingRecord,
-    pkg: AiPricingPackageOption
+    pkg: AiPricingPackageOption,
+    pkgIdx: number
   ) => {
-    setCreatingQuote(true);
-    try {
-      const ensuredClient = await ensureClientForBriefing(b);
-      const setup = Math.max(0, Number(pkg.setupPriceMxn) || 0);
-      const monthly = Math.max(0, Number(pkg.monthlyRetainerMxn) || 0);
-      const items: QuoteItem[] = [
-        {
-          description: `${safeStr(pkg.tierName)} — ${ensuredClient.companyName || ensuredClient.name}`,
-          details: [safeStr(pkg.subtitle), ...toStringArray(pkg.deliverables).map((d) => `• ${d}`)].join("\n"),
-          quantity: 1,
-          price: setup,
-          billingType: "once",
-        },
-      ];
-      if (monthly > 0) {
-        items.push({
-          description: "Póliza Mensual de Infraestructura, Soporte y Consumo IA",
-          details: "Monitoreo continuo, servidor seguro, ajustes evolutivos y bolsa operativa de procesamiento IA.",
-          quantity: 1,
-          price: monthly,
-          billingType: "monthly",
-        });
-      }
+    const setup = Math.max(0, Number(pkg.setupPriceMxn) || 0);
+    const monthly = Math.max(0, Number(pkg.monthlyRetainerMxn) || 0);
+    const companyLabel = b.answers.companyName || b.companyName || "Cliente";
 
-      const validDate = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const totalOnceWithIva = Math.round(setup * 1.16 * 100) / 100;
-      const totalMonthlyWithIva = Math.round(monthly * 1.16 * 100) / 100;
-
-      const newQuote: Quotation = {
-        id: "quote_" + Math.random().toString(36).slice(2, 11),
-        clientId: ensuredClient.id,
-        clientName: ensuredClient.name,
-        clientCompanyName: ensuredClient.companyName || "",
-        clientEmail: ensuredClient.email || "",
-        items,
-        subtotal: setup,
-        total: totalOnceWithIva,
-        subtotalMonthly: monthly,
-        totalMonthly: totalMonthlyWithIva,
-        hasIva: true,
-        deliveryTime: safeStr(pkg.estimatedWeeks || b.aiPreDiagnostic?.estimatedImplementationWeeks || "3 a 5 semanas"),
-        paymentMilestones: setup > 0
-          ? [
-              {
-                concept: "Anticipo de inicio de arquitectura y desarrollo",
-                percentage: 50,
-                amount: Math.round((totalOnceWithIva * 0.5) * 100) / 100,
-                timeframe: "Al autorizar propuesta",
-              },
-              {
-                concept: "Liquidación contra entrega, pruebas e implementación en vivo",
-                percentage: 50,
-                amount: Math.round((totalOnceWithIva * 0.5) * 100) / 100,
-                timeframe: "Contra entrega en producción",
-              },
-            ]
-          : [],
-        notes: safeStr(
-          b.aiPreDiagnostic?.paymentStructureRecommendation ||
-            "Propuesta generada a partir del Diagnóstico Ejecutivo de Automatización y Agentes de IA. Precios expresados en Pesos Mexicanos (MXN)."
-        ),
-        createdAt: new Date().toISOString(),
-        validUntil: validDate,
-        status: "Pendiente",
-      };
-
-      await addQuotation(newQuote);
-      setCreatedQuoteId(newQuote.id);
-    } finally {
-      setCreatingQuote(false);
+    const initialItems: QuoteItem[] = [
+      {
+        description: `${safeStr(pkg.tierName)} — ${companyLabel}`,
+        details: [safeStr(pkg.subtitle), ...toStringArray(pkg.deliverables).map((d) => `• ${d}`)].join("\n"),
+        quantity: 1,
+        price: setup,
+        billingType: "once",
+      },
+    ];
+    if (monthly > 0) {
+      initialItems.push({
+        description: "Póliza Mensual de Infraestructura, Soporte y Consumo IA",
+        details: "Monitoreo continuo, servidor seguro, ajustes evolutivos y bolsa operativa de procesamiento IA.",
+        quantity: 1,
+        price: monthly,
+        billingType: "monthly",
+      });
     }
+
+    setReviewPackageIndex(pkgIdx);
+    setReviewSourceTitle(safeStr(pkg.tierName));
+    setDraftItems(initialItems);
+    setDraftHasIva(true);
+    setDraftDiscount(0);
+    setDraftDeliveryTime(
+      safeStr(pkg.estimatedWeeks || b.aiPreDiagnostic?.estimatedImplementationWeeks || "3 a 5 semanas")
+    );
+    setDraftValidUntil(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
+    setDraftUpfrontPercent(50);
+    setDraftNotes(
+      safeStr(
+        b.aiPreDiagnostic?.paymentStructureRecommendation ||
+          "Propuesta generada a partir del Diagnóstico Ejecutivo de Automatización y Agentes de IA. Precios expresados en Pesos Mexicanos (MXN)."
+      )
+    );
+    setSavedPackageNotice(false);
+    setReviewModalOpen(true);
   };
 
-  const handleCreateQuotationFromSuggestedItems = async (b: AiBriefingRecord) => {
+  const handleOpenReviewSuggestedItems = (b: AiBriefingRecord) => {
     const rawItems = b.aiPreDiagnostic?.suggestedQuoteItems;
     if (!Array.isArray(rawItems) || rawItems.length === 0) return;
 
+    const initialItems: QuoteItem[] = rawItems.map((it) => ({
+      description: safeStr(it.concept || "Partida de implementación IA"),
+      details: safeStr(it.details),
+      quantity: 1,
+      price: Math.max(0, Number(it.priceMxn) || 0),
+      billingType: it.billingType === "monthly" ? "monthly" : "once",
+    }));
+
+    setReviewPackageIndex(null);
+    setReviewSourceTitle("Partidas Desglosadas Sugeridas");
+    setDraftItems(initialItems);
+    setDraftHasIva(true);
+    setDraftDiscount(0);
+    setDraftDeliveryTime(safeStr(b.aiPreDiagnostic?.estimatedImplementationWeeks || "4 a 5 semanas"));
+    setDraftValidUntil(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
+    setDraftUpfrontPercent(50);
+    setDraftNotes(
+      safeStr(
+        b.aiPreDiagnostic?.paymentStructureRecommendation ||
+          "Propuesta técnica y económica derivada del Diagnóstico Ejecutivo de IA y Automatización."
+      )
+    );
+    setSavedPackageNotice(false);
+    setReviewModalOpen(true);
+  };
+
+  // Guarda los precios/tiempos editados de vuelta en la tarjeta del Pre-Diagnóstico (Firestore)
+  const handleSaveAdjustmentsToPreDiagnostic = async () => {
+    if (!selectedBriefing?.aiPreDiagnostic) return;
+    setSavingPackageBack(true);
+    try {
+      const diag = { ...selectedBriefing.aiPreDiagnostic };
+      const onceSum = draftItems
+        .filter((i) => i.billingType !== "monthly")
+        .reduce((acc, i) => acc + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0);
+      const monthlySum = draftItems
+        .filter((i) => i.billingType === "monthly")
+        .reduce((acc, i) => acc + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0);
+
+      if (reviewPackageIndex !== null && Array.isArray(diag.pricingPackagesMxn)) {
+        const updatedPkgs = [...diag.pricingPackagesMxn];
+        if (updatedPkgs[reviewPackageIndex]) {
+          const firstOnceDetails = draftItems.find((i) => i.billingType !== "monthly")?.details || "";
+          const parsedBullets = firstOnceDetails
+            .split("\n")
+            .map((line) => line.replace(/^[•\-*]\s*/, "").trim())
+            .filter(Boolean);
+          updatedPkgs[reviewPackageIndex] = {
+            ...updatedPkgs[reviewPackageIndex],
+            setupPriceMxn: onceSum,
+            monthlyRetainerMxn: monthlySum,
+            estimatedWeeks: draftDeliveryTime || updatedPkgs[reviewPackageIndex].estimatedWeeks,
+            deliverables:
+              parsedBullets.length > 1
+                ? parsedBullets.slice(1)
+                : updatedPkgs[reviewPackageIndex].deliverables,
+          };
+        }
+        diag.pricingPackagesMxn = updatedPkgs;
+      } else {
+        diag.suggestedQuoteItems = draftItems.map((it) => ({
+          concept: it.description,
+          details: it.details || "",
+          priceMxn: Number(it.price) || 0,
+          billingType: it.billingType === "monthly" ? "monthly" : "once",
+        }));
+      }
+
+      diag.paymentStructureRecommendation = draftNotes;
+
+      await setDoc(
+        doc(db, "briefings", selectedBriefing.id),
+        { aiPreDiagnostic: diag },
+        { merge: true }
+      );
+      setSelectedBriefing({ ...selectedBriefing, aiPreDiagnostic: diag });
+      setSavedPackageNotice(true);
+      setTimeout(() => setSavedPackageNotice(false), 3000);
+    } finally {
+      setSavingPackageBack(false);
+    }
+  };
+
+  // Construye y guarda la Cotización oficial ya revisada/editada por ti
+  const handleConfirmReviewedQuotation = async (mode: "save_only" | "download_pdf" | "open_editor") => {
+    if (!selectedBriefing) return;
+    const validItems = draftItems.filter((i) => i.description.trim() !== "");
+    if (validItems.length === 0) {
+      alert("Agrega al menos una partida con descripción.");
+      return;
+    }
+
     setCreatingQuote(true);
     try {
-      const ensuredClient = await ensureClientForBriefing(b);
-      const items: QuoteItem[] = rawItems.map((it) => ({
-        description: safeStr(it.concept || "Partida de implementación IA"),
-        details: safeStr(it.details),
-        quantity: 1,
-        price: Math.max(0, Number(it.priceMxn) || 0),
+      const ensuredClient = await ensureClientForBriefing(selectedBriefing);
+      const sanitizedItems: QuoteItem[] = validItems.map((it) => ({
+        description: it.description.trim(),
+        ...(it.details && it.details.trim() ? { details: it.details.trim() } : {}),
+        quantity: Math.max(1, Number(it.quantity) || 1),
+        price: Math.max(0, Number(it.price) || 0),
         billingType: it.billingType === "monthly" ? "monthly" : "once",
       }));
 
-      const setup = items
+      const subtotalOnce = sanitizedItems
         .filter((i) => i.billingType !== "monthly")
         .reduce((acc, i) => acc + i.price * i.quantity, 0);
-      const monthly = items
+      const subtotalMonthly = sanitizedItems
         .filter((i) => i.billingType === "monthly")
         .reduce((acc, i) => acc + i.price * i.quantity, 0);
 
-      const totalOnceWithIva = Math.round(setup * 1.16 * 100) / 100;
-      const totalMonthlyWithIva = Math.round(monthly * 1.16 * 100) / 100;
-      const validDate = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const safeDisc = Math.min(100, Math.max(0, Number(draftDiscount) || 0));
+      const onceAfterDisc = subtotalOnce * (1 - safeDisc / 100);
+      const totalOnce = Math.round((draftHasIva ? onceAfterDisc * 1.16 : onceAfterDisc) * 100) / 100;
+      const totalMonthly =
+        Math.round((draftHasIva ? subtotalMonthly * 1.16 : subtotalMonthly) * 100) / 100;
+
+      const upfrontPct = Math.min(100, Math.max(0, Number(draftUpfrontPercent) || 50));
+      const remainPct = Math.max(0, 100 - upfrontPct);
+      const milestones =
+        totalOnce > 0
+          ? remainPct > 0
+            ? [
+                {
+                  concept: "Anticipo de inicio de arquitectura y desarrollo",
+                  percentage: upfrontPct,
+                  amount: Math.round(((totalOnce * upfrontPct) / 100) * 100) / 100,
+                  timeframe: "Al autorizar propuesta",
+                },
+                {
+                  concept: "Liquidación contra entrega y salida a producción",
+                  percentage: remainPct,
+                  amount: Math.round(((totalOnce * remainPct) / 100) * 100) / 100,
+                  timeframe: "Contra entrega",
+                },
+              ]
+            : [
+                {
+                  concept: "Pago único de implementación",
+                  percentage: 100,
+                  amount: totalOnce,
+                  timeframe: "Al autorizar propuesta",
+                },
+              ]
+          : [];
 
       const newQuote: Quotation = {
         id: "quote_" + Math.random().toString(36).slice(2, 11),
@@ -330,40 +444,32 @@ const BriefingsAiAdmin: React.FC = () => {
         clientName: ensuredClient.name,
         clientCompanyName: ensuredClient.companyName || "",
         clientEmail: ensuredClient.email || "",
-        items,
-        subtotal: setup,
-        total: totalOnceWithIva,
-        subtotalMonthly: monthly,
-        totalMonthly: totalMonthlyWithIva,
-        hasIva: true,
-        deliveryTime: safeStr(b.aiPreDiagnostic?.estimatedImplementationWeeks || "4 a 5 semanas"),
-        paymentMilestones: setup > 0
-          ? [
-              {
-                concept: "Anticipo de inicio de proyecto",
-                percentage: 50,
-                amount: Math.round((totalOnceWithIva * 0.5) * 100) / 100,
-                timeframe: "Al autorizar propuesta",
-              },
-              {
-                concept: "Liquidación contra entrega y salida en vivo",
-                percentage: 50,
-                amount: Math.round((totalOnceWithIva * 0.5) * 100) / 100,
-                timeframe: "Contra entrega",
-              },
-            ]
-          : [],
-        notes: safeStr(
-          b.aiPreDiagnostic?.paymentStructureRecommendation ||
-            "Propuesta técnica y económica derivada del Diagnóstico Ejecutivo de IA y Automatización."
-        ),
+        items: sanitizedItems,
+        subtotal: subtotalOnce,
+        ...(safeDisc > 0 ? { discount: safeDisc } : {}),
+        total: totalOnce,
+        subtotalMonthly,
+        totalMonthly,
+        hasIva: draftHasIva,
+        deliveryTime: draftDeliveryTime.trim() || "3 a 5 semanas",
+        paymentMilestones: milestones,
+        notes: draftNotes.trim(),
         createdAt: new Date().toISOString(),
-        validUntil: validDate,
+        validUntil:
+          draftValidUntil ||
+          new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         status: "Pendiente",
       };
 
       await addQuotation(newQuote);
       setCreatedQuoteId(newQuote.id);
+      setReviewModalOpen(false);
+
+      if (mode === "download_pdf") {
+        await generateQuotationPDF(newQuote, ensuredClient, companyInfo);
+      } else if (mode === "open_editor") {
+        navigate(`/quotations?edit=${newQuote.id}`);
+      }
     } finally {
       setCreatingQuote(false);
     }
@@ -942,7 +1048,7 @@ const BriefingsAiAdmin: React.FC = () => {
                               <span>3. Cotizador Estratégico Sugerido (3 Escenarios en MXN + IVA)</span>
                             </h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                              Elige cualquiera de los paquetes para enviarlo directo como borrador editable a tu módulo de Cotizaciones.
+                              Haz clic en <strong>"Revisar y Editar Propuesta"</strong> en cualquiera de las opciones para ajustar precios, entregables, IVA, descuentos y condiciones antes de crear o descargar la cotización.
                             </p>
                           </div>
                         </div>
@@ -1009,7 +1115,7 @@ const BriefingsAiAdmin: React.FC = () => {
                                 </div>
 
                                 <button
-                                  onClick={() => handleCreateQuotationFromPackage(selectedBriefing, pkg)}
+                                  onClick={() => handleOpenReviewPackage(selectedBriefing, pkg, idx)}
                                   disabled={creatingQuote}
                                   className={clsx(
                                     "w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all",
@@ -1018,8 +1124,8 @@ const BriefingsAiAdmin: React.FC = () => {
                                       : "bg-white dark:bg-dark-surface hover:bg-indigo-50 dark:hover:bg-slate-800 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
                                   )}
                                 >
-                                  <FileText className="w-3.5 h-3.5" />
-                                  <span>Crear Borrador en Cotizaciones</span>
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span>Revisar y Editar Propuesta</span>
                                 </button>
                               </div>
                             );
@@ -1042,12 +1148,12 @@ const BriefingsAiAdmin: React.FC = () => {
                                   )}
                                 </div>
                                 <button
-                                  onClick={() => handleCreateQuotationFromSuggestedItems(selectedBriefing)}
+                                  onClick={() => handleOpenReviewSuggestedItems(selectedBriefing)}
                                   disabled={creatingQuote}
                                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
                                 >
-                                  <FileText className="w-3.5 h-3.5" />
-                                  <span>Enviar Partidas Desglosadas a Cotizaciones</span>
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span>Revisar, Editar y Cotizar Partidas</span>
                                 </button>
                               </div>
 
@@ -1363,6 +1469,320 @@ const BriefingsAiAdmin: React.FC = () => {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* MODAL INTERACTIVO: REVISIÓN Y EDICIÓN DE PROPUESTA ANTES DE COTIZAR */}
+      {reviewModalOpen && selectedBriefing && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-dark-border flex items-center justify-between gap-4 bg-gray-50/70 dark:bg-dark-bg/60">
+              <div>
+                <div className="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                  Editor Previo de Cotización • {selectedBriefing.answers.companyName || selectedBriefing.companyName}
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white">
+                  Revisar y Ajustar: {reviewSourceTitle}
+                </h3>
+              </div>
+              <button
+                onClick={() => setReviewModalOpen(false)}
+                className="p-2 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+              {/* Items Editor */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-200">
+                    1. Partidas, Entregables y Precios (MXN)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDraftItems((prev) => [
+                        ...prev,
+                        { description: "", details: "", quantity: 1, price: 0, billingType: "once" },
+                      ])
+                    }
+                    className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 text-xs font-bold inline-flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Agregar Partida</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {draftItems.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-2xl bg-gray-50 dark:bg-dark-bg/70 border border-gray-200 dark:border-dark-border space-y-3"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        <div className="md:col-span-6">
+                          <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">
+                            Concepto de la partida *
+                          </label>
+                          <input
+                            type="text"
+                            value={item.description}
+                            onChange={(e) => {
+                              const next = [...draftItems];
+                              next[idx] = { ...next[idx], description: e.target.value };
+                              setDraftItems(next);
+                            }}
+                            placeholder="Ej. Implementación Agente Nexia IA"
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border text-xs font-semibold text-gray-900 dark:text-white"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">
+                            Tipo Cobro
+                          </label>
+                          <select
+                            value={item.billingType || "once"}
+                            onChange={(e) => {
+                              const next = [...draftItems];
+                              next[idx] = {
+                                ...next[idx],
+                                billingType: e.target.value === "monthly" ? "monthly" : "once",
+                              };
+                              setDraftItems(next);
+                            }}
+                            className="w-full px-2.5 py-2 rounded-xl bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border text-xs font-semibold text-gray-900 dark:text-white"
+                          >
+                            <option value="once">Pago Único</option>
+                            <option value="monthly">Mensual</option>
+                          </select>
+                        </div>
+
+                        <div className="md:col-span-3">
+                          <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">
+                            Precio Unitario (MXN)
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            step={100}
+                            value={item.price}
+                            onChange={(e) => {
+                              const next = [...draftItems];
+                              next[idx] = { ...next[idx], price: Number(e.target.value) || 0 };
+                              setDraftItems(next);
+                            }}
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border text-xs font-black text-gray-900 dark:text-white"
+                          />
+                        </div>
+
+                        <div className="md:col-span-1 flex items-end justify-end">
+                          {draftItems.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setDraftItems(draftItems.filter((_, i) => i !== idx))}
+                              className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                              title="Eliminar partida"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">
+                          Descripción y entregables que verá el cliente
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={item.details || ""}
+                          onChange={(e) => {
+                            const next = [...draftItems];
+                            next[idx] = { ...next[idx], details: e.target.value };
+                            setDraftItems(next);
+                          }}
+                          placeholder="Detalla qué incluye esta partida..."
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border text-xs text-gray-800 dark:text-gray-200"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Terms, Taxes, Delivery & Milestones */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2 border-t border-gray-100 dark:border-dark-border">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">
+                    Tiempo de Entrega
+                  </label>
+                  <input
+                    type="text"
+                    value={draftDeliveryTime}
+                    onChange={(e) => setDraftDeliveryTime(e.target.value)}
+                    placeholder="Ej. 3 a 5 semanas"
+                    className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border text-xs font-semibold text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">
+                    Vigencia Propuesta
+                  </label>
+                  <input
+                    type="date"
+                    value={draftValidUntil}
+                    onChange={(e) => setDraftValidUntil(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border text-xs font-semibold text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">
+                    % Anticipo Inicial
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={draftUpfrontPercent}
+                    onChange={(e) => setDraftUpfrontPercent(Number(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border text-xs font-semibold text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">
+                    Descuento (%)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={draftDiscount}
+                    onChange={(e) => setDraftDiscount(Number(e.target.value) || 0)}
+                    className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border text-xs font-semibold text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <input
+                  id="toggle-iva-review"
+                  type="checkbox"
+                  checked={draftHasIva}
+                  onChange={(e) => setDraftHasIva(e.target.checked)}
+                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                />
+                <label
+                  htmlFor="toggle-iva-review"
+                  className="text-xs font-bold text-gray-700 dark:text-gray-200 cursor-pointer"
+                >
+                  Desglosar y sumar 16% de IVA en la cotización
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">
+                  Notas y Condiciones Comerciales
+                </label>
+                <textarea
+                  rows={2}
+                  value={draftNotes}
+                  onChange={(e) => setDraftNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border text-xs text-gray-800 dark:text-gray-200"
+                />
+              </div>
+
+              {/* Live Totals Summary */}
+              {(() => {
+                const subOnce = draftItems
+                  .filter((i) => i.billingType !== "monthly")
+                  .reduce((a, i) => a + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0);
+                const subMonth = draftItems
+                  .filter((i) => i.billingType === "monthly")
+                  .reduce((a, i) => a + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0);
+                const discFactor = 1 - Math.min(100, Math.max(0, Number(draftDiscount) || 0)) / 100;
+                const totOnce = draftHasIva ? subOnce * discFactor * 1.16 : subOnce * discFactor;
+                const totMonth = draftHasIva ? subMonth * 1.16 : subMonth;
+
+                return (
+                  <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-300">
+                        Total Implementación {draftHasIva ? "(IVA incluido)" : "(Sin IVA)"}
+                      </div>
+                      <div className="text-xl font-black text-gray-900 dark:text-white">
+                        {formatMxn(Math.round(totOnce))}
+                      </div>
+                    </div>
+                    {subMonth > 0 && (
+                      <div>
+                        <div className="text-[10px] font-bold uppercase text-violet-600 dark:text-violet-300">
+                          Póliza Mensual {draftHasIva ? "(IVA incluido)" : "(Sin IVA)"}
+                        </div>
+                        <div className="text-lg font-black text-violet-700 dark:text-violet-200">
+                          {formatMxn(Math.round(totMonth))}/mes
+                        </div>
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-600 dark:text-gray-300">
+                      Hitos: <strong>{draftUpfrontPercent}%</strong> anticipo /{" "}
+                      <strong>{Math.max(0, 100 - draftUpfrontPercent)}%</strong> contra entrega
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div className="px-6 py-4 border-t border-gray-100 dark:border-dark-border bg-gray-50/80 dark:bg-dark-bg/70 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleSaveAdjustmentsToPreDiagnostic}
+                disabled={savingPackageBack}
+                className="px-3.5 py-2 rounded-xl bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border hover:border-indigo-400 text-xs font-bold text-gray-700 dark:text-gray-200 inline-flex items-center gap-1.5"
+              >
+                {savingPackageBack ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Save className="w-3.5 h-3.5 text-indigo-500" />
+                )}
+                <span>
+                  {savedPackageNotice
+                    ? "¡Guardado en Pre-Diagnóstico!"
+                    : "Guardar precios en este Pre-Diagnóstico"}
+                </span>
+              </button>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleConfirmReviewedQuotation("download_pdf")}
+                  disabled={creatingQuote}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Guardar y Descargar PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleConfirmReviewedQuotation("open_editor")}
+                  disabled={creatingQuote}
+                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Guardar y Abrir en Cotizaciones</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

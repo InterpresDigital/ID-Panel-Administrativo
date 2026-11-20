@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   FileText, 
   Plus, 
@@ -32,6 +33,8 @@ import { getAppBaseUrl } from '../utils/urlUtils';
 
 const Quotations: React.FC = () => {
   const { clients, platforms, quotations, companyInfo, bookingSettings, addQuotation, updateQuotation, deleteQuotation } = useData();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const editQueryId = searchParams.get('edit');
 
   const formatLocalDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -344,6 +347,16 @@ const Quotations: React.FC = () => {
     setEditorTab('edit');
     setIsModalOpen(true);
   };
+
+  useEffect(() => {
+    if (editQueryId && quotations.length > 0 && !isModalOpen) {
+      const target = quotations.find(q => q.id === editQueryId);
+      if (target) {
+        handleOpenEdit(target);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [editQueryId, quotations]);
 
   // Save Quotation
   const handleSave = async (e: React.FormEvent) => {
