@@ -18,7 +18,8 @@ import {
   MapPin,
   Users,
   UserCheck,
-  ClipboardList
+  ClipboardList,
+  Cpu
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
@@ -509,7 +510,9 @@ const Clients: React.FC = () => {
                  </button>
                  {/* Briefing Lumina Core */}
                  {(() => {
-                    const hasBrief = briefings.find(b => b.clientId === client.id && b.briefingType !== 'general');
+                    const hasBrief = briefings.find(
+                      b => b.clientId === client.id && b.briefingType !== 'general' && b.briefingType !== 'ai-agent'
+                    );
                     if (hasBrief) {
                       return (
                         <a
@@ -570,6 +573,40 @@ const Clients: React.FC = () => {
                           title="Copiar Enlace de Briefing General Personalizado"
                         >
                           <FileText className="w-4 h-4 opacity-50" />
+                        </button>
+                      );
+                    }
+                  })()}
+
+                 {/* Briefing IA */}
+                 {(() => {
+                    const hasAiBrief = briefings.find(b => b.clientId === client.id && b.briefingType === 'ai-agent');
+                    if (hasAiBrief) {
+                      return (
+                        <a
+                          href={`/#/briefings-ia?id=${hasAiBrief.id}`}
+                          className="p-2 text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                          title="Ver Respuestas del Briefing IA y Cotizador"
+                        >
+                          <Cpu className="w-4 h-4" />
+                        </a>
+                      );
+                    } else {
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const origin = (typeof window !== 'undefined' && window.location)
+                              ? window.location.origin
+                              : 'https://panel.interpresdigital.com';
+                            const personalUrl = `${origin}/#/briefing/ia/${client.id}`;
+                            navigator.clipboard.writeText(personalUrl);
+                            alert(`¡Enlace personalizado de Briefing IA para ${client.name} copiado al portapapeles!\n\n${personalUrl}`);
+                          }}
+                          className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                          title="Copiar Enlace de Briefing IA Personalizado"
+                        >
+                          <Cpu className="w-4 h-4 opacity-50" />
                         </button>
                       );
                     }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Quotation, Client, CompanyInfo } from '../types';
+import { Quotation, Client, ClientStatus, CompanyInfo } from '../types';
 import { Card } from '../components/ui/Card';
 import { generateQuotationPDF } from '../utils/quotePdfGenerator';
 import { 
@@ -73,11 +73,29 @@ const ViewQuotation: React.FC = () => {
         const qData = quoteSnap.data() as Quotation;
         setQuotation(qData);
 
-        // Get Client
-        const clientSnap = await getDoc(doc(db, "clients", qData.clientId));
-        if (clientSnap.exists()) {
-          setClient(clientSnap.data() as Client);
+        // Get Client (con respaldo automático si el clientId venía vacío o el cliente fue eliminado)
+        let loadedClient: Client | null = null;
+        if (qData.clientId && qData.clientId.trim()) {
+          const clientSnap = await getDoc(doc(db, "clients", qData.clientId.trim()));
+          if (clientSnap.exists()) {
+            loadedClient = clientSnap.data() as Client;
+          }
         }
+        if (!loadedClient) {
+          loadedClient = {
+            id: qData.clientId || "fallback_client",
+            name: qData.clientName || qData.clientCompanyName || "Cliente",
+            companyName: qData.clientCompanyName || qData.clientName || "",
+            email: qData.clientEmail || "",
+            phone: "",
+            serviceType: "Servicios Digitales",
+            responsiblePerson: "Interpres Digital",
+            contactMethod: "Email",
+            contractStartDate: new Date().toISOString().split("T")[0],
+            status: ClientStatus.Lead
+          };
+        }
+        setClient(loadedClient);
 
         // Get Company info
         const companySnap = await getDoc(doc(db, "settings", "company_info"));

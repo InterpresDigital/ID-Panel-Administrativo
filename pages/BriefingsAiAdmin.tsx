@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { db } from "../services/firebase";
 import {
   collection,
@@ -7,10 +7,11 @@ import {
   orderBy,
   onSnapshot,
   doc,
+  setDoc,
   deleteDoc,
 } from "firebase/firestore";
 import { useData } from "../context/DataContext";
-import { Quotation, QuoteItem } from "../types";
+import { Client, ClientStatus, Quotation, QuoteItem } from "../types";
 import { getAppBaseUrl } from "../utils/urlUtils";
 import {
   AiBriefingRecord,
@@ -60,7 +61,10 @@ const formatMxn = (val?: number): string => {
 
 const BriefingsAiAdmin: React.FC = () => {
   const navigate = useNavigate();
-  const { clients, companyInfo, addQuotation } = useData();
+  const [searchParams] = useSearchParams();
+  const queryBriefingId = searchParams.get("id");
+  const queryClientId = searchParams.get("clientId");
+  const { clients, companyInfo, addClient, addQuotation } = useData();
   const [briefings, setBriefings] = useState<AiBriefingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBriefing, setSelectedBriefing] = useState<AiBriefingRecord | null>(null);
@@ -96,7 +100,13 @@ const BriefingsAiAdmin: React.FC = () => {
         });
         setBriefings(list);
         setLoading(false);
-        if (selectedBriefing) {
+        if (queryBriefingId && !selectedBriefing) {
+          const byId = list.find((item) => item.id === queryBriefingId);
+          if (byId) setSelectedBriefing(byId);
+        } else if (queryClientId && !selectedBriefing) {
+          const byClient = list.find((item) => item.clientId === queryClientId);
+          if (byClient) setSelectedBriefing(byClient);
+        } else if (selectedBriefing) {
           const updated = list.find((item) => item.id === selectedBriefing.id);
           if (updated) setSelectedBriefing(updated);
         }
@@ -161,17 +171,68 @@ const BriefingsAiAdmin: React.FC = () => {
     }
   };
 
+  // Garantiza que exista el cliente real en el módulo de Clientes antes de emitir cualquier cotización
+  const ensureClientForBriefing = async (b: AiBriefingRecord): Promise<Client> => {
+    const cleanEmail = (b.answers.contactEmail || b.email || "").trim().toLowerCase();
+    const cleanCompany = (b.answers.companyName || b.companyName || "").trim();
+    const cleanName = (b.answers.contactName || b.clientName || cleanCompany || "Cliente IA").trim();
+    const cleanPhone = (b.answers.contactPhone || b.whatsapp || "").trim();
+
+    let found = clients.find(
+      (c) =>
+        (b.clientId && c.id === b.clientId) ||
+        (cleanEmail && (c.email || "").trim().toLowerCase() === cleanEmail)
+    );
+
+    if (!found && cleanCompany) {
+      found = clients.find(
+        (c) => (c.companyName || "").trim().toLowerCase() === cleanCompany.toLowerCase()
+      );
+    }
+
+    if (found) {
+      if (b.clientId !== found.id) {
+        await setDoc(doc(db, "briefings", b.id), { clientId: found.id }, { merge: true });
+      }
+      return found;
+    }
+
+    const generatedClientId = `cli_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const newClient: Client = {
+      id: generatedClientId,
+      name: cleanName,
+      companyName: cleanCompany || cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      whatsapp: cleanPhone,
+      serviceType: "Automatización y Agentes de IA",
+      responsiblePerson: "Interpres Digital",
+      contactMethod: cleanPhone ? "WhatsApp" : "Email",
+      acquisitionSource: "Briefing IA (RFI)",
+      contractStartDate: new Date().toISOString().split("T")[0],
+      status: ClientStatus.Lead,
+      notes: b.answers.businessProblem
+        ? `RFI IA: ${b.answers.businessProblem}`
+        : "Creado desde Briefing IA y Cotizador.",
+    };
+
+    await addClient(newClient);
+    await setDoc(doc(db, "briefings", b.id), { clientId: newClient.id }, { merge: true });
+    return newClient;
+  };
+
   const handleCreateQuotationFromPackage = async (
     b: AiBriefingRecord,
     pkg: AiPricingPackageOption
   ) => {
     setCreatingQuote(true);
     try {
+      const ensuredClient = await ensureClientForBriefing(b);
       const setup = Math.max(0, Number(pkg.setupPriceMxn) || 0);
       const monthly = Math.max(0, Number(pkg.monthlyRetainerMxn) || 0);
       const items: QuoteItem[] = [
         {
-          description: `${safeStr(pkg.tierName)} — ${b.answers.companyName || b.companyName || "Proyecto IA"}`,
+          description: `${safeStr(pkg.tierName)} — ${ensuredClient.companyName || ensuredClient.name}`,
           details: [safeStr(pkg.subtitle), ...toStringArray(pkg.deliverables).map((d) => `• ${d}`)].join("\n"),
           quantity: 1,
           price: setup,
@@ -192,18 +253,12 @@ const BriefingsAiAdmin: React.FC = () => {
       const totalOnceWithIva = Math.round(setup * 1.16 * 100) / 100;
       const totalMonthlyWithIva = Math.round(monthly * 1.16 * 100) / 100;
 
-      const matchedClient = clients.find(
-        (c) =>
-          c.id === b.clientId ||
-          (b.email && c.email?.toLowerCase() === b.email.toLowerCase())
-      );
-
       const newQuote: Quotation = {
-        id: `QT-${Date.now()}`,
-        clientId: matchedClient?.id || b.clientId || "",
-        clientName: b.answers.contactName || b.clientName || matchedClient?.name || "Cliente",
-        clientCompanyName: b.answers.companyName || b.companyName || matchedClient?.companyName || "",
-        clientEmail: b.answers.contactEmail || b.email || matchedClient?.email || "",
+        id: "quote_" + Math.random().toString(36).slice(2, 11),
+        clientId: ensuredClient.id,
+        clientName: ensuredClient.name,
+        clientCompanyName: ensuredClient.companyName || "",
+        clientEmail: ensuredClient.email || "",
         items,
         subtotal: setup,
         total: totalOnceWithIva,
@@ -249,6 +304,7 @@ const BriefingsAiAdmin: React.FC = () => {
 
     setCreatingQuote(true);
     try {
+      const ensuredClient = await ensureClientForBriefing(b);
       const items: QuoteItem[] = rawItems.map((it) => ({
         description: safeStr(it.concept || "Partida de implementación IA"),
         details: safeStr(it.details),
@@ -268,18 +324,12 @@ const BriefingsAiAdmin: React.FC = () => {
       const totalMonthlyWithIva = Math.round(monthly * 1.16 * 100) / 100;
       const validDate = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-      const matchedClient = clients.find(
-        (c) =>
-          c.id === b.clientId ||
-          (b.email && c.email?.toLowerCase() === b.email.toLowerCase())
-      );
-
       const newQuote: Quotation = {
-        id: `QT-${Date.now()}`,
-        clientId: matchedClient?.id || b.clientId || "",
-        clientName: b.answers.contactName || b.clientName || matchedClient?.name || "Cliente",
-        clientCompanyName: b.answers.companyName || b.companyName || matchedClient?.companyName || "",
-        clientEmail: b.answers.contactEmail || b.email || matchedClient?.email || "",
+        id: "quote_" + Math.random().toString(36).slice(2, 11),
+        clientId: ensuredClient.id,
+        clientName: ensuredClient.name,
+        clientCompanyName: ensuredClient.companyName || "",
+        clientEmail: ensuredClient.email || "",
         items,
         subtotal: setup,
         total: totalOnceWithIva,

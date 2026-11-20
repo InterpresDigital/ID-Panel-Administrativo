@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { useData } from '../context/DataContext';
-import { Quotation, QuoteItem, Client, PaymentMilestone } from '../types';
+import { Quotation, QuoteItem, Client, ClientStatus, PaymentMilestone } from '../types';
 import { MarkdownRenderer } from '../utils/markdownParser';
 import { generateQuotationPDF } from '../utils/quotePdfGenerator';
 import clsx from 'clsx';
@@ -59,8 +59,32 @@ const Quotations: React.FC = () => {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailNotice, setEmailNotice] = useState<{ success: boolean; message: string } | null>(null);
 
+  const resolveClientForQuote = (quote: Quotation): Client => {
+    const byId = quote.clientId ? clients.find(c => c.id === quote.clientId) : undefined;
+    if (byId) return byId;
+
+    const cleanEmail = (quote.clientEmail || '').trim().toLowerCase();
+    const byEmail = cleanEmail
+      ? clients.find(c => (c.email || '').trim().toLowerCase() === cleanEmail)
+      : undefined;
+    if (byEmail) return byEmail;
+
+    return {
+      id: quote.clientId || 'fallback_client',
+      name: quote.clientName || quote.clientCompanyName || 'Cliente',
+      companyName: quote.clientCompanyName || quote.clientName || '',
+      email: quote.clientEmail || '',
+      phone: '',
+      serviceType: 'Servicios Digitales',
+      responsiblePerson: 'Interpres Digital',
+      contactMethod: 'Email',
+      contractStartDate: new Date().toISOString().split('T')[0],
+      status: ClientStatus.Lead
+    };
+  };
+
   const handleOpenEmailModal = (quotation: Quotation) => {
-    const client = clients.find(c => c.id === quotation.clientId);
+    const client = resolveClientForQuote(quotation);
     setEmailModalQuotation(quotation);
     setEmailTarget(quotation.clientEmail || client?.email || '');
     setEmailSubject(`Cotización y Propuesta Comercial - ${quotation.clientName}`);
@@ -90,7 +114,7 @@ const Quotations: React.FC = () => {
   };
 
   const handleSendQuotationWhatsApp = (quotation: Quotation) => {
-    const client = clients.find(c => c.id === quotation.clientId);
+    const client = resolveClientForQuote(quotation);
     const phone = client?.whatsapp || client?.phone || '';
     if (!phone) {
       alert("El cliente no tiene un teléfono o WhatsApp registrado.");
@@ -305,8 +329,10 @@ const Quotations: React.FC = () => {
 
   // Open Edit Modal
   const handleOpenEdit = (quote: Quotation) => {
+    const resolved = resolveClientForQuote(quote);
+    const matchedRealId = clients.some(c => c.id === resolved.id) ? resolved.id : quote.clientId;
     setEditingQuotation(quote);
-    setSelectedClientId(quote.clientId);
+    setSelectedClientId(matchedRealId);
     setItems(quote.items);
     setDiscount(quote.discount || 0);
     setHasIva(quote.hasIva || false);
@@ -428,11 +454,7 @@ const Quotations: React.FC = () => {
   };
 
   const downloadPDF = async (quote: Quotation) => {
-    const client = clients.find(c => c.id === quote.clientId);
-    if (!client) {
-      alert("Cliente no encontrado.");
-      return;
-    }
+    const client = resolveClientForQuote(quote);
     await generateQuotationPDF(quote, client, companyInfo);
   };
 

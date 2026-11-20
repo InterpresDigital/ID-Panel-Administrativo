@@ -111,6 +111,7 @@ const PublicAiBriefing: React.FC = () => {
 
   // Telemetría interna de duración de voz (exclusiva para el Panel Administrativo)
   const briefingIdRef = useRef<string | null>(draftParam);
+  const linkedClientIdRef = useRef<string>(clientId || "");
   const answersRef = useRef<AiBriefingAnswers>(INITIAL_AI_BRIEFING_ANSWERS);
   const activeSectionRef = useRef<number>(1);
   const wakeLockRef = useRef<any>(null);
@@ -315,6 +316,9 @@ const PublicAiBriefing: React.FC = () => {
     const applyLoadedDraft = (id: string, data: Record<string, any>) => {
       setBriefingId(id);
       briefingIdRef.current = id;
+      if (typeof data.clientId === "string" && data.clientId.trim()) {
+        linkedClientIdRef.current = data.clientId.trim();
+      }
       setSearchParams({ draft: id }, { replace: true });
       accumulatedVoiceSecondsRef.current = Number(data.voiceDurationSeconds) || 0;
       lastVoiceSessionAtRef.current =
@@ -456,6 +460,84 @@ const PublicAiBriefing: React.FC = () => {
     init();
   }, [clientId, draftParam, setSearchParams, storageDraftKey]);
 
+  // Crea o vincula automáticamente al prospecto en la colección 'clients' sin duplicar registros
+  const syncAiProspectToClients = useCallback(
+    async (ans: AiBriefingAnswers): Promise<string> => {
+      try {
+        const cleanName = ans.contactName.trim();
+        const cleanCompany = ans.companyName.trim();
+        const cleanEmail = ans.contactEmail.trim().toLowerCase();
+        const cleanPhone = ans.contactPhone.trim();
+
+        if (!cleanName && !cleanCompany && !cleanEmail) {
+          return linkedClientIdRef.current || clientId || "";
+        }
+
+        let targetClientId = linkedClientIdRef.current || clientId || "";
+
+        // 1. Si aún no hay clientId vinculado, buscar en 'clients' por correo para no duplicar
+        if (!targetClientId && cleanEmail) {
+          const allClientsSnap = await getDocs(collection(db, "clients"));
+          allClientsSnap.forEach((cDoc) => {
+            if (targetClientId) return;
+            const cData = cDoc.data();
+            if (String(cData.email || "").trim().toLowerCase() === cleanEmail) {
+              targetClientId = cDoc.id;
+            }
+          });
+        }
+
+        // 2. Si ya existe el cliente, enriquecer datos faltantes sin sobrescribir su estatus Activo
+        if (targetClientId) {
+          const existingSnap = await getDoc(doc(db, "clients", targetClientId));
+          if (existingSnap.exists()) {
+            const ex = existingSnap.data();
+            const patch: Record<string, any> = { id: targetClientId };
+            if (!ex.companyName && cleanCompany) patch.companyName = cleanCompany;
+            if (!ex.phone && cleanPhone) patch.phone = cleanPhone;
+            if (!ex.whatsapp && cleanPhone) patch.whatsapp = cleanPhone;
+            if (!ex.email && cleanEmail) patch.email = cleanEmail;
+            if (ans.businessProblem.trim() && !String(ex.notes || "").includes(ans.businessProblem.trim().slice(0, 30))) {
+              patch.notes = ex.notes
+                ? `${ex.notes}\n• RFI IA: ${ans.businessProblem.trim()}`
+                : `RFI IA: ${ans.businessProblem.trim()}`;
+            }
+            await setDoc(doc(db, "clients", targetClientId), patch, { merge: true });
+            linkedClientIdRef.current = targetClientId;
+            return targetClientId;
+          }
+        }
+
+        // 3. Crear nuevo registro de Prospecto en el módulo de Clientes
+        const newClientPayload: Record<string, any> = {
+          name: cleanName || cleanCompany || "Prospecto IA",
+          companyName: cleanCompany || cleanName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          whatsapp: cleanPhone,
+          serviceType: "Automatización y Agentes de IA",
+          responsiblePerson: "Interpres Digital",
+          contactMethod: cleanPhone ? "WhatsApp" : "Email",
+          acquisitionSource: "Briefing IA (RFI)",
+          contractStartDate: new Date().toISOString().split("T")[0],
+          status: "Prospecto",
+          notes: ans.businessProblem.trim()
+            ? `RFI IA: ${ans.businessProblem.trim()}`
+            : "Registrado automáticamente desde el Diagnóstico Ejecutivo de Agentes de IA.",
+        };
+
+        const createdClient = await addDoc(collection(db, "clients"), newClientPayload);
+        await setDoc(doc(db, "clients", createdClient.id), { id: createdClient.id }, { merge: true });
+        linkedClientIdRef.current = createdClient.id;
+        return createdClient.id;
+      } catch (err) {
+        console.warn("Error sincronizando cliente desde Briefing IA:", err);
+        return linkedClientIdRef.current || clientId || "";
+      }
+    },
+    [clientId]
+  );
+
   // Persist draft helper
   const persistDraft = useCallback(
     async (
@@ -480,7 +562,7 @@ const PublicAiBriefing: React.FC = () => {
           briefingType: "ai-agent",
           status: statusOverride,
           completionMode: computedMode,
-          clientId: clientId || "",
+          clientId: linkedClientIdRef.current || clientId || "",
           companyName: nextAnswers.companyName.trim(),
           clientName: nextAnswers.contactName.trim(),
           email: nextAnswers.contactEmail.trim(),
@@ -630,6 +712,9 @@ const PublicAiBriefing: React.FC = () => {
     answersRef.current = stampedAnswers;
     setActiveSection(resumeSec);
     activeSectionRef.current = resumeSec;
+
+    // Crear o vincular automáticamente el prospecto en el módulo de Clientes antes de guardar el briefing
+    await syncAiProspectToClients(stampedAnswers);
 
     const id = await persistDraft(
       stampedAnswers,
@@ -976,6 +1061,7 @@ const PublicAiBriefing: React.FC = () => {
     voiceRef.current?.stop();
     setSubmittingFinal(true);
     try {
+      await syncAiProspectToClients(answers);
       await persistDraft(answers, briefingId, "completed");
 
       const computedMode: "voice" | "manual" | "hybrid" =

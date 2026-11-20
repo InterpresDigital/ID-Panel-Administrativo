@@ -142,7 +142,7 @@ const BriefingsAdmin: React.FC = () => {
       const all: Briefing[] = [];
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
-        if (data && data.briefingType !== 'general') {
+        if (data && data.briefingType !== 'general' && data.briefingType !== 'ai-agent') {
           all.push({ id: docSnap.id, ...data } as Briefing);
         }
       });
