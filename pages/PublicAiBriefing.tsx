@@ -74,13 +74,85 @@ import { getAppBaseUrl } from "../utils/urlUtils";
 const LOGO_URL =
   "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/3.png";
 
+/**
+ * Valida que el registro cuente obligatoriamente con datos de identificación y
+ * aceptación expresa del Aviso de Privacidad, Confidencialidad y Uso Ético de IA.
+ */
+const hasValidCoverIdentity = (a?: Partial<AiBriefingAnswers> | null): boolean => {
+  if (!a) return false;
+  return Boolean(
+    safeStr(a.companyName).trim() &&
+      safeStr(a.contactName).trim() &&
+      safeStr(a.contactEmail).trim() &&
+      a.privacyConsentAccepted === true
+  );
+};
+
+/**
+ * Combina estado remoto y local sin permitir JAMÁS que cadenas vacías ("") o booleanos
+ * falsos de una pestaña recién abierta sobrescriban datos de portada, consentimiento o respuestas previas.
+ */
+const mergeAnswersPreservingIdentity = (
+  base: Partial<AiBriefingAnswers> | null | undefined,
+  incoming: Partial<AiBriefingAnswers> | null | undefined,
+  topLevelFallback?: {
+    companyName?: string;
+    clientName?: string;
+    email?: string;
+    whatsapp?: string;
+  }
+): AiBriefingAnswers => {
+  const cleanBase = sanitizeLegacyAnswers(base);
+  const rawIncoming = incoming && typeof incoming === "object" ? incoming : {};
+  const mergedRaw: Record<string, any> = { ...cleanBase };
+
+  for (const [k, v] of Object.entries(rawIncoming)) {
+    if (v === undefined || v === null) continue;
+    if (typeof v === "string") {
+      if (!v.trim() && safeStr((cleanBase as any)[k]).trim()) {
+        continue;
+      }
+      mergedRaw[k] = v;
+    } else if (k === "privacyConsentAccepted") {
+      mergedRaw[k] = Boolean(cleanBase.privacyConsentAccepted || v);
+    } else if (k === "observationsConfirmed") {
+      mergedRaw[k] = Boolean(cleanBase.observationsConfirmed || v);
+    } else if (Array.isArray(v)) {
+      if (v.length === 0 && Array.isArray((cleanBase as any)[k]) && (cleanBase as any)[k].length > 0) {
+        continue;
+      }
+      mergedRaw[k] = v;
+    } else {
+      mergedRaw[k] = v;
+    }
+  }
+
+  if (topLevelFallback) {
+    if (!safeStr(mergedRaw.companyName).trim() && safeStr(topLevelFallback.companyName).trim()) {
+      mergedRaw.companyName = safeStr(topLevelFallback.companyName).trim();
+    }
+    if (!safeStr(mergedRaw.contactName).trim() && safeStr(topLevelFallback.clientName).trim()) {
+      mergedRaw.contactName = safeStr(topLevelFallback.clientName).trim();
+    }
+    if (!safeStr(mergedRaw.contactEmail).trim() && safeStr(topLevelFallback.email).trim()) {
+      mergedRaw.contactEmail = safeStr(topLevelFallback.email).trim();
+    }
+    if (!safeStr(mergedRaw.contactPhone).trim() && safeStr(topLevelFallback.whatsapp).trim()) {
+      mergedRaw.contactPhone = safeStr(topLevelFallback.whatsapp).trim();
+    }
+  }
+
+  return sanitizeLegacyAnswers(mergedRaw);
+};
+
 const PublicAiBriefing: React.FC = () => {
   const { clientId } = useParams<{ clientId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const draftParam = searchParams.get("draft");
 
   const [loadingInit, setLoadingInit] = useState(true);
-  const [briefingId, setBriefingId] = useState<string | null>(draftParam);
+  // No asignar draftParam antes de cargar Firestore para evitar que visibilitychange sobrescriba con respuestas vacías
+  const [briefingId, setBriefingId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<AiBriefingAnswers>(INITIAL_AI_BRIEFING_ANSWERS);
   const [step, setStep] = useState<"welcome" | "workspace" | "submitted">("welcome");
   const [activeMode, setActiveMode] = useState<"voice" | "manual">("voice");
@@ -109,10 +181,20 @@ const PublicAiBriefing: React.FC = () => {
   >([]);
   const [recentlyUpdatedSection, setRecentlyUpdatedSection] = useState<number | null>(null);
 
-  // Telemetría interna de duración de voz (exclusiva para el Panel Administrativo)
-  const briefingIdRef = useRef<string | null>(draftParam);
+  // Telemetría interna de duración de voz y resguardo anti-borrado de portada
+  const loadingInitRef = useRef<boolean>(true);
+  const stepRef = useRef<"welcome" | "workspace" | "submitted">("welcome");
+  const briefingIdRef = useRef<string | null>(null);
   const linkedClientIdRef = useRef<string>(clientId || "");
   const answersRef = useRef<AiBriefingAnswers>(INITIAL_AI_BRIEFING_ANSWERS);
+  const verifiedCoverRef = useRef<{
+    companyName: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    privacyConsentAccepted: boolean;
+    privacyConsentAcceptedAt: string;
+  } | null>(null);
   const activeSectionRef = useRef<number>(1);
   const wakeLockRef = useRef<any>(null);
   const manualDebounceRef = useRef<number | null>(null);
@@ -123,11 +205,32 @@ const PublicAiBriefing: React.FC = () => {
   const hasSentTelegramRef = useRef<boolean>(false);
 
   useEffect(() => {
+    loadingInitRef.current = loadingInit;
+  }, [loadingInit]);
+
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+
+  useEffect(() => {
     briefingIdRef.current = briefingId;
   }, [briefingId]);
 
   useEffect(() => {
     answersRef.current = answers;
+    if (hasValidCoverIdentity(answers)) {
+      verifiedCoverRef.current = {
+        companyName: answers.companyName.trim(),
+        contactName: answers.contactName.trim(),
+        contactEmail: answers.contactEmail.trim(),
+        contactPhone: answers.contactPhone.trim(),
+        privacyConsentAccepted: true,
+        privacyConsentAcceptedAt:
+          answers.privacyConsentAcceptedAt ||
+          verifiedCoverRef.current?.privacyConsentAcceptedAt ||
+          "",
+      };
+    }
   }, [answers]);
 
   useEffect(() => {
@@ -258,7 +361,14 @@ const PublicAiBriefing: React.FC = () => {
   // Autoguardado periódico y respaldo inmediato si se oculta la pestaña o entra el protector de pantalla
   useEffect(() => {
     const handlePageHidden = () => {
-      if (document.visibilityState === "hidden" && briefingIdRef.current) {
+      // PROHIBIDO guardar mientras carga Firestore, si aún está en portada ('welcome') o sin identidad/consentimiento válido
+      if (
+        document.visibilityState === "hidden" &&
+        !loadingInitRef.current &&
+        stepRef.current === "workspace" &&
+        briefingIdRef.current &&
+        hasValidCoverIdentity(answersRef.current)
+      ) {
         const snapshotAns: AiBriefingAnswers = {
           ...answersRef.current,
           lastActiveSection: activeSectionRef.current,
@@ -268,6 +378,10 @@ const PublicAiBriefing: React.FC = () => {
         setDoc(
           doc(db, "briefings", briefingIdRef.current),
           {
+            companyName: snapshotAns.companyName.trim(),
+            clientName: snapshotAns.contactName.trim(),
+            email: snapshotAns.contactEmail.trim(),
+            whatsapp: snapshotAns.contactPhone.trim(),
             answers: snapshotAns,
             updatedAt: serverTimestamp(),
           },
@@ -313,11 +427,15 @@ const PublicAiBriefing: React.FC = () => {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    const applyLoadedDraft = (id: string, data: Record<string, any>) => {
+    const applyLoadedDraft = async (id: string, data: Record<string, any>) => {
       setBriefingId(id);
       briefingIdRef.current = id;
-      if (typeof data.clientId === "string" && data.clientId.trim()) {
-        linkedClientIdRef.current = data.clientId.trim();
+      const effectiveClientId =
+        typeof data.clientId === "string" && data.clientId.trim()
+          ? data.clientId.trim()
+          : clientId || "";
+      if (effectiveClientId) {
+        linkedClientIdRef.current = effectiveClientId;
       }
       setSearchParams({ draft: id }, { replace: true });
       accumulatedVoiceSecondsRef.current = Number(data.voiceDurationSeconds) || 0;
@@ -329,51 +447,92 @@ const PublicAiBriefing: React.FC = () => {
       if (data.completionMode === "manual" || data.completionMode === "hybrid") {
         setUsedManualOnce(true);
       }
-      if (data.answers) {
-        let cleaned = sanitizeLegacyAnswers(data.answers);
 
-        // Si el navegador guardó un snapshot local más reciente antes de entrar en suspensión, recuperarlo
+      const topLevelFallback = {
+        companyName: safeStr(data.companyName),
+        clientName: safeStr(data.clientName),
+        email: safeStr(data.email),
+        whatsapp: safeStr(data.whatsapp),
+      };
+
+      let cleaned = mergeAnswersPreservingIdentity(data.answers, null, topLevelFallback);
+
+      // Si el navegador guardó un snapshot local más reciente antes de entrar en suspensión, fusionarlo sin borrar campos existentes
+      try {
+        const rawSnap = localStorage.getItem(`interpres_ai_rfi_snapshot_${id}`);
+        if (rawSnap) {
+          const parsedSnap = JSON.parse(rawSnap);
+          const firestoreMs = (data.updatedAt?.seconds || data.createdAt?.seconds || 0) * 1000;
+          if (parsedSnap?.answers && Number(parsedSnap.updatedAtMs || 0) > firestoreMs) {
+            cleaned = mergeAnswersPreservingIdentity(cleaned, parsedSnap.answers, topLevelFallback);
+          }
+        }
+      } catch {}
+
+      // Si faltan datos de contacto pero existe un clientId vinculado, recuperarlos de 'clients'
+      if (
+        effectiveClientId &&
+        (!cleaned.companyName.trim() || !cleaned.contactName.trim() || !cleaned.contactEmail.trim())
+      ) {
         try {
-          const rawSnap = localStorage.getItem(`interpres_ai_rfi_snapshot_${id}`);
-          if (rawSnap) {
-            const parsedSnap = JSON.parse(rawSnap);
-            const firestoreMs = (data.updatedAt?.seconds || data.createdAt?.seconds || 0) * 1000;
-            if (parsedSnap?.answers && Number(parsedSnap.updatedAtMs || 0) > firestoreMs) {
-              cleaned = sanitizeLegacyAnswers({
-                ...cleaned,
-                ...parsedSnap.answers,
-              });
-              setDoc(
-                doc(db, "briefings", id),
-                { answers: cleaned, updatedAt: serverTimestamp() },
-                { merge: true }
-              ).catch(() => {});
-            }
+          const clientSnap = await getDoc(doc(db, "clients", effectiveClientId));
+          if (clientSnap.exists()) {
+            const c = clientSnap.data();
+            cleaned = mergeAnswersPreservingIdentity(cleaned, null, {
+              companyName: safeStr(c.companyName),
+              clientName: safeStr(c.name),
+              email: safeStr(c.email),
+              whatsapp: safeStr(c.phone || c.whatsapp),
+            });
           }
         } catch {}
-
-        const resumeSec =
-          data.completionMode === "manual" && typeof data.answers?.lastActiveSection === "number"
-            ? clampSection(data.answers.lastActiveSection, getFirstIncompleteSection(cleaned))
-            : resolveResumeSection(cleaned);
-        const syncedAnswers: AiBriefingAnswers = {
-          ...cleaned,
-          lastActiveSection: resumeSec,
-        };
-        setAnswers(syncedAnswers);
-        answersRef.current = syncedAnswers;
-        setActiveSection(resumeSec);
-        activeSectionRef.current = resumeSec;
-
-        if (
-          cleaned.operatingHours !== (data.answers.operatingHours || "") ||
-          cleaned.operatingLanguages !== (data.answers.operatingLanguages || "") ||
-          !Array.isArray(data.answers.targetUsers) ||
-          !Array.isArray(data.answers.channels)
-        ) {
-          setDoc(doc(db, "briefings", id), { answers: syncedAnswers }, { merge: true }).catch(() => {});
-        }
       }
+
+      const resumeSec =
+        data.completionMode === "manual" && typeof data.answers?.lastActiveSection === "number"
+          ? clampSection(data.answers.lastActiveSection, getFirstIncompleteSection(cleaned))
+          : resolveResumeSection(cleaned);
+
+      const syncedAnswers: AiBriefingAnswers = {
+        ...cleaned,
+        lastActiveSection: resumeSec,
+      };
+      setAnswers(syncedAnswers);
+      answersRef.current = syncedAnswers;
+      setActiveSection(resumeSec);
+      activeSectionRef.current = resumeSec;
+
+      if (hasValidCoverIdentity(syncedAnswers)) {
+        verifiedCoverRef.current = {
+          companyName: syncedAnswers.companyName.trim(),
+          contactName: syncedAnswers.contactName.trim(),
+          contactEmail: syncedAnswers.contactEmail.trim(),
+          contactPhone: syncedAnswers.contactPhone.trim(),
+          privacyConsentAccepted: true,
+          privacyConsentAcceptedAt: syncedAnswers.privacyConsentAcceptedAt || "",
+        };
+      }
+
+      if (
+        hasValidCoverIdentity(syncedAnswers) &&
+        (cleaned.operatingHours !== (data.answers?.operatingHours || "") ||
+          cleaned.operatingLanguages !== (data.answers?.operatingLanguages || "") ||
+          !Array.isArray(data.answers?.targetUsers) ||
+          !Array.isArray(data.answers?.channels))
+      ) {
+        setDoc(doc(db, "briefings", id), { answers: syncedAnswers }, { merge: true }).catch(() => {});
+      }
+
+      // CANDADO OBLIGATORIO DE PORTADA: Nadie entra al workspace ni da por enviado sin Identidad + Privacidad aceptada
+      if (!hasValidCoverIdentity(syncedAnswers)) {
+        localStorage.setItem(storageDraftKey, id);
+        setStep("welcome");
+        setWelcomeError(
+          "Por seguridad y trazabilidad, confirma Empresa, Nombre del contacto, Correo electrónico y el Aviso de Privacidad para continuar con este diagnóstico."
+        );
+        return;
+      }
+
       if (data.status === "completed") {
         hasSentTelegramRef.current = true;
         localStorage.removeItem(storageDraftKey);
@@ -392,7 +551,7 @@ const PublicAiBriefing: React.FC = () => {
         if (draftParam) {
           const snap = await getDoc(doc(db, "briefings", draftParam));
           if (snap.exists()) {
-            applyLoadedDraft(snap.id, snap.data());
+            await applyLoadedDraft(snap.id, snap.data());
             setLoadingInit(false);
             return;
           }
@@ -418,7 +577,7 @@ const PublicAiBriefing: React.FC = () => {
               const tB = b.data.updatedAt?.seconds || b.data.createdAt?.seconds || 0;
               return tB - tA;
             });
-            applyLoadedDraft(clientDrafts[0].id, clientDrafts[0].data);
+            await applyLoadedDraft(clientDrafts[0].id, clientDrafts[0].data);
             setLoadingInit(false);
             return;
           }
@@ -429,7 +588,7 @@ const PublicAiBriefing: React.FC = () => {
         if (rememberedId) {
           const remSnap = await getDoc(doc(db, "briefings", rememberedId));
           if (remSnap.exists() && remSnap.data()?.status === "draft") {
-            applyLoadedDraft(remSnap.id, remSnap.data());
+            await applyLoadedDraft(remSnap.id, remSnap.data());
             setLoadingInit(false);
             return;
           } else {
@@ -447,7 +606,7 @@ const PublicAiBriefing: React.FC = () => {
               companyName: c.companyName || prev.companyName,
               contactName: c.name || prev.contactName,
               contactEmail: c.email || prev.contactEmail,
-              contactPhone: c.phone || prev.contactPhone,
+              contactPhone: c.phone || c.whatsapp || prev.contactPhone,
             }));
           }
         }
@@ -548,6 +707,32 @@ const PublicAiBriefing: React.FC = () => {
     ): Promise<string> => {
       setSavingDraft(true);
       try {
+        // Blindaje anti-borrado: jamás permitir que campos de portada ya verificados se sobrescriban en blanco
+        const coverGuard = verifiedCoverRef.current;
+        const protectedAnswers: AiBriefingAnswers = {
+          ...nextAnswers,
+          companyName: nextAnswers.companyName.trim() || coverGuard?.companyName || "",
+          contactName: nextAnswers.contactName.trim() || coverGuard?.contactName || "",
+          contactEmail: nextAnswers.contactEmail.trim() || coverGuard?.contactEmail || "",
+          contactPhone: nextAnswers.contactPhone.trim() || coverGuard?.contactPhone || "",
+          privacyConsentAccepted: Boolean(
+            nextAnswers.privacyConsentAccepted || coverGuard?.privacyConsentAccepted
+          ),
+          privacyConsentAcceptedAt:
+            nextAnswers.privacyConsentAcceptedAt || coverGuard?.privacyConsentAcceptedAt || "",
+        };
+
+        if (hasValidCoverIdentity(protectedAnswers)) {
+          verifiedCoverRef.current = {
+            companyName: protectedAnswers.companyName.trim(),
+            contactName: protectedAnswers.contactName.trim(),
+            contactEmail: protectedAnswers.contactEmail.trim(),
+            contactPhone: protectedAnswers.contactPhone.trim(),
+            privacyConsentAccepted: true,
+            privacyConsentAcceptedAt: protectedAnswers.privacyConsentAcceptedAt || "",
+          };
+        }
+
         const computedMode =
           modeOverride ||
           (usedVoiceOnce && usedManualOnce
@@ -563,12 +748,12 @@ const PublicAiBriefing: React.FC = () => {
           status: statusOverride,
           completionMode: computedMode,
           clientId: linkedClientIdRef.current || clientId || "",
-          companyName: nextAnswers.companyName.trim(),
-          clientName: nextAnswers.contactName.trim(),
-          email: nextAnswers.contactEmail.trim(),
-          whatsapp: nextAnswers.contactPhone.trim(),
+          companyName: protectedAnswers.companyName.trim(),
+          clientName: protectedAnswers.contactName.trim(),
+          email: protectedAnswers.contactEmail.trim(),
+          whatsapp: protectedAnswers.contactPhone.trim(),
           voiceDurationSeconds: currentVoiceSecs,
-          answers: nextAnswers,
+          answers: protectedAnswers,
           updatedAt: serverTimestamp(),
         };
 
@@ -581,7 +766,7 @@ const PublicAiBriefing: React.FC = () => {
         }
 
         if (currentId) {
-          saveLocalSnapshot(currentId, nextAnswers);
+          saveLocalSnapshot(currentId, protectedAnswers);
           await setDoc(doc(db, "briefings", currentId), payload, { merge: true });
           if (statusOverride === "completed") {
             localStorage.removeItem(storageDraftKey);
@@ -595,7 +780,7 @@ const PublicAiBriefing: React.FC = () => {
           const created = await addDoc(collection(db, "briefings"), payload);
           setBriefingId(created.id);
           briefingIdRef.current = created.id;
-          saveLocalSnapshot(created.id, nextAnswers);
+          saveLocalSnapshot(created.id, protectedAnswers);
           setSearchParams({ draft: created.id }, { replace: true });
           if (statusOverride === "completed") {
             localStorage.removeItem(storageDraftKey);
@@ -749,22 +934,24 @@ const PublicAiBriefing: React.FC = () => {
     setVoiceCompletedBanner(false);
     setUsedVoiceOnce(true);
 
-    // Combinar memoria en vivo con el borrador remoto más reciente por si el navegador despertó tras suspensión
-    let freshAnswers: AiBriefingAnswers = {
-      ...answersRef.current,
-      ...(currentAns || {}),
-    };
+    // Combinar memoria en vivo con el borrador remoto más reciente sin sobrescribir campos de portada ya guardados
+    let freshAnswers: AiBriefingAnswers = mergeAnswersPreservingIdentity(
+      answersRef.current,
+      currentAns || null
+    );
     try {
       const latestSnap = await getDoc(doc(db, "briefings", targetBriefingId));
-      if (latestSnap.exists() && latestSnap.data()?.answers) {
-        const remoteAns = sanitizeLegacyAnswers(latestSnap.data().answers);
-        freshAnswers = sanitizeLegacyAnswers({
-          ...remoteAns,
-          ...answersRef.current,
+      if (latestSnap.exists()) {
+        const snapData = latestSnap.data();
+        freshAnswers = mergeAnswersPreservingIdentity(snapData?.answers, freshAnswers, {
+          companyName: safeStr(snapData?.companyName),
+          clientName: safeStr(snapData?.clientName),
+          email: safeStr(snapData?.email),
+          whatsapp: safeStr(snapData?.whatsapp),
         });
       }
     } catch {
-      // Si hay latencia momentánea, continuar con answersRef.current
+      // Si hay latencia momentánea, continuar con freshAnswers
     }
 
     const resumeSec = resolveResumeSection(freshAnswers);
@@ -1057,12 +1244,41 @@ const PublicAiBriefing: React.FC = () => {
   };
 
   const handleFinalSubmit = async () => {
+    const coverGuard = verifiedCoverRef.current;
+    const effectiveAnswers: AiBriefingAnswers = {
+      ...answersRef.current,
+      ...answers,
+      companyName: answers.companyName.trim() || coverGuard?.companyName || "",
+      contactName: answers.contactName.trim() || coverGuard?.contactName || "",
+      contactEmail: answers.contactEmail.trim() || coverGuard?.contactEmail || "",
+      contactPhone: answers.contactPhone.trim() || coverGuard?.contactPhone || "",
+      privacyConsentAccepted: Boolean(
+        answers.privacyConsentAccepted || coverGuard?.privacyConsentAccepted
+      ),
+      privacyConsentAcceptedAt:
+        answers.privacyConsentAcceptedAt || coverGuard?.privacyConsentAcceptedAt || "",
+    };
+
+    // Validación final inquebrantable antes de enviar el RFI
+    if (!hasValidCoverIdentity(effectiveAnswers)) {
+      setAnswers(effectiveAnswers);
+      answersRef.current = effectiveAnswers;
+      setWelcomeError(
+        "Antes de enviar tu diagnóstico, por favor completa Empresa solicitante, Nombre del contacto, Correo electrónico y acepta el Aviso de Privacidad. Todas tus respuestas de las 10 etapas están resguardadas."
+      );
+      setStep("welcome");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    setAnswers(effectiveAnswers);
+    answersRef.current = effectiveAnswers;
     captureElapsedVoiceSeconds(true);
     voiceRef.current?.stop();
     setSubmittingFinal(true);
     try {
-      await syncAiProspectToClients(answers);
-      await persistDraft(answers, briefingId, "completed");
+      await syncAiProspectToClients(effectiveAnswers);
+      await persistDraft(effectiveAnswers, briefingId, "completed");
 
       const computedMode: "voice" | "manual" | "hybrid" =
         usedVoiceOnce && usedManualOnce
@@ -1071,20 +1287,20 @@ const PublicAiBriefing: React.FC = () => {
           ? "voice"
           : "manual";
       const filledCount = AI_RFI_SECTIONS.filter((s) =>
-        isSectionFilled(answers, s.number)
+        isSectionFilled(effectiveAnswers, s.number)
       ).length;
 
       await sendTelegramAiBriefingNotification({
-        companyName: answers.companyName.trim(),
-        contactName: answers.contactName.trim(),
-        contactEmail: answers.contactEmail.trim(),
-        contactPhone: answers.contactPhone.trim(),
+        companyName: effectiveAnswers.companyName.trim(),
+        contactName: effectiveAnswers.contactName.trim(),
+        contactEmail: effectiveAnswers.contactEmail.trim(),
+        contactPhone: effectiveAnswers.contactPhone.trim(),
         completionMode: computedMode,
         completedSectionsCount: filledCount,
-        businessProblem: answers.businessProblem,
-        estimatedBudget: answers.estimatedBudget,
-        idealLaunchDate: answers.idealLaunchDate,
-        attachmentsCount: (answers.attachments || []).length,
+        businessProblem: effectiveAnswers.businessProblem,
+        estimatedBudget: effectiveAnswers.estimatedBudget,
+        idealLaunchDate: effectiveAnswers.idealLaunchDate,
+        attachmentsCount: (effectiveAnswers.attachments || []).length,
         isUpdate: hasSentTelegramRef.current,
       });
       hasSentTelegramRef.current = true;
