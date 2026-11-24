@@ -81,6 +81,7 @@ export interface AiPricingPackageOption {
   subtitle: string;
   setupPriceMxn: number;
   monthlyRetainerMxn: number;
+  monthlyRetainerBreakdown?: string;
   estimatedWeeks: string;
   idealFor: string;
   deliverables: string[];
@@ -93,16 +94,36 @@ export interface AiSuggestedQuoteItem {
   billingType: "once" | "monthly";
 }
 
+export interface AiClientQuestionResponse {
+  question: string;
+  strategicAnswer: string;
+}
+
+export interface AiSecurityArchitectureSpec {
+  riskTier: string;
+  recommendedLayers: string[];
+  dataGovernanceAndRetention: string;
+}
+
+export interface AiDeterministicVsAiSplit {
+  deterministicScope: string;
+  aiCognitiveScope: string;
+}
+
 export interface AiPreDiagnostic {
   complexityLevel: "Baja" | "Media" | "Alta" | "Enterprise";
+  solutionArchetype?: string;
   executiveSummary: string;
   budgetFitStatus?: string;
   budgetVsNeedsAnalysis?: string;
+  pricingRationale?: string;
   whatCanBeDone?: string[];
+  deterministicVsAiSplit?: AiDeterministicVsAiSplit;
   recommendedInterpresLines?: string[];
   commercialPitchAndHowToOffer?: string;
   roiArgument?: string;
   recommendedArchitecture: string;
+  securityArchitecture?: AiSecurityArchitectureSpec;
   stepByStepIntegrationPlan?: string[];
   pricingPackagesMxn?: AiPricingPackageOption[];
   suggestedQuoteItems?: AiSuggestedQuoteItem[];
@@ -110,6 +131,7 @@ export interface AiPreDiagnostic {
   criticalRisks: string[];
   mvpScope: string[];
   phase2Scope: string[];
+  clientQuestionsResponses?: AiClientQuestionResponse[];
   followUpQuestions: string[];
   estimatedImplementationWeeks: string;
   customNotesUsed?: string;

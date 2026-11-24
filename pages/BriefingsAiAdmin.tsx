@@ -61,6 +61,7 @@ import {
   X,
   Save,
   Languages,
+  ShieldCheck,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -309,8 +310,10 @@ const BriefingsAiAdmin: React.FC = () => {
     ];
     if (monthly > 0) {
       initialItems.push({
-        description: "Póliza Mensual de Infraestructura, Soporte y Consumo IA",
-        details: "Monitoreo continuo, servidor seguro, ajustes evolutivos y bolsa operativa de procesamiento IA.",
+        description: "Póliza Mensual de Infraestructura, Ciberseguridad, Consumo IA y Soporte",
+        details:
+          safeStr(pkg.monthlyRetainerBreakdown).trim() ||
+          "Monitoreo continuo, infraestructura segura en Google Cloud/Firebase, capas de ciberseguridad activas y bolsa operativa de procesamiento IA.",
         quantity: 1,
         price: monthly,
         billingType: "monthly",
@@ -1042,6 +1045,11 @@ const BriefingsAiAdmin: React.FC = () => {
                       <span className="px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-extrabold">
                         Complejidad: {selectedBriefing.aiPreDiagnostic.complexityLevel}
                       </span>
+                      {selectedBriefing.aiPreDiagnostic.solutionArchetype && (
+                        <span className="px-3.5 py-1.5 rounded-full bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 text-xs font-extrabold">
+                          Tipo de Solución: {selectedBriefing.aiPreDiagnostic.solutionArchetype}
+                        </span>
+                      )}
                       <span className="px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold">
                         Implementación estimada: {selectedBriefing.aiPreDiagnostic.estimatedImplementationWeeks}
                       </span>
@@ -1151,6 +1159,14 @@ const BriefingsAiAdmin: React.FC = () => {
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                               Haz clic en <strong>"Revisar y Editar Propuesta"</strong> en cualquiera de las opciones para ajustar precios, entregables, IVA, descuentos y condiciones antes de crear o descargar la cotización.
                             </p>
+                            {selectedBriefing.aiPreDiagnostic.pricingRationale && (
+                              <div className="mt-3 p-3.5 rounded-xl bg-slate-50 dark:bg-dark-bg/70 border border-slate-200 dark:border-dark-border text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                                <strong className="text-slate-900 dark:text-white">
+                                  Criterio de Economía Unitaria y Congruencia de Costos:{" "}
+                                </strong>
+                                {selectedBriefing.aiPreDiagnostic.pricingRationale}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1195,7 +1211,13 @@ const BriefingsAiAdmin: React.FC = () => {
                                     <div className="text-xs font-bold text-indigo-600 dark:text-indigo-300 mt-1">
                                       + Póliza mensual: {formatMxn(pkg.monthlyRetainerMxn)}/mes
                                     </div>
-                                    <div className="text-[11px] text-gray-500 mt-0.5">
+                                    {pkg.monthlyRetainerBreakdown && (
+                                      <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 bg-white/70 dark:bg-dark-surface/60 p-2 rounded-lg border border-gray-200/60 dark:border-dark-border leading-snug">
+                                        <strong className="text-gray-800 dark:text-gray-200">Desglose mensual: </strong>
+                                        {pkg.monthlyRetainerBreakdown}
+                                      </p>
+                                    )}
+                                    <div className="text-[11px] text-gray-500 mt-1">
                                       Entrega estimada: <strong>{pkg.estimatedWeeks}</strong>
                                     </div>
                                   </div>
@@ -1310,6 +1332,30 @@ const BriefingsAiAdmin: React.FC = () => {
                       </p>
                     </div>
 
+                    {selectedBriefing.aiPreDiagnostic.deterministicVsAiSplit && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-dark-bg/70 border border-slate-200 dark:border-dark-border space-y-1.5">
+                          <h5 className="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase flex items-center gap-1.5">
+                            <Cpu className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>Motor Determinista / Reglas Exactas (Sin Alucinación)</span>
+                          </h5>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            {selectedBriefing.aiPreDiagnostic.deterministicVsAiSplit.deterministicScope}
+                          </p>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/70 dark:border-violet-800/40 space-y-1.5">
+                          <h5 className="font-bold text-violet-800 dark:text-violet-300 text-xs uppercase flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+                            <span>Capa Cognitiva IA (Google Gemini sobre Vertex AI)</span>
+                          </h5>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            {selectedBriefing.aiPreDiagnostic.deterministicVsAiSplit.aiCognitiveScope}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {toStringArray(selectedBriefing.aiPreDiagnostic.stepByStepIntegrationPlan).length > 0 && (
                       <div className="p-4 rounded-xl bg-gray-50 dark:bg-dark-bg/70 border border-gray-200/70 dark:border-dark-border space-y-2">
                         <div className="text-[11px] font-bold uppercase text-indigo-600 dark:text-indigo-300">
@@ -1351,6 +1397,81 @@ const BriefingsAiAdmin: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* 4B. Enterprise Cybersecurity & Data Governance Shield (10-Layer Standard) */}
+                  {selectedBriefing.aiPreDiagnostic.securityArchitecture && (
+                    <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 border border-emerald-200/80 dark:border-emerald-900/50 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 dark:border-dark-border pb-3">
+                        <h4 className="text-sm font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>5. Arquitectura de Ciberseguridad y Gobernanza de Datos (Estándar Interpres Digital)</span>
+                        </h4>
+                        {selectedBriefing.aiPreDiagnostic.securityArchitecture.riskTier && (
+                          <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-extrabold">
+                            Nivel de Riesgo / Blindaje: {selectedBriefing.aiPreDiagnostic.securityArchitecture.riskTier}
+                          </span>
+                        )}
+                      </div>
+
+                      {toStringArray(selectedBriefing.aiPreDiagnostic.securityArchitecture.recommendedLayers).length > 0 && (
+                        <div>
+                          <div className="text-[11px] font-bold uppercase text-gray-400 mb-2">
+                            Capas de Seguridad Activas Recomendadas para este Proyecto
+                          </div>
+                          <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-200">
+                            {toStringArray(
+                              selectedBriefing.aiPreDiagnostic.securityArchitecture.recommendedLayers
+                            ).map((layer, lIdx) => (
+                              <li
+                                key={lIdx}
+                                className="p-2.5 rounded-xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 flex items-start gap-2"
+                              >
+                                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                                <span>{layer}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {selectedBriefing.aiPreDiagnostic.securityArchitecture.dataGovernanceAndRetention && (
+                        <div className="p-4 rounded-xl bg-gray-50 dark:bg-dark-bg/70 border border-gray-200/70 dark:border-dark-border space-y-1">
+                          <div className="text-[11px] font-bold uppercase text-gray-500 dark:text-gray-400">
+                            Gobernanza, Residencia, Cero Entrenamiento vs. Conservación de Datos y LFPDPPP / NDA
+                          </div>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            {selectedBriefing.aiPreDiagnostic.securityArchitecture.dataGovernanceAndRetention}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 4C. Direct Strategic Answers to Client's Explicit RFI Questions */}
+                  {Array.isArray(selectedBriefing.aiPreDiagnostic.clientQuestionsResponses) &&
+                    selectedBriefing.aiPreDiagnostic.clientQuestionsResponses.length > 0 && (
+                      <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 border border-indigo-200/80 dark:border-indigo-900/50 space-y-4">
+                        <h4 className="text-sm font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-2 border-b border-gray-100 dark:border-dark-border pb-3">
+                          <HelpCircle className="w-4 h-4" />
+                          <span>Respuestas Estratégicas a las Preguntas Directas del Cliente en el RFI</span>
+                        </h4>
+                        <div className="space-y-3">
+                          {selectedBriefing.aiPreDiagnostic.clientQuestionsResponses.map((qa, qIdx) => (
+                            <div
+                              key={qIdx}
+                              className="p-4 rounded-xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40 space-y-1.5"
+                            >
+                              <div className="text-xs font-black text-indigo-900 dark:text-indigo-200">
+                                {qIdx + 1}. {safeStr(qa?.question)}
+                              </div>
+                              <p className="text-xs text-gray-700 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
+                                {safeStr(qa?.strategicAnswer)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                   {/* 5. Critical Risks & Specialist Follow-up Questions */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

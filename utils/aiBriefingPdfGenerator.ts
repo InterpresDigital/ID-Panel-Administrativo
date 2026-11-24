@@ -410,18 +410,27 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
     currentY = (doc as any).lastAutoTable.finalY + 6;
   };
 
-  addBlockTable("1. Diagnóstico e Interpretación Presupuesto vs. Alcance", [
+  const block1Rows: [string, string][] = [];
+  if (diag.solutionArchetype) {
+    block1Rows.push(["Tipo / Arquetipo de solución", safeStr(diag.solutionArchetype)]);
+  }
+  block1Rows.push(
     ["Diagnóstico ejecutivo", safeStr(diag.executiveSummary)],
     ["Presupuesto declarado por cliente", safeStr(a.estimatedBudget || "Por definir")],
     ["Ajuste presupuestal", safeStr(diag.budgetFitStatus || "Evaluado")],
-    ["Análisis de presupuesto vs. necesidades", safeStr(diag.budgetVsNeedsAnalysis)],
-    [
-      "Qué se puede hacer",
-      toStringArray(diag.whatCanBeDone)
-        .map((x) => `• ${cleanPdfText(x)}`)
-        .join("\n"),
-    ],
+    ["Análisis de presupuesto vs. necesidades", safeStr(diag.budgetVsNeedsAnalysis)]
+  );
+  if (diag.pricingRationale) {
+    block1Rows.push(["Economía unitaria y congruencia de costos", safeStr(diag.pricingRationale)]);
+  }
+  block1Rows.push([
+    "Qué se puede hacer",
+    toStringArray(diag.whatCanBeDone)
+      .map((x) => `• ${cleanPdfText(x)}`)
+      .join("\n"),
   ]);
+
+  addBlockTable("1. Diagnóstico e Interpretación Presupuesto vs. Alcance", block1Rows);
 
   addBlockTable("2. Qué Ofrecer y Estrategia Comercial de Cierre", [
     ["Líneas Interpres recomendadas", toStringArray(diag.recommendedInterpresLines).join("  •  ")],
@@ -465,7 +474,7 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
           "Pago Único\n(Setup)",
           "Póliza\nMensual",
           "Tiempo\nEst.",
-          "Entregables Clave",
+          "Entregables y Desglose Mensual",
         ],
       ],
       headStyles: {
@@ -494,25 +503,45 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
         3: { cellWidth: 20 },
         4: { cellWidth: contentWidth - 118 },
       },
-      body: diag.pricingPackagesMxn.map((pkg) => [
-        `${cleanPdfText(pkg.tierName)}\n(${cleanPdfText(pkg.subtitle)})`,
-        formatMxnPdf(pkg.setupPriceMxn),
-        `${formatMxnPdf(pkg.monthlyRetainerMxn)}/mes`,
-        cleanPdfText(pkg.estimatedWeeks),
-        toStringArray(pkg.deliverables)
+      body: diag.pricingPackagesMxn.map((pkg) => {
+        const delivText = toStringArray(pkg.deliverables)
           .map((d) => `• ${cleanPdfText(d)}`)
-          .join("\n"),
-      ]),
+          .join("\n");
+        const breakdownText = safeStr(pkg.monthlyRetainerBreakdown).trim()
+          ? `\n\nDesglose póliza mensual:\n${cleanPdfText(pkg.monthlyRetainerBreakdown)}`
+          : "";
+        return [
+          `${cleanPdfText(pkg.tierName)}\n(${cleanPdfText(pkg.subtitle)})`,
+          formatMxnPdf(pkg.setupPriceMxn),
+          `${formatMxnPdf(pkg.monthlyRetainerMxn)}/mes`,
+          cleanPdfText(pkg.estimatedWeeks),
+          `${delivText}${breakdownText}`,
+        ];
+      }),
     });
 
     currentY = (doc as any).lastAutoTable.finalY + 6;
   }
 
-  addBlockTable("4. Arquitectura Técnica y Cómo Integrarlo", [
+  const block4Rows: [string, string][] = [
     ["Arquitectura recomendada", safeStr(diag.recommendedArchitecture)],
+  ];
+  if (diag.deterministicVsAiSplit) {
+    block4Rows.push(
+      [
+        "Motor determinista / reglas exactas",
+        safeStr(diag.deterministicVsAiSplit.deterministicScope),
+      ],
+      [
+        "Capa cognitiva IA (Google Gemini)",
+        safeStr(diag.deterministicVsAiSplit.aiCognitiveScope),
+      ]
+    );
+  }
+  block4Rows.push(
     ["Ruta de integración paso a paso", toStringArray(diag.stepByStepIntegrationPlan).join("\n")],
     [
-      "Alcance Fase 1 (MVP)",
+      "Alcance Fase 1 (PoC / MVP)",
       toStringArray(diag.mvpScope)
         .map((x) => `• ${cleanPdfText(x)}`)
         .join("\n"),
@@ -522,10 +551,42 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
       toStringArray(diag.phase2Scope)
         .map((x) => `• ${cleanPdfText(x)}`)
         .join("\n"),
-    ],
-  ]);
+    ]
+  );
 
-  addBlockTable("5. Riesgos Críticos y Preguntas para Reunión de Cierre", [
+  addBlockTable("4. Arquitectura Técnica y Cómo Integrarlo", block4Rows);
+
+  if (diag.securityArchitecture) {
+    addBlockTable("5. Arquitectura de Ciberseguridad y Gobernanza de Datos", [
+      ["Nivel de criticidad / blindaje", safeStr(diag.securityArchitecture.riskTier)],
+      [
+        "Capas de seguridad recomendadas",
+        toStringArray(diag.securityArchitecture.recommendedLayers)
+          .map((l) => `• ${cleanPdfText(l)}`)
+          .join("\n"),
+      ],
+      [
+        "Gobernanza, residencia y retención",
+        safeStr(diag.securityArchitecture.dataGovernanceAndRetention),
+      ],
+    ]);
+  }
+
+  const block6Rows: [string, string][] = [];
+  if (Array.isArray(diag.clientQuestionsResponses) && diag.clientQuestionsResponses.length > 0) {
+    block6Rows.push([
+      "Respuestas a preguntas directas del cliente",
+      diag.clientQuestionsResponses
+        .map(
+          (qa, idx) =>
+            `${idx + 1}. ${cleanPdfText(qa?.question)}\nRespuesta: ${cleanPdfText(
+              qa?.strategicAnswer
+            )}`
+        )
+        .join("\n\n"),
+    ]);
+  }
+  block6Rows.push(
     [
       "Riesgos y dependencias a cuidar",
       toStringArray(diag.criticalRisks)
@@ -537,8 +598,15 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
       toStringArray(diag.followUpQuestions)
         .map((x) => `• ${cleanPdfText(x)}`)
         .join("\n"),
-    ],
-  ]);
+    ]
+  );
+
+  addBlockTable(
+    diag.securityArchitecture
+      ? "6. Respuestas al Cliente, Riesgos y Preguntas de Descubrimiento"
+      : "5. Riesgos Críticos y Preguntas para Reunión de Cierre",
+    block6Rows
+  );
 
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
