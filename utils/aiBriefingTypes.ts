@@ -79,6 +79,7 @@ export interface AiBriefingAnswers {
 export interface AiPricingPackageOption {
   tierName: string;
   subtitle: string;
+  estimatedEngineeringHours?: number;
   setupPriceMxn: number;
   monthlyRetainerMxn: number;
   monthlyRetainerBreakdown?: string;

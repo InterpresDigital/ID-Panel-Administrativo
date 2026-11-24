@@ -510,11 +510,15 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
         const breakdownText = safeStr(pkg.monthlyRetainerBreakdown).trim()
           ? `\n\nDesglose póliza mensual:\n${cleanPdfText(pkg.monthlyRetainerBreakdown)}`
           : "";
+        const hoursLabel =
+          Number(pkg.estimatedEngineeringHours) > 0
+            ? `\n(~${pkg.estimatedEngineeringHours} hrs ing.)`
+            : "";
         return [
           `${cleanPdfText(pkg.tierName)}\n(${cleanPdfText(pkg.subtitle)})`,
           formatMxnPdf(pkg.setupPriceMxn),
           `${formatMxnPdf(pkg.monthlyRetainerMxn)}/mes`,
-          cleanPdfText(pkg.estimatedWeeks),
+          `${cleanPdfText(pkg.estimatedWeeks)}${hoursLabel}`,
           `${delivText}${breakdownText}`,
         ];
       }),

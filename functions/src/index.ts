@@ -172,17 +172,31 @@ PRINCIPIOS UNIVERSALES DE INGENIERÍA DE SOLUCIONES (OBLIGATORIOS PARA CUALQUIER
    - **Capa 9 — Doble Factor Obligatorio (\`2FA TOTP\` Google/Microsoft Authenticator) y Cierre Automático (\`15 min\`):** Destrucción automática de sesión y caché tras 15 minutos de inactividad.
    - **Capa 10 — Bitácora Forense Inmutable y Marco Legal (\`NDA\` + \`LFPDPPP\`):** Sello inborrable de auditoría (usuario, fecha/hora exacta, IP, equipo, versión de archivo o aprobación ejecutada), respaldado por convenio de confidencialidad bilateral y cumplimiento LFPDPPP (más reglas de residencia/transferencia transfronteriza cuando aplique).
 
-6. **COTIZADOR CONGRUENTE BASADO EN ECONOMÍA UNITARIA REAL (MXN + IVA):**
-   - **Implementación Inicial (Pago Único / Setup):** Debe reflejar con realismo las horas de ingeniería de cada alcance:
-     * **Opción 1 (Piloto / PoC / MVP de Entrada):** Acotado, de bajo riesgo y financieramente congruente con el presupuesto del cliente para demostrar valor medible rápido (incluyendo Fase 0 de viabilidad si hay sistemas externos por auditar).
-     * **Opción 2 (Solución Integral Recomendada):** Resuelve de punta a punta el flujo operativo principal con controles, seguridad y panel/integraciones clave.
-     * **Opción 3 (Ecosistema Completo / Escalamiento):** Plataforma multiusuario avanzada, automatización expandida e inteligencia operativa completa (*Intentional Systems*).
-   - **Póliza Mensual Recurrente (PROHIBIDO INFLAR MENSUALIDADES SIN JUSTIFICACIÓN):**
-     * Calcula \`monthlyRetainerMxn\` estrictamente en proporción al **número real de usuarios, volumen mensual de operaciones/mensajes, costo real de nube + tokens Gemini, capas de seguridad activas y nivel de soporte**:
-       - *Volumen bajo / uso interno ligero (1 a 3 usuarios, <500 ejecuciones/mes):* Póliza ligera y creíble (ej. \`$1,200 a $2,800 MXN/mes\`).
-       - *Volumen medio (4 a 15 usuarios o 500 a 5,000 interacciones/mes):* Póliza media (ej. \`$3,000 a $5,800 MXN/mes\`).
-       - *Volumen alto / misión crítica (+15 usuarios, miles de transacciones, multi-sede o bolsa mensual de horas de desarrollo continuo):* Póliza corporativa justificada (\`$6,500 a $15,000+ MXN/mes\`).
-     * En CADA paquete es obligatorio llenar \`monthlyRetainerBreakdown\` desglosando con transparencia qué incluye ese monto mensual (Infraestructura Cloud + Consumo IA estimado + Seguridad activa + Soporte/Mantenimiento).
+6. **METODOLOGÍA DE COSTEO REAL DE MERCADO B2B EN MÉXICO 2026 (BOTTOM-UP ENGINEERING WBS — CERO PRECIOS INVENTADOS O REGALADOS):**
+   PROHIBIDO inventar precios al tanteo, regalar ingeniería compleja a precios de chatbot o inflar precios sin sustento. Debes calcular CADA paquete desde abajo (**Work Breakdown Structure — WBS**) como lo hace un Director de Ingeniería de Software real en México:
+
+   **PASO A — Calcula primero las HORAS REALES DE INGENIERÍA (\`estimatedEngineeringHours\`) sumando cada componente técnico requerido:**
+   - *Levantamiento técnico / auditoría de APIs, licencias y arquitectura (Fase 0):* 8 a 20 h
+   - *Flujo conversacional sencillo (WhatsApp/Web + Sheets):* 12 a 25 h
+   - *Integración de API estándar / Webhook / Google Workspace:* 12 a 25 h por sistema
+   - *Desarrollo de plugins/conectores nativos de escritorio o industriales (ej. .NET, C#, AutoLISP, ERPs cerrados, POS):* 35 a 90 h según alcance
+   - *Motor determinista de reglas complejas, cálculos financieros/fiscales o validación geométrica/técnica:* 30 a 75 h
+   - *Capa Cognitiva en Vertex AI (prompts estructurados, extracción multimodal PDF/imagen, RAG vectorial con Firestore):* 20 a 50 h
+   - *Panel Web Operativo a medida en React + Firebase (roles, historial de versiones, aprobaciones, KPIs):* 35 a 85 h
+   - *Implementación de Ciberseguridad (según capas: 4–8 h para seguridad base PyME; 18–35 h para blindaje corporativo de 8–10 capas con 2FA TOTP, RAM masking, WAF/Geo-Fencing, Bóveda aislada y bitácora forense) + QA y pruebas:* 10 a 35 h
+
+   **PASO B — Multiplica las horas reales por la TARIFA HORARIA REAL DE MERCADO B2B EN MÉXICO (2026, MXN sin IVA) según la especialidad exigida:**
+   - *Nivel 1 — Automatización Estándar / Low-Code / PyME Sencilla:* **\`$800 a $950 MXN / hora\`**
+   - *Nivel 2 — Ingeniería Full-Stack Cloud, Sistemas Web a Medida e IA Empresarial:* **\`$1,050 a $1,300 MXN / hora\`**
+   - *Nivel 3 — Ingeniería Especializada / Industrial / Desktop SDKs / Finanzas Corporativas / Alta Ciberseguridad:* **\`$1,300 a $1,650 MXN / hora\`** (en proyectos especializados o transfronterizos EE. UU./México, jamás cotices horas de ingeniería senior a tarifa de chatbot básico; aunque el sistema lo usen solo 1 o 2 usuarios, el esfuerzo de desarrollo depende de la complejidad de los módulos construidos, NO de cuántos empleados inicien sesión).
+   *(Verifica aritméticamente que \`setupPriceMxn ≈ estimatedEngineeringHours × tarifa_horaria_aplicada\`, redondeando a múltiplos limpios de $500 o $1,000 MXN).*
+
+   **PASO C — Calcula la PÓLIZA MENSUAL REAL (\`monthlyRetainerMxn\`) sumando sus 4 componentes reales de mercado (MXN/mes + IVA):**
+   1. *Infraestructura Cloud, Base de Datos, Respaldos y Dominio/WAF (GCP/Firebase/Cloudflare):* desde \`$300 MXN/mes\` (microempresa) hasta \`$1,500–$3,500 MXN/mes\` (entornos empresariales aislados con WAF/logs).
+   2. *Consumo estimado de IA (Vertex AI / Gemini) y APIs según el volumen mensual real declarado:* calcula el costo real aproximado con margen operativo sano.
+   3. *Operación de Ciberseguridad Activa y Gobernanza:* \`$0–$300/mes\` en nivel básico; \`$1,500–$3,500/mes\` cuando hay 8–10 capas críticas activas (monitoreo WAF, rotación de llaves, auditoría forense, parches).
+   4. *Horas mensuales incluidas de Soporte e Ingeniería Especializada (SLA):* multiplica las horas mensuales de soporte/mantenimiento que requiere esa arquitectura (ej. 1–2 h/mes para un bot sencillo PyME; 4–6 h/mes para mantener una plataforma integral/conectores de software; 8–15 h/mes para evolución continua de un ecosistema industrial/corporativo) por la tarifa horaria correspondiente.
+   *(Nota importante: si la Opción 1 es estrictamente un Diagnóstico de Viabilidad + PoC puntual de evaluación corta, la póliza mensual solo aplica si el cliente decide mantener el piloto en operación continua tras validarlo, y debe indicarse claramente en \`monthlyRetainerBreakdown\`).*
 
 ${customGuidance ? `DIRECTRIZ ESPECÍFICA DEL DIRECTOR COMERCIAL PARA ESTA PROPUESTA:\n"${customGuidance}"\n(Aplica prioritariamente esta directriz en arquitectura, alcance y precios).\n` : ""}
 
@@ -192,12 +206,12 @@ ${JSON.stringify(answers, null, 2)}
 Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, 100% en ESPAÑOL profesional, técnico y claro) con esta estructura exacta:
 {
   "complexityLevel": "Baja" | "Media" | "Alta" | "Enterprise",
-  "solutionArchetype": "Clasificación precisa de la solución (ej. 'Automatización de Ingeniería Híbrida + Copiloto IA', 'Agente Comercial Omnicanal', 'Automatización Back-Office Financiero', 'Sistema Operativo Central + IA')",
-  "estimatedImplementationWeeks": "Ej. 3 a 4 semanas (Fase 1 PoC) / 6 a 8 semanas (Integral)",
+  "solutionArchetype": "Clasificación precisa de la solución según la necesidad real del cliente",
+  "estimatedImplementationWeeks": "Plazo realista según las horas de ingeniería calculadas (ej. '3 a 4 semanas (Fase 1 PoC) / 8 a 10 semanas (Integral)')",
   "budgetFitStatus": "Óptimo" | "Ajustado — Entrar con MVP/Piloto" | "Por definir — Validar con PoC + 3 Escenarios" | "Bajo para alcance total — Acotar a Fase 1",
   "executiveSummary": "Diagnóstico técnico y de negocio objetivo (4 a 6 líneas): cuál es el cuello de botella real basado estrictamente en lo declarado por el cliente, qué requiere automatización determinista vs. IA y cuál es la estrategia correcta.",
-  "budgetVsNeedsAnalysis": "Análisis honesto de viabilidad económica y técnica: cruza el presupuesto y expectativas del cliente contra la complejidad real, explicando por qué conviene arrancar con PoC/MVP si hay dependencias por validar.",
-  "pricingRationale": "Justificación transparente de costos y economía unitaria según el número de usuarios, volumen diario/semanal declarado, complejidad de integraciones y consumo real estimado de nube/IA.",
+  "budgetVsNeedsAnalysis": "Análisis honesto de viabilidad económica y técnica: cruza el presupuesto y expectativas del cliente contra la complejidad de ingeniería real del mercado.",
+  "pricingRationale": "Desglose transparente del costeo WBS de mercado en México: especifica la tarifa horaria aplicada según el nivel de especialización técnica ($MXN/h), el resumen de horas estimadas por bloque de desarrollo para cada opción y por qué la póliza mensual corresponde exactamente a la infraestructura, ciberseguridad y horas de SLA requeridas.",
   "whatCanBeDone": [
     "4 a 6 capacidades concretas, realistas y verificables que SÍ se pueden resolver (distinguiendo qué es directo y qué está sujeto a validación de versiones/licencias si aplica)"
   ],
@@ -206,15 +220,15 @@ Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, 100% en ESP
     "aiCognitiveScope": "Dónde interviene específicamente Google Gemini (sobre Vertex AI) para aportar valor cognitivo real (lectura documental, lenguaje natural, RAG, reportes) respetando siempre la supervisión humana requerida."
   },
   "recommendedInterpresLines": [
-    "Líneas de Interpres Digital aplicables al caso (ej. 'Automatización a Medida & Conectores Nativos', 'Nexia IA Copiloto / Back-Office (Vertex AI)', 'Intentional Systems (Panel Web Firebase)', etc.)"
+    "Líneas de Interpres Digital aplicables al caso"
   ],
   "commercialPitchAndHowToOffer": "Cómo debe presentar y vender esta propuesta Interpres Digital en la reunión: qué enfoque genera máxima confianza en este perfil de comprador y cómo guiarlo al cierre.",
   "roiArgument": "Cálculo de ROI con matemática exacta paso a paso basada en los datos del RFI (ej. horas/día × días/semana × % ahorro = horas recuperadas/semana y al mes), separando claramente datos reales declarados de escenarios ilustrativos y recomendando medir línea base.",
   "recommendedArchitecture": "Arquitectura técnica detallada y coherente con la necesidad real del cliente: flujo extremo a extremo desde la entrada de datos/sistema del cliente, capa determinista, capa cognitiva con modelos vigentes de Google Gemini (Vertex AI), backend/base de datos en Google Cloud & Firebase (o integración con Workspace/software local según corresponda), interfaz de usuario/aprobación humana y canales adecuados.",
   "securityArchitecture": {
-    "riskTier": "Nivel de criticidad de datos del caso (ej. 'Estándar Comercial', 'Alto — Información Financiera/Sensible', 'Crítico — Propiedad Industrial y Confidencialidad Internacional')",
+    "riskTier": "Nivel de criticidad de datos del caso",
     "recommendedLayers": [
-      "Lista de las capas exactas seleccionadas del Estándar de 10 Capas de Interpres Digital adaptadas al cliente (ej. 'Google reCAPTCHA v3 Enterprise + Rate Limiting', 'Doble Factor (2FA TOTP) + Cierre Automático de Sesión (15 min)', 'Anonimización en RAM antes de la IA', 'Modo Oficina Segura (Control IP en 1 clic) + Huella de Equipo y Horario', 'Cloudflare WAF + Geo-Fencing', 'Bóveda Aislada Multi-Tenant + Permisos por Rol (RBAC)', 'Cifrado TLS 1.3 y AES-256', 'Vertex AI Enterprise (Cero Entrenamiento + Zero Data Retention)', 'Bitácora Forense Inmutable + NDA y LFPDPPP')"
+      "Capas exactas seleccionadas del Estándar de 10 Capas de Interpres Digital proporcionales al riesgo real del proyecto"
     ],
     "dataGovernanceAndRetention": "Especificación clara de ubicación/residencia de datos, distinción entre política de Cero Entrenamiento y política de Conservación/Borrado de datos, respaldos, control de acceso y manejo de archivos de prueba/demostración."
   },
@@ -227,51 +241,54 @@ Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, 100% en ESP
   ],
   "pricingPackagesMxn": [
     {
-      "tierName": "Opción 1 — Viabilidad Técnica y Piloto Funcional (PoC / MVP)",
-      "subtitle": "Validación práctica de bajo riesgo sobre el flujo prioritario",
-      "setupPriceMxn": 24000,
-      "monthlyRetainerMxn": 1800,
-      "monthlyRetainerBreakdown": "Desglose mensual transparente: $X infraestructura Google Cloud/Firebase + $Y consumo estimado Vertex AI/Gemini + $Z seguridad activa y soporte técnico base.",
-      "estimatedWeeks": "2 a 3 semanas",
-      "idealFor": "Demostrar resultados medibles y viabilidad técnica antes de escalar la inversión",
+      "tierName": "Opción 1 — [Nombre del Piloto / PoC / MVP acorde al caso]",
+      "subtitle": "Descripción ejecutiva corta del alcance inicial de bajo riesgo",
+      "estimatedEngineeringHours": 0,
+      "setupPriceMxn": 0,
+      "monthlyRetainerMxn": 0,
+      "monthlyRetainerBreakdown": "Desglose exacto en MXN: infraestructura + consumo IA + ciberseguridad + horas mensuales de soporte incluidas.",
+      "estimatedWeeks": "Plazo realista",
+      "idealFor": "Perfil de decisión para esta etapa",
       "deliverables": ["Entregable concreto 1", "Entregable concreto 2", "Entregable concreto 3"]
     },
     {
-      "tierName": "Opción 2 — Solución Integral Recomendada",
-      "subtitle": "Automatización operativa completa, seguridad corporativa y panel de control",
-      "setupPriceMxn": 58000,
-      "monthlyRetainerMxn": 3400,
-      "monthlyRetainerBreakdown": "Desglose mensual transparente acorde al volumen real de usuarios y operaciones.",
-      "estimatedWeeks": "5 a 6 semanas",
-      "idealFor": "Operar el proceso completo con trazabilidad, supervisión y ahorro sostenido",
+      "tierName": "Opción 2 — [Nombre de la Solución Integral Recomendada]",
+      "subtitle": "Descripción ejecutiva corta de la solución completa en producción",
+      "estimatedEngineeringHours": 0,
+      "setupPriceMxn": 0,
+      "monthlyRetainerMxn": 0,
+      "monthlyRetainerBreakdown": "Desglose exacto en MXN: infraestructura + consumo IA + ciberseguridad activa + horas mensuales de SLA de ingeniería.",
+      "estimatedWeeks": "Plazo realista",
+      "idealFor": "Resolver de punta a punta la operación con seguridad y control",
       "deliverables": ["Entregable concreto 1", "Entregable concreto 2", "Entregable concreto 3", "Entregable concreto 4"]
     },
     {
-      "tierName": "Opción 3 — Ecosistema Completo y Escalamiento",
-      "subtitle": "Arquitectura multiusuario expandida, gestión avanzada y evolución continua",
-      "setupPriceMxn": 98000,
-      "monthlyRetainerMxn": 5800,
-      "monthlyRetainerBreakdown": "Desglose mensual transparente incluyendo infraestructura, seguridad avanzada y horas de evolución.",
-      "estimatedWeeks": "7 a 9 semanas",
-      "idealFor": "Escalar el equipo y estandarizar toda la operación a mediano/largo plazo",
+      "tierName": "Opción 3 — [Nombre del Ecosistema Completo / Escalamiento]",
+      "subtitle": "Descripción ejecutiva corta de la plataforma expandida a mediano/largo plazo",
+      "estimatedEngineeringHours": 0,
+      "setupPriceMxn": 0,
+      "monthlyRetainerMxn": 0,
+      "monthlyRetainerBreakdown": "Desglose exacto en MXN: infraestructura escalable + consumo IA + blindaje completo + bolsa mensual de horas de evolución continua.",
+      "estimatedWeeks": "Plazo realista",
+      "idealFor": "Estandarización total, multiusuario y crecimiento sostenido",
       "deliverables": ["Entregable concreto 1", "Entregable concreto 2", "Entregable concreto 3", "Entregable concreto 4"]
     }
   ],
   "suggestedQuoteItems": [
     {
-      "concept": "Concepto principal de implementación recomendado",
+      "concept": "Concepto principal de implementación (de la Opción que mejor encaje para abrir negocio con este cliente)",
       "details": "Descripción ejecutiva clara de entregables y alcance para la cotización formal",
-      "priceMxn": 24000,
+      "priceMxn": 0,
       "billingType": "once"
     },
     {
       "concept": "Póliza Mensual de Infraestructura, Ciberseguridad, Consumo IA y Soporte",
-      "details": "Desglose claro de alojamiento seguro, consumo estimado de IA para su volumen y mantenimiento operativo",
-      "priceMxn": 1800,
+      "details": "Desglose claro de alojamiento seguro, seguridad activa, consumo estimado de IA y horas de soporte",
+      "priceMxn": 0,
       "billingType": "monthly"
     }
   ],
-  "paymentStructureRecommendation": "Esquema de pagos por hitos verificables (ej. anticipo al firmar NDA/contrato, pago contra validación de prototipo/PoC y liquidación contra entrega + inicio de póliza mensual al salir a producción; precios en MXN más IVA).",
+  "paymentStructureRecommendation": "Esquema de pagos por hitos verificables en MXN más IVA.",
   "criticalRisks": [
     "3 a 5 riesgos técnicos, de licenciamiento, calidad de datos o dependencias externas que deben quedar acotados contractualmente"
   ],
@@ -291,7 +308,7 @@ Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, 100% en ESP
     "4 a 6 preguntas técnicas y operativas clave que el especialista de Interpres Digital debe levantar en la sesión de descubrimiento"
   ]
 }
-(IMPORTANTE: Los precios numéricos de arriba son solo ejemplos de formato JSON; calcula montos 100% REALISTAS y CONGRUENTES en MXN según el tamaño, presupuesto, usuarios y volumen específico de este cliente).
+(REGLA CRÍTICA DE COSTOS: Todos los campos \`estimatedEngineeringHours\`, \`setupPriceMxn\`, \`monthlyRetainerMxn\` y \`priceMxn\` en tu respuesta DEBEN ser números enteros positivos mayores a cero calculados rigurosamente con la metodología WBS de los Pasos A, B y C para el mercado real mexicano).
 `;
 
         const responseText = await generateTextWithFallback(ai, prompt, true);

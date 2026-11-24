@@ -1217,8 +1217,15 @@ const BriefingsAiAdmin: React.FC = () => {
                                         {pkg.monthlyRetainerBreakdown}
                                       </p>
                                     )}
-                                    <div className="text-[11px] text-gray-500 mt-1">
-                                      Entrega estimada: <strong>{pkg.estimatedWeeks}</strong>
+                                    <div className="text-[11px] text-gray-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                      <span>
+                                        Entrega estimada: <strong>{pkg.estimatedWeeks}</strong>
+                                      </span>
+                                      {Number(pkg.estimatedEngineeringHours) > 0 && (
+                                        <span className="text-indigo-600 dark:text-indigo-300 font-bold">
+                                          • ~{pkg.estimatedEngineeringHours} hrs ingeniería
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
 
