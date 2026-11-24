@@ -8,44 +8,113 @@ import {
   toAttachmentArray,
   toStringArray,
 } from "./aiBriefingTypes";
-import { loadPdfLogo, drawProportionalLogo } from "./pdfLogoHelper";
+import {
+  loadPdfLogo,
+  drawProportionalLogo,
+  registerCrispPdfFont,
+  LoadedPdfLogo,
+} from "./pdfLogoHelper";
 
 const COLORS = {
-  headerBg: [15, 23, 42] as [number, number, number],
-  accent: [79, 70, 229] as [number, number, number],
-  textDark: [30, 41, 59] as [number, number, number],
-  textGray: [100, 116, 139] as [number, number, number],
-  stripe: [248, 250, 252] as [number, number, number],
+  inkBlack: [10, 15, 25] as [number, number, number], // Tinta negra profunda de máxima legibilidad
+  titleNavy: [15, 23, 42] as [number, number, number], // Slate 900
+  labelSlate: [51, 65, 85] as [number, number, number], // Slate 700 nítido (nunca gris pálido)
+  accent: [79, 70, 229] as [number, number, number], // Indigo 600
+  darkHeaderFill: [30, 41, 59] as [number, number, number], // Slate 800 para encabezados de tabla comparativa
+  cardBg: [248, 250, 252] as [number, number, number], // Fondo suave de tarjeta resumen
+  stripe: [249, 250, 252] as [number, number, number], // Cebra muy sutil para no restar contraste a la tinta
+  border: [203, 213, 225] as [number, number, number], // Borde limpio Slate 300
 };
 
 /**
- * Limpia marcas crudas de Markdown (**negritas**, encabezados ###) y normaliza viñetas
- * para que las celdas de los PDFs ejecutivos luzcan limpias y editoriales.
+ * Limpia marcas crudas de Markdown (**negritas**, encabezados ###), espacios especiales
+ * y normaliza guiones/viñetas para una lectura uniforme y nítida en el PDF.
  */
 const cleanPdfText = (raw?: unknown): string => {
   const txt = safeStr(raw);
   if (!txt) return "";
   return txt
+    .replace(/\u00a0/g, " ")
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/__([^_]+)__/g, "$1")
     .replace(/^#{1,6}\s+/gm, "")
-    .replace(/^\s*-\s+/gm, "• ")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/^\s*[-*]\s+/gm, "• ")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
 };
 
 /**
- * Garantiza que ninguna línea del encabezado oscuro invada jamás la zona izquierda del logotipo (máx. 122 mm).
+ * Garantiza que ninguna línea del encabezado derecho invada jamás el espacio del logotipo.
  */
-const fitHeaderLine = (doc: jsPDF, text: string, maxWidthMm = 122): string => {
+const fitHeaderLine = (doc: jsPDF, text: string, maxWidthMm = 118): string => {
   const clean = text.replace(/\s+/g, " ").trim();
   if (!clean) return "";
   if (doc.getTextWidth(clean) <= maxWidthMm) return clean;
   let clipped = clean;
-  while (clipped.length > 4 && doc.getTextWidth(`${clipped}…`) > maxWidthMm) {
+  while (clipped.length > 4 && doc.getTextWidth(`${clipped}...`) > maxWidthMm) {
     clipped = clipped.slice(0, -1);
   }
-  return `${clipped.trimEnd()}…`;
+  return `${clipped.trimEnd()}...`;
+};
+
+/**
+ * Encabezado corporativo limpio sobre fondo blanco (alineado con Cotizaciones y Contratos):
+ * - Cero líneas blancas fantasma en bordes de página
+ * - Logotipo oficial a color en proporción exacta 4.96:1
+ * - Línea divisoria Índigo corporativa de margen a margen
+ */
+const drawCleanExecutiveHeader = (
+  doc: jsPDF,
+  logo: LoadedPdfLogo | null,
+  fontName: string,
+  title: string,
+  subtitle: string,
+  badgeText?: string
+): number => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  const maxRightWidth = pageWidth - margin - 76;
+
+  drawProportionalLogo(doc, logo, {
+    x: margin,
+    boxTopY: 6,
+    boxHeight: 24,
+    maxWidth: 52,
+    maxHeight: 13.5,
+    fallbackText: "INTERPRES DIGITAL",
+    fallbackColor: COLORS.titleNavy,
+  });
+
+  doc.setFont(fontName, "bold");
+  doc.setFontSize(10.5);
+  doc.setTextColor(...COLORS.titleNavy);
+  doc.text(fitHeaderLine(doc, title, maxRightWidth), pageWidth - margin, 14.5, {
+    align: "right",
+  });
+
+  doc.setFont(fontName, "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...COLORS.labelSlate);
+  doc.text(fitHeaderLine(doc, subtitle, maxRightWidth), pageWidth - margin, 20.5, {
+    align: "right",
+  });
+
+  if (badgeText) {
+    doc.setFont(fontName, "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.accent);
+    doc.text(fitHeaderLine(doc, badgeText, maxRightWidth), pageWidth - margin, 26, {
+      align: "right",
+    });
+  }
+
+  doc.setDrawColor(...COLORS.accent);
+  doc.setLineWidth(0.7);
+  doc.line(margin, 32, pageWidth - margin, 32);
+
+  return 38;
 };
 
 export interface GenerateAiBriefingPdfOptions {
@@ -58,46 +127,14 @@ export const generateAiBriefingPDF = async (
   options?: GenerateAiBriefingPdfOptions
 ): Promise<void> => {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const fontName = await registerCrispPdfFont(doc);
+  const logo = await loadPdfLogo("color");
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
   const a = sanitizeLegacyAnswers(options?.answersOverride || briefing.answers);
   const isEsTranslated = Boolean(options?.isTranslatedSpanish);
-
-  const headerHeight = 40;
-  const maxRightTextWidth = pageWidth - 14 - 74; // 122mm libres a la derecha del logotipo
-
-  // Header Banner
-  doc.setFillColor(...COLORS.headerBg);
-  doc.rect(0, 0, pageWidth, headerHeight, "F");
-
-  const logo = await loadPdfLogo("white");
-  drawProportionalLogo(doc, logo, {
-    x: 14,
-    boxTopY: 0,
-    boxHeight: headerHeight,
-    maxWidth: 48,
-    maxHeight: 13,
-    fallbackText: "INTERPRES DIGITAL",
-    fallbackColor: [255, 255, 255],
-  });
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10.5);
-  doc.text(
-    fitHeaderLine(doc, "RFI — DISEÑO DE AGENTES DE IA Y AUTOMATIZACIÓN", maxRightTextWidth),
-    pageWidth - 14,
-    14,
-    { align: "right" }
-  );
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(199, 210, 254);
-  const companyLine = `Empresa: ${a.companyName || briefing.companyName || "N/A"}  |  Fecha: ${a.requestDate || "N/A"}`;
-  doc.text(fitHeaderLine(doc, companyLine, maxRightTextWidth), pageWidth - 14, 21, {
-    align: "right",
-  });
 
   const modeLabel =
     briefing.completionMode === "voice"
@@ -105,45 +142,54 @@ export const generateAiBriefingPDF = async (
       : briefing.completionMode === "hybrid"
       ? "Híbrido (Voz IA + Manual)"
       : "Formulario Manual";
-  const thirdLine = isEsTranslated
-    ? `Modalidad: ${modeLabel}  |  Edición: Español Técnico (IA)`
-    : `Modalidad: ${modeLabel}`;
-  doc.setFontSize(8);
-  doc.setTextColor(isEsTranslated ? 167 : 199, isEsTranslated ? 243 : 210, isEsTranslated ? 208 : 254);
-  doc.text(fitHeaderLine(doc, thirdLine, maxRightTextWidth), pageWidth - 14, 27.5, {
-    align: "right",
-  });
 
-  let currentY = 47;
+  let currentY = drawCleanExecutiveHeader(
+    doc,
+    logo,
+    fontName,
+    "RFI — DISEÑO DE AGENTES DE IA Y AUTOMATIZACIÓN",
+    `Empresa: ${a.companyName || briefing.companyName || "N/A"}  •  Fecha: ${a.requestDate || "N/A"}`,
+    isEsTranslated
+      ? `Modalidad: ${modeLabel}  •  EDICIÓN EN ESPAÑOL TÉCNICO (IA)`
+      : `Modalidad: ${modeLabel}`
+  );
 
   const addSectionTable = (title: string, rows: [string, string][]) => {
     autoTable(doc, {
       startY: currentY,
-      head: [[title, ""]],
+      head: [[{ content: title.toUpperCase(), colSpan: 2 }]],
       body: rows.map(([label, val]) => {
         const cleanVal = cleanPdfText(val);
         return [label, cleanVal ? cleanVal : "No especificado / Pendiente"];
       }),
       theme: "grid",
+      styles: {
+        font: fontName,
+        lineColor: COLORS.border,
+        lineWidth: 0.2,
+      },
       headStyles: {
+        font: fontName,
         fillColor: COLORS.accent,
         textColor: [255, 255, 255],
         fontStyle: "bold",
-        fontSize: 10,
+        fontSize: 9.5,
+        cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
       },
       bodyStyles: {
-        textColor: COLORS.textDark,
-        fontSize: 9,
+        font: fontName,
+        textColor: COLORS.inkBlack,
+        fontSize: 9.5,
         cellPadding: 3.5,
       },
       alternateRowStyles: {
         fillColor: COLORS.stripe,
       },
       columnStyles: {
-        0: { cellWidth: 62, fontStyle: "bold" },
-        1: { cellWidth: pageWidth - 90 },
+        0: { cellWidth: 60, fontStyle: "bold", textColor: COLORS.titleNavy },
+        1: { cellWidth: pageWidth - margin * 2 - 60 },
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: margin, right: margin, bottom: 16 },
     });
     currentY = (doc as any).lastAutoTable.finalY + 6;
   };
@@ -222,7 +268,9 @@ export const generateAiBriefingPDF = async (
     [
       "Documentos adjuntos",
       toAttachmentArray(a.attachments).length > 0
-        ? toAttachmentArray(a.attachments).map((att) => `${att.name} (${att.url})`).join("\n")
+        ? toAttachmentArray(a.attachments)
+            .map((att) => `${att.name} (${att.url})`)
+            .join("\n")
         : "Sin archivos adjuntos",
     ],
   ]);
@@ -230,11 +278,13 @@ export const generateAiBriefingPDF = async (
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(150);
+    doc.setFont(fontName, "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.labelSlate);
     doc.text(
-      `RFI Diseño de Agentes de IA${isEsTranslated ? " (Traducción Técnica Español)" : ""} — Interpres Digital | Página ${i} de ${totalPages}`,
+      `RFI Diseño de Agentes de IA${
+        isEsTranslated ? " (Traducción Técnica Español)" : ""
+      } — Interpres Digital  •  Página ${i} de ${totalPages}`,
       pageWidth / 2,
       pageHeight - 8,
       { align: "center" }
@@ -258,83 +308,106 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
   const a = sanitizeLegacyAnswers(briefing.answersTranslatedEs || briefing.answers);
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const fontName = await registerCrispPdfFont(doc);
+  const logo = await loadPdfLogo("color");
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const contentWidth = pageWidth - margin * 2;
 
-  const headerHeight = 40;
-  const maxRightTextWidth = pageWidth - 14 - 74; // 122mm libres sin tocar jamás el logotipo
-
-  doc.setFillColor(...COLORS.headerBg);
-  doc.rect(0, 0, pageWidth, headerHeight, "F");
-
-  const logo = await loadPdfLogo("white");
-  drawProportionalLogo(doc, logo, {
-    x: 14,
-    boxTopY: 0,
-    boxHeight: headerHeight,
-    maxWidth: 48,
-    maxHeight: 13,
-    fallbackText: "INTERPRES DIGITAL",
-    fallbackColor: [255, 255, 255],
-  });
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text(
-    fitHeaderLine(doc, "PRE-DIAGNÓSTICO ESTRATÉGICO Y COTIZADOR IA", maxRightTextWidth),
-    pageWidth - 14,
-    13.5,
-    { align: "right" }
+  let currentY = drawCleanExecutiveHeader(
+    doc,
+    logo,
+    fontName,
+    "PRE-DIAGNÓSTICO ESTRATÉGICO Y COTIZADOR IA",
+    `Prospecto: ${a.companyName || briefing.companyName || "N/A"}  •  Contacto: ${
+      a.contactName || briefing.clientName || "N/A"
+    }`,
+    `DOCUMENTO CONFIDENCIAL INTERNO  •  Complejidad: ${
+      safeStr(diag.complexityLevel) || "Evaluada"
+    }  •  Tiempo est.: ${safeStr(diag.estimatedImplementationWeeks) || "Por definir"}`
   );
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(199, 210, 254);
-  const prospectLine = `Prospecto: ${a.companyName || briefing.companyName || "N/A"}  |  Contacto: ${
-    a.contactName || briefing.clientName || "N/A"
-  }`;
-  doc.text(fitHeaderLine(doc, prospectLine, maxRightTextWidth), pageWidth - 14, 21, {
-    align: "right",
+  // Ficha resumen ejecutiva autoajustable debajo del encabezado (envuelve correos largos sin desbordes ni recortes)
+  autoTable(doc, {
+    startY: currentY,
+    margin: { left: margin, right: margin },
+    theme: "grid",
+    styles: {
+      font: fontName,
+      fontSize: 8.8,
+      textColor: COLORS.inkBlack,
+      fillColor: COLORS.cardBg,
+      lineColor: COLORS.border,
+      lineWidth: 0.25,
+      cellPadding: 2.8,
+    },
+    columnStyles: {
+      0: { cellWidth: contentWidth / 2 },
+      1: { cellWidth: contentWidth / 2 },
+    },
+    body: [
+      [
+        `Empresa / Contacto: ${a.companyName || briefing.companyName || "N/A"} (${
+          a.contactName || briefing.clientName || "Sin contacto"
+        })`,
+        `Correo / WhatsApp: ${
+          [a.contactEmail || briefing.email, a.contactPhone || briefing.whatsapp]
+            .filter(Boolean)
+            .join("  •  ") || "No especificado"
+        }`,
+      ],
+      [
+        `Ajuste Presupuestal: ${safeStr(diag.budgetFitStatus || "Evaluado")}`,
+        `Fecha de Solicitud RFI: ${safeStr(a.requestDate || "Registrada")}`,
+      ],
+    ],
   });
 
-  doc.setFontSize(8);
-  doc.setTextColor(165, 180, 252);
-  const metaLine = `CONFIDENCIAL INTERNO  •  Complejidad: ${
-    safeStr(diag.complexityLevel) || "Evaluada"
-  }  •  Tiempo est.: ${safeStr(diag.estimatedImplementationWeeks) || "Por definir"}`;
-  doc.text(fitHeaderLine(doc, metaLine, maxRightTextWidth), pageWidth - 14, 28, {
-    align: "right",
-  });
-
-  let currentY = 47;
+  currentY = (doc as any).lastAutoTable.finalY + 6;
 
   const addBlockTable = (title: string, rows: [string, string][]) => {
     if (currentY > pageHeight - 36) {
       doc.addPage();
       currentY = 18;
     }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(...COLORS.accent);
-    doc.text(title.toUpperCase(), 14, currentY);
-    currentY += 3;
 
     autoTable(doc, {
       startY: currentY,
-      margin: { left: 14, right: 14 },
+      margin: { left: margin, right: margin, bottom: 16 },
       theme: "grid",
-      headStyles: { fillColor: COLORS.accent, fontSize: 8.5 },
-      bodyStyles: { fontSize: 8.5, textColor: COLORS.textDark, cellPadding: 3 },
-      alternateRowStyles: { fillColor: COLORS.stripe },
+      head: [[{ content: title.toUpperCase(), colSpan: 2 }]],
+      styles: {
+        font: fontName,
+        lineColor: COLORS.border,
+        lineWidth: 0.2,
+      },
+      headStyles: {
+        font: fontName,
+        fillColor: COLORS.accent,
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 9.5,
+        cellPadding: { top: 3, bottom: 3, left: 4, right: 4 },
+      },
+      bodyStyles: {
+        font: fontName,
+        fontSize: 9.5,
+        textColor: COLORS.inkBlack,
+        cellPadding: 3.5,
+      },
+      alternateRowStyles: {
+        fillColor: COLORS.stripe,
+      },
       columnStyles: {
-        0: { cellWidth: 50, fontStyle: "bold" },
-        1: { cellWidth: pageWidth - 78 },
+        0: { cellWidth: 52, fontStyle: "bold", textColor: COLORS.titleNavy },
+        1: { cellWidth: contentWidth - 52 },
       },
       body: rows.map(([k, v]) => [k, cleanPdfText(v) || "—"]),
     });
 
-    currentY = (doc as any).lastAutoTable.finalY + 7;
+    currentY = (doc as any).lastAutoTable.finalY + 6;
   };
 
   addBlockTable("1. Diagnóstico e Interpretación Presupuesto vs. Alcance", [
@@ -342,67 +415,139 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
     ["Presupuesto declarado por cliente", safeStr(a.estimatedBudget || "Por definir")],
     ["Ajuste presupuestal", safeStr(diag.budgetFitStatus || "Evaluado")],
     ["Análisis de presupuesto vs. necesidades", safeStr(diag.budgetVsNeedsAnalysis)],
-    ["Qué se puede hacer", toStringArray(diag.whatCanBeDone).map((x) => `• ${cleanPdfText(x)}`).join("\n")],
+    [
+      "Qué se puede hacer",
+      toStringArray(diag.whatCanBeDone)
+        .map((x) => `• ${cleanPdfText(x)}`)
+        .join("\n"),
+    ],
   ]);
 
   addBlockTable("2. Qué Ofrecer y Estrategia Comercial de Cierre", [
-    ["Líneas Interpres recomendadas", toStringArray(diag.recommendedInterpresLines).join("  |  ")],
+    ["Líneas Interpres recomendadas", toStringArray(diag.recommendedInterpresLines).join("  •  ")],
     ["Cómo presentarlo y venderlo", safeStr(diag.commercialPitchAndHowToOffer)],
     ["Argumento de ROI para el cliente", safeStr(diag.roiArgument)],
     ["Esquema de cobro sugerido", safeStr(diag.paymentStructureRecommendation)],
   ]);
 
   if (Array.isArray(diag.pricingPackagesMxn) && diag.pricingPackagesMxn.length > 0) {
-    if (currentY > pageHeight - 45) {
+    // Asegurar espacio suficiente para el encabezado + la primera opción completa sin dejar cabecera huérfana
+    if (currentY > pageHeight - 95) {
       doc.addPage();
       currentY = 18;
     }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(...COLORS.accent);
-    doc.text("3. ESCENARIOS DE COTIZACIÓN SUGERIDOS (MXN + IVA)", 14, currentY);
-    currentY += 3;
 
     autoTable(doc, {
       startY: currentY,
-      margin: { left: 14, right: 14 },
+      margin: { left: margin, right: margin, bottom: 16 },
       theme: "grid",
-      head: [["Opción / Paquete", "Implementación (Único)", "Póliza Mensual", "Tiempo", "Entregables Clave"]],
-      headStyles: { fillColor: COLORS.headerBg, textColor: [255, 255, 255], fontSize: 8 },
-      bodyStyles: { fontSize: 8, textColor: COLORS.textDark, cellPadding: 2.8 },
-      alternateRowStyles: { fillColor: COLORS.stripe },
+      rowPageBreak: "avoid",
+      styles: {
+        font: fontName,
+        lineColor: COLORS.border,
+        lineWidth: 0.2,
+      },
+      head: [
+        [
+          {
+            content: "3. ESCENARIOS DE COTIZACIÓN SUGERIDOS (MXN + IVA)",
+            colSpan: 5,
+            styles: {
+              fillColor: COLORS.accent,
+              textColor: [255, 255, 255],
+              fontSize: 9.5,
+              fontStyle: "bold",
+            },
+          },
+        ],
+        [
+          "Opción / Paquete",
+          "Pago Único\n(Setup)",
+          "Póliza\nMensual",
+          "Tiempo\nEst.",
+          "Entregables Clave",
+        ],
+      ],
+      headStyles: {
+        font: fontName,
+        fillColor: COLORS.darkHeaderFill,
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 8.8,
+        lineColor: [51, 65, 85],
+        lineWidth: 0.2,
+        cellPadding: 3,
+      },
+      bodyStyles: {
+        font: fontName,
+        fontSize: 9,
+        textColor: COLORS.inkBlack,
+        cellPadding: 3.2,
+      },
+      alternateRowStyles: {
+        fillColor: COLORS.stripe,
+      },
+      columnStyles: {
+        0: { cellWidth: 42, fontStyle: "bold", textColor: COLORS.titleNavy },
+        1: { cellWidth: 29, fontStyle: "bold" },
+        2: { cellWidth: 27, fontStyle: "bold" },
+        3: { cellWidth: 20 },
+        4: { cellWidth: contentWidth - 118 },
+      },
       body: diag.pricingPackagesMxn.map((pkg) => [
-        `${safeStr(pkg.tierName)}\n(${safeStr(pkg.subtitle)})`,
+        `${cleanPdfText(pkg.tierName)}\n(${cleanPdfText(pkg.subtitle)})`,
         formatMxnPdf(pkg.setupPriceMxn),
         `${formatMxnPdf(pkg.monthlyRetainerMxn)}/mes`,
-        safeStr(pkg.estimatedWeeks),
-        toStringArray(pkg.deliverables).map((d) => `• ${d}`).join("\n"),
+        cleanPdfText(pkg.estimatedWeeks),
+        toStringArray(pkg.deliverables)
+          .map((d) => `• ${cleanPdfText(d)}`)
+          .join("\n"),
       ]),
     });
 
-    currentY = (doc as any).lastAutoTable.finalY + 7;
+    currentY = (doc as any).lastAutoTable.finalY + 6;
   }
 
   addBlockTable("4. Arquitectura Técnica y Cómo Integrarlo", [
     ["Arquitectura recomendada", safeStr(diag.recommendedArchitecture)],
     ["Ruta de integración paso a paso", toStringArray(diag.stepByStepIntegrationPlan).join("\n")],
-    ["Alcance Fase 1 (MVP)", toStringArray(diag.mvpScope).map((x) => `• ${x}`).join("\n")],
-    ["Alcance Fase 2 (Escalamiento)", toStringArray(diag.phase2Scope).map((x) => `• ${x}`).join("\n")],
+    [
+      "Alcance Fase 1 (MVP)",
+      toStringArray(diag.mvpScope)
+        .map((x) => `• ${cleanPdfText(x)}`)
+        .join("\n"),
+    ],
+    [
+      "Alcance Fase 2 (Escalamiento)",
+      toStringArray(diag.phase2Scope)
+        .map((x) => `• ${cleanPdfText(x)}`)
+        .join("\n"),
+    ],
   ]);
 
   addBlockTable("5. Riesgos Críticos y Preguntas para Reunión de Cierre", [
-    ["Riesgos y dependencias a cuidar", toStringArray(diag.criticalRisks).map((x) => `• ${x}`).join("\n")],
-    ["Preguntas clave para el cliente", toStringArray(diag.followUpQuestions).map((x) => `• ${x}`).join("\n")],
+    [
+      "Riesgos y dependencias a cuidar",
+      toStringArray(diag.criticalRisks)
+        .map((x) => `• ${cleanPdfText(x)}`)
+        .join("\n"),
+    ],
+    [
+      "Preguntas clave para el cliente",
+      toStringArray(diag.followUpQuestions)
+        .map((x) => `• ${cleanPdfText(x)}`)
+        .join("\n"),
+    ],
   ]);
 
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(150);
+    doc.setFont(fontName, "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.labelSlate);
     doc.text(
-      `CONFIDENCIAL INTERNO — Interpres Digital | Estrategia y Cotizador IA | Página ${i} de ${totalPages}`,
+      `CONFIDENCIAL INTERNO — Interpres Digital  •  Estrategia y Cotizador IA  •  Página ${i} de ${totalPages}`,
       pageWidth / 2,
       pageHeight - 8,
       { align: "center" }

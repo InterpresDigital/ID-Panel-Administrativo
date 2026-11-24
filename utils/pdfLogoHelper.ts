@@ -180,3 +180,63 @@ export const drawProportionalSignature = (
     console.error('Error renderizando firma en PDF:', err);
   }
 };
+
+let cachedRobotoRegularB64: string | null = null;
+let cachedRobotoBoldB64: string | null = null;
+
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+};
+
+const fetchFontBase64 = async (url: string): Promise<string | null> => {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    if (!buf || buf.byteLength < 1000) return null;
+    return arrayBufferToBase64(buf);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Registra tipografía TrueType con hinting nativo (Roboto) en jsPDF para evitar trazos tenues
+ * o efecto "sin tinta" en monitores Windows y soportar caracteres UTF-8 completos.
+ * Devuelve el nombre de la fuente activa ('Roboto' o 'helvetica' como respaldo).
+ */
+export const registerCrispPdfFont = async (doc: jsPDF): Promise<string> => {
+  try {
+    if (!cachedRobotoRegularB64 || !cachedRobotoBoldB64) {
+      const [reg, bold] = await Promise.all([
+        cachedRobotoRegularB64
+          ? Promise.resolve(cachedRobotoRegularB64)
+          : fetchFontBase64('/fonts/Roboto-Regular.ttf?v=20261124'),
+        cachedRobotoBoldB64
+          ? Promise.resolve(cachedRobotoBoldB64)
+          : fetchFontBase64('/fonts/Roboto-Bold.ttf?v=20261124'),
+      ]);
+      if (reg) cachedRobotoRegularB64 = reg;
+      if (bold) cachedRobotoBoldB64 = bold;
+    }
+
+    if (cachedRobotoRegularB64 && cachedRobotoBoldB64) {
+      doc.addFileToVFS('Roboto-Regular.ttf', cachedRobotoRegularB64);
+      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+      doc.addFileToVFS('Roboto-Bold.ttf', cachedRobotoBoldB64);
+      doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+      doc.setFont('Roboto', 'normal');
+      return 'Roboto';
+    }
+  } catch (err) {
+    console.warn('Usando helvetica de respaldo en PDF:', err);
+  }
+  doc.setFont('helvetica', 'normal');
+  return 'helvetica';
+};
