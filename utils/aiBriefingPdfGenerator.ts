@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
+  AiBriefingAnswers,
   AiBriefingRecord,
   safeStr,
   sanitizeLegacyAnswers,
@@ -17,62 +18,110 @@ const COLORS = {
   stripe: [248, 250, 252] as [number, number, number],
 };
 
-export const generateAiBriefingPDF = async (briefing: AiBriefingRecord): Promise<void> => {
+/**
+ * Limpia marcas crudas de Markdown (**negritas**, encabezados ###) y normaliza viñetas
+ * para que las celdas de los PDFs ejecutivos luzcan limpias y editoriales.
+ */
+const cleanPdfText = (raw?: unknown): string => {
+  const txt = safeStr(raw);
+  if (!txt) return "";
+  return txt
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s*-\s+/gm, "• ")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+};
+
+/**
+ * Garantiza que ninguna línea del encabezado oscuro invada jamás la zona izquierda del logotipo (máx. 122 mm).
+ */
+const fitHeaderLine = (doc: jsPDF, text: string, maxWidthMm = 122): string => {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean) return "";
+  if (doc.getTextWidth(clean) <= maxWidthMm) return clean;
+  let clipped = clean;
+  while (clipped.length > 4 && doc.getTextWidth(`${clipped}…`) > maxWidthMm) {
+    clipped = clipped.slice(0, -1);
+  }
+  return `${clipped.trimEnd()}…`;
+};
+
+export interface GenerateAiBriefingPdfOptions {
+  answersOverride?: Partial<AiBriefingAnswers> | null;
+  isTranslatedSpanish?: boolean;
+}
+
+export const generateAiBriefingPDF = async (
+  briefing: AiBriefingRecord,
+  options?: GenerateAiBriefingPdfOptions
+): Promise<void> => {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const a = sanitizeLegacyAnswers(briefing.answers);
+  const a = sanitizeLegacyAnswers(options?.answersOverride || briefing.answers);
+  const isEsTranslated = Boolean(options?.isTranslatedSpanish);
+
+  const headerHeight = 40;
+  const maxRightTextWidth = pageWidth - 14 - 74; // 122mm libres a la derecha del logotipo
 
   // Header Banner
   doc.setFillColor(...COLORS.headerBg);
-  doc.rect(0, 0, pageWidth, 38, "F");
+  doc.rect(0, 0, pageWidth, headerHeight, "F");
 
   const logo = await loadPdfLogo("white");
   drawProportionalLogo(doc, logo, {
     x: 14,
     boxTopY: 0,
-    boxHeight: 38,
-    maxWidth: 52,
-    maxHeight: 14,
+    boxHeight: headerHeight,
+    maxWidth: 48,
+    maxHeight: 13,
     fallbackText: "INTERPRES DIGITAL",
     fallbackColor: [255, 255, 255],
   });
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11.5);
-  doc.text("RFI — DISEÑO DE AGENTE DE IA Y AUTOMATIZACIÓN", pageWidth - 14, 14.5, { align: "right" });
+  doc.setFontSize(10.5);
+  doc.text(
+    fitHeaderLine(doc, "RFI — DISEÑO DE AGENTES DE IA Y AUTOMATIZACIÓN", maxRightTextWidth),
+    pageWidth - 14,
+    14,
+    { align: "right" }
+  );
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(199, 210, 254);
-  doc.text(
-    `Empresa: ${a.companyName || briefing.companyName || "N/A"}  |  Fecha: ${a.requestDate || "N/A"}`,
-    pageWidth - 14,
-    21.5,
-    { align: "right" }
-  );
-  doc.text(
-    `Modalidad: ${
-      briefing.completionMode === "voice"
-        ? "Entrevista IA por Voz"
-        : briefing.completionMode === "hybrid"
-        ? "Híbrido (Voz IA + Manual)"
-        : "Formulario Manual"
-    }`,
-    pageWidth - 14,
-    27.5,
-    { align: "right" }
-  );
+  const companyLine = `Empresa: ${a.companyName || briefing.companyName || "N/A"}  |  Fecha: ${a.requestDate || "N/A"}`;
+  doc.text(fitHeaderLine(doc, companyLine, maxRightTextWidth), pageWidth - 14, 21, {
+    align: "right",
+  });
 
-  let currentY = 46;
+  const modeLabel =
+    briefing.completionMode === "voice"
+      ? "Entrevista IA por Voz"
+      : briefing.completionMode === "hybrid"
+      ? "Híbrido (Voz IA + Manual)"
+      : "Formulario Manual";
+  const thirdLine = isEsTranslated
+    ? `Modalidad: ${modeLabel}  |  Edición: Español Técnico (IA)`
+    : `Modalidad: ${modeLabel}`;
+  doc.setFontSize(8);
+  doc.setTextColor(isEsTranslated ? 167 : 199, isEsTranslated ? 243 : 210, isEsTranslated ? 208 : 254);
+  doc.text(fitHeaderLine(doc, thirdLine, maxRightTextWidth), pageWidth - 14, 27.5, {
+    align: "right",
+  });
+
+  let currentY = 47;
 
   const addSectionTable = (title: string, rows: [string, string][]) => {
     autoTable(doc, {
       startY: currentY,
       head: [[title, ""]],
       body: rows.map(([label, val]) => {
-        const cleanVal = safeStr(val).trim();
+        const cleanVal = cleanPdfText(val);
         return [label, cleanVal ? cleanVal : "No especificado / Pendiente"];
       }),
       theme: "grid",
@@ -185,7 +234,7 @@ export const generateAiBriefingPDF = async (briefing: AiBriefingRecord): Promise
     doc.setFontSize(7.5);
     doc.setTextColor(150);
     doc.text(
-      `RFI Diseño de Agentes de IA — Interpres Digital | Página ${i} de ${totalPages}`,
+      `RFI Diseño de Agentes de IA${isEsTranslated ? " (Traducción Técnica Español)" : ""} — Interpres Digital | Página ${i} de ${totalPages}`,
       pageWidth / 2,
       pageHeight - 8,
       { align: "center" }
@@ -195,7 +244,7 @@ export const generateAiBriefingPDF = async (briefing: AiBriefingRecord): Promise
   const safeName = (a.companyName || briefing.companyName || "Cliente")
     .replace(/[^a-zA-Z0-9_-]/g, "_")
     .slice(0, 40);
-  doc.save(`RFI_Agente_IA_${safeName}.pdf`);
+  doc.save(`RFI_Agente_IA_${safeName}${isEsTranslated ? "_ES" : ""}.pdf`);
 };
 
 const formatMxnPdf = (amount?: number): string => {
@@ -206,50 +255,59 @@ const formatMxnPdf = (amount?: number): string => {
 export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord): Promise<void> => {
   if (!briefing.aiPreDiagnostic) return;
   const diag = briefing.aiPreDiagnostic;
-  const a = sanitizeLegacyAnswers(briefing.answers);
+  const a = sanitizeLegacyAnswers(briefing.answersTranslatedEs || briefing.answers);
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
+  const headerHeight = 40;
+  const maxRightTextWidth = pageWidth - 14 - 74; // 122mm libres sin tocar jamás el logotipo
+
   doc.setFillColor(...COLORS.headerBg);
-  doc.rect(0, 0, pageWidth, 38, "F");
+  doc.rect(0, 0, pageWidth, headerHeight, "F");
 
   const logo = await loadPdfLogo("white");
   drawProportionalLogo(doc, logo, {
     x: 14,
     boxTopY: 0,
-    boxHeight: 38,
-    maxWidth: 52,
-    maxHeight: 14,
+    boxHeight: headerHeight,
+    maxWidth: 48,
+    maxHeight: 13,
     fallbackText: "INTERPRES DIGITAL",
     fallbackColor: [255, 255, 255],
   });
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("PRE-DIAGNÓSTICO ESTRATÉGICO Y COTIZADOR IA (USO INTERNO)", pageWidth - 14, 15, {
-    align: "right",
-  });
+  doc.setFontSize(10);
+  doc.text(
+    fitHeaderLine(doc, "PRE-DIAGNÓSTICO ESTRATÉGICO Y COTIZADOR IA", maxRightTextWidth),
+    pageWidth - 14,
+    13.5,
+    { align: "right" }
+  );
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(199, 210, 254);
-  doc.text(
-    `Prospecto: ${a.companyName || briefing.companyName || "N/A"}  |  Contacto: ${a.contactName || briefing.clientName || "N/A"}`,
-    pageWidth - 14,
-    22,
-    { align: "right" }
-  );
-  doc.text(
-    `Complejidad: ${safeStr(diag.complexityLevel)}  |  Tiempo est.: ${safeStr(diag.estimatedImplementationWeeks)}  |  Presupuesto cliente: ${safeStr(a.estimatedBudget || "Por definir")}`,
-    pageWidth - 14,
-    28.5,
-    { align: "right" }
-  );
+  const prospectLine = `Prospecto: ${a.companyName || briefing.companyName || "N/A"}  |  Contacto: ${
+    a.contactName || briefing.clientName || "N/A"
+  }`;
+  doc.text(fitHeaderLine(doc, prospectLine, maxRightTextWidth), pageWidth - 14, 21, {
+    align: "right",
+  });
 
-  let currentY = 46;
+  doc.setFontSize(8);
+  doc.setTextColor(165, 180, 252);
+  const metaLine = `CONFIDENCIAL INTERNO  •  Complejidad: ${
+    safeStr(diag.complexityLevel) || "Evaluada"
+  }  •  Tiempo est.: ${safeStr(diag.estimatedImplementationWeeks) || "Por definir"}`;
+  doc.text(fitHeaderLine(doc, metaLine, maxRightTextWidth), pageWidth - 14, 28, {
+    align: "right",
+  });
+
+  let currentY = 47;
 
   const addBlockTable = (title: string, rows: [string, string][]) => {
     if (currentY > pageHeight - 36) {
@@ -273,7 +331,7 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
         0: { cellWidth: 50, fontStyle: "bold" },
         1: { cellWidth: pageWidth - 78 },
       },
-      body: rows.map(([k, v]) => [k, safeStr(v).trim() || "—"]),
+      body: rows.map(([k, v]) => [k, cleanPdfText(v) || "—"]),
     });
 
     currentY = (doc as any).lastAutoTable.finalY + 7;
@@ -281,9 +339,10 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
 
   addBlockTable("1. Diagnóstico e Interpretación Presupuesto vs. Alcance", [
     ["Diagnóstico ejecutivo", safeStr(diag.executiveSummary)],
+    ["Presupuesto declarado por cliente", safeStr(a.estimatedBudget || "Por definir")],
     ["Ajuste presupuestal", safeStr(diag.budgetFitStatus || "Evaluado")],
     ["Análisis de presupuesto vs. necesidades", safeStr(diag.budgetVsNeedsAnalysis)],
-    ["Qué se puede hacer", toStringArray(diag.whatCanBeDone).map((x) => `• ${x}`).join("\n")],
+    ["Qué se puede hacer", toStringArray(diag.whatCanBeDone).map((x) => `• ${cleanPdfText(x)}`).join("\n")],
   ]);
 
   addBlockTable("2. Qué Ofrecer y Estrategia Comercial de Cierre", [

@@ -133,8 +133,41 @@ export interface AiBriefingRecord {
   updatedAt?: any;
   completedAt?: any;
   answers: AiBriefingAnswers;
+  answersTranslatedEs?: AiBriefingAnswers;
+  translatedEsAt?: string;
   aiPreDiagnostic?: AiPreDiagnostic;
 }
+
+/**
+ * Detecta si las respuestas del RFI fueron redactadas principalmente en inglés (u otro idioma distinto al español)
+ * para ofrecer descarga directa del PDF Ejecutivo con traducción técnica especializada.
+ */
+export const isLikelyNonSpanishBriefing = (answers?: Partial<AiBriefingAnswers> | null): boolean => {
+  if (!answers) return false;
+  const sample = [
+    answers.businessProblem,
+    answers.expectedOutcome,
+    answers.roleOrProcessDescription,
+    answers.specificFunctions,
+    answers.systemsToIntegrate,
+    answers.additionalComments,
+  ]
+    .map((s) => (typeof s === "string" ? s : ""))
+    .join(" ");
+
+  if (sample.trim().length < 25) return false;
+
+  const enMatches =
+    sample.match(
+      /\b(the|and|with|for|our|we|want|would|should|currently|workflow|customer|customers|business|requirements|system|files|provide|provides|using|allow|without)\b/gi
+    ) || [];
+  const esMatches =
+    sample.match(
+      /\b(para|con|los|las|del|una|nuestro|nuestra|queremos|proceso|clientes|empresa|sistema|actualmente|mediante|cuando|porque|también)\b/gi
+    ) || [];
+
+  return enMatches.length >= 4 && enMatches.length > esMatches.length;
+};
 
 export const formatVoiceDuration = (seconds?: number): string => {
   const total = Math.max(0, Math.round(Number(seconds) || 0));

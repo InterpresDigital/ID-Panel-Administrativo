@@ -7,10 +7,10 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Client, Transaction } from "../types";
-import { AiBriefingRecord, AiPreDiagnostic } from "../utils/aiBriefingTypes";
+import { AiBriefingAnswers, AiBriefingRecord, AiPreDiagnostic } from "../utils/aiBriefingTypes";
 
 async function callSecureAiAction<T>(
-  action: "voice-session" | "analyze-rfi" | "business-insights" | "client-email",
+  action: "voice-session" | "analyze-rfi" | "translate-rfi-es" | "business-insights" | "client-email",
   payload: Record<string, any>,
   timeoutMs = 55000
 ): Promise<T> {
@@ -132,4 +132,23 @@ export const generateAiRfiPreDiagnostic = async (
     115000
   );
   return data.diagnostic;
+};
+
+export const translateAiBriefingToTechnicalSpanish = async (
+  briefing: AiBriefingRecord,
+  forceRefresh = false
+): Promise<{ answersTranslatedEs: AiBriefingAnswers; translatedEsAt: string }> => {
+  const data = await callSecureAiAction<{
+    answersTranslatedEs: AiBriefingAnswers;
+    translatedEsAt: string;
+  }>(
+    "translate-rfi-es",
+    {
+      briefingId: briefing.id,
+      answers: briefing.answers,
+      forceRefresh,
+    },
+    115000
+  );
+  return data;
 };

@@ -17,6 +17,7 @@ import {
   AiBriefingRecord,
   AiPricingPackageOption,
   AI_RFI_SECTIONS,
+  isLikelyNonSpanishBriefing,
   isSectionFilled,
   formatVoiceDuration,
   safeStr,
@@ -29,7 +30,10 @@ import {
   generateAiDiagnosticInternalPDF,
 } from "../utils/aiBriefingPdfGenerator";
 import { generateQuotationPDF } from "../utils/quotePdfGenerator";
-import { generateAiRfiPreDiagnostic } from "../services/geminiService";
+import {
+  generateAiRfiPreDiagnostic,
+  translateAiBriefingToTechnicalSpanish,
+} from "../services/geminiService";
 import {
   Sparkles,
   Copy,
@@ -56,6 +60,7 @@ import {
   Plus,
   X,
   Save,
+  Languages,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -80,6 +85,7 @@ const BriefingsAiAdmin: React.FC = () => {
   const [selectedClientForLink, setSelectedClientForLink] = useState<string>("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [generatingEsPdf, setGeneratingEsPdf] = useState(false);
   const [generatingDiagPdf, setGeneratingDiagPdf] = useState(false);
   const [generatingDiag, setGeneratingDiag] = useState(false);
   const [customGuidance, setCustomGuidance] = useState("");
@@ -114,6 +120,9 @@ const BriefingsAiAdmin: React.FC = () => {
               id: d.id,
               ...data,
               answers: sanitizeLegacyAnswers(data.answers),
+              answersTranslatedEs: data.answersTranslatedEs
+                ? sanitizeLegacyAnswers(data.answersTranslatedEs)
+                : undefined,
             } as AiBriefingRecord);
           }
         });
@@ -161,6 +170,45 @@ const BriefingsAiAdmin: React.FC = () => {
       await generateAiBriefingPDF(b);
     } finally {
       setGeneratingPdf(false);
+    }
+  };
+
+  const handleDownloadSpanishTechnicalPdf = async (b: AiBriefingRecord) => {
+    setGeneratingEsPdf(true);
+    try {
+      const updatedMs = (b.updatedAt?.seconds || 0) * 1000;
+      const translatedMs = b.translatedEsAt ? Date.parse(b.translatedEsAt) : 0;
+      const needsRefresh =
+        !b.answersTranslatedEs ||
+        (updatedMs > 0 && translatedMs > 0 && updatedMs > translatedMs + 5000);
+
+      let translatedAnswers = b.answersTranslatedEs;
+      if (needsRefresh || !translatedAnswers) {
+        const res = await translateAiBriefingToTechnicalSpanish(b, needsRefresh);
+        translatedAnswers = sanitizeLegacyAnswers(res.answersTranslatedEs);
+        setSelectedBriefing((prev) =>
+          prev && prev.id === b.id
+            ? {
+                ...prev,
+                answersTranslatedEs: translatedAnswers,
+                translatedEsAt: res.translatedEsAt,
+              }
+            : prev
+        );
+      }
+
+      await generateAiBriefingPDF(b, {
+        answersOverride: translatedAnswers,
+        isTranslatedSpanish: true,
+      });
+    } catch (err: any) {
+      console.error("Error traduciendo RFI a español técnico:", err);
+      alert(
+        err?.message ||
+          "No se pudo traducir el RFI en este momento. Intenta nuevamente en unos segundos."
+      );
+    } finally {
+      setGeneratingEsPdf(false);
     }
   };
 
@@ -567,18 +615,71 @@ const BriefingsAiAdmin: React.FC = () => {
 
               <div className="h-4 w-px bg-gray-200 dark:bg-dark-border" />
 
-              <button
-                onClick={() => handleDownloadPdf(selectedBriefing)}
-                disabled={generatingPdf}
-                className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                {generatingPdf ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                <span>Descargar PDF Ejecutivo</span>
-              </button>
+              {isLikelyNonSpanishBriefing(selectedBriefing.answers) ||
+              Boolean(selectedBriefing.answersTranslatedEs) ? (
+                <>
+                  <button
+                    onClick={() => handleDownloadSpanishTechnicalPdf(selectedBriefing)}
+                    disabled={generatingEsPdf || generatingPdf}
+                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all"
+                    title="Traduce con IA especializada en ingeniería/TI al español técnico de México y descarga el PDF Ejecutivo"
+                  >
+                    {generatingEsPdf ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Languages className="w-3.5 h-3.5" />
+                    )}
+                    <span>
+                      {generatingEsPdf
+                        ? "Traduciendo con IA técnica..."
+                        : "Descargar PDF Ejecutivo (Español Técnico IA)"}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDownloadPdf(selectedBriefing)}
+                    disabled={generatingPdf || generatingEsPdf}
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline"
+                    title="Descargar PDF con el texto en su idioma original"
+                  >
+                    {generatingPdf ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    <span>PDF Original (Inglés)</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleDownloadPdf(selectedBriefing)}
+                    disabled={generatingPdf || generatingEsPdf}
+                    className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    {generatingPdf ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                    <span>Descargar PDF Ejecutivo</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDownloadSpanishTechnicalPdf(selectedBriefing)}
+                    disabled={generatingEsPdf || generatingPdf}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline"
+                    title="Forzar revisión/traducción técnica al español con IA antes de descargar"
+                  >
+                    {generatingEsPdf ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Languages className="w-3.5 h-3.5" />
+                    )}
+                    <span>{generatingEsPdf ? "Traduciendo..." : "PDF Español IA"}</span>
+                  </button>
+                </>
+              )}
 
               {selectedBriefing.status === "draft" && (
                 <>

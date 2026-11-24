@@ -283,6 +283,132 @@ Devuelve ESTRICTAMENTE un objeto JSON válido (sin bloques markdown, todo en ESP
         return;
       }
 
+      if (action === "translate-rfi-es") {
+        const { briefingId, answers, forceRefresh } = payload;
+        if (!briefingId || !answers || typeof answers !== "object") {
+          throw new Error("Faltan datos del RFI para traducir.");
+        }
+
+        const briefingRef = db.collection("briefings").doc(String(briefingId));
+        const existingSnap = await briefingRef.get();
+        const existingData = existingSnap.exists ? existingSnap.data() || {} : {};
+
+        if (!forceRefresh && existingData.answersTranslatedEs && existingData.translatedEsAt) {
+          await snap.ref.update({
+            status: "completed",
+            result: {
+              answersTranslatedEs: existingData.answersTranslatedEs,
+              translatedEsAt: existingData.translatedEsAt
+            },
+            completedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+          return;
+        }
+
+        const translatableFields: Record<string, any> = {
+          businessProblem: answers.businessProblem || "",
+          expectedOutcome: answers.expectedOutcome || "",
+          previousAiInitiatives: answers.previousAiInitiatives || "",
+          roleOrProcessDescription: answers.roleOrProcessDescription || "",
+          periodicTasks: answers.periodicTasks || "",
+          automationPercentage: answers.automationPercentage || "",
+          unavailabilityImpact: answers.unavailabilityImpact || "",
+          specificFunctions: answers.specificFunctions || "",
+          outOfScopeTasks: answers.outOfScopeTasks || "",
+          autonomyLevel: answers.autonomyLevel || "",
+          targetUsers: Array.isArray(answers.targetUsers) ? answers.targetUsers : [],
+          approxUserCount: answers.approxUserCount || "",
+          interactionVolume: answers.interactionVolume || "",
+          operatingHours: answers.operatingHours || "",
+          channels: Array.isArray(answers.channels) ? answers.channels : [],
+          systemsToIntegrate: answers.systemsToIntegrate || "",
+          apiAvailability: answers.apiAvailability || "",
+          knowledgeBaseDocs: answers.knowledgeBaseDocs || "",
+          dataHostingAndFormat: answers.dataHostingAndFormat || "",
+          maintenanceOwner: answers.maintenanceOwner || "",
+          sensitiveData: answers.sensitiveData || "",
+          compliancePolicies: answers.compliancePolicies || "",
+          dataResidency: answers.dataResidency || "",
+          estimatedBudget: answers.estimatedBudget || "",
+          idealLaunchDate: answers.idealLaunchDate || "",
+          operatingLanguages: answers.operatingLanguages || "",
+          approverAndSponsor: answers.approverAndSponsor || "",
+          kpis: answers.kpis || "",
+          successAt3And6Months: answers.successAt3And6Months || "",
+          additionalComments: answers.additionalComments || ""
+        };
+
+        const ai = new GoogleGenAI({ apiKey });
+        const translationPrompt = `
+Eres un **Traductor Técnico Senior especializado en Ingeniería de Software, Automatización Industrial (CAD/CAM/CNC), Arquitectura Cloud e Inteligencia Artificial Empresarial** para **Interpres Digital** en México.
+
+Tu tarea es traducir al **español técnico ejecutivo de México** las respuestas de un RFI (Request for Information) redactadas en inglés (o idioma mixto).
+
+REGLAS ESTRICTAS DE TRADUCCIÓN TÉCNICA REAL (PROHIBIDA LA TRADUCCIÓN LITERAL):
+1. **Precisión terminológica de ingeniería e industria:**
+   - Emplea la terminología real que usan directores técnicos, ingenieros industriales, arquitectos de software y líderes de TI en México.
+   - Ejemplos obligatorios de criterio técnico:
+     * "shop drawings" -> "planos de taller / planos de fabricación"
+     * "sheet-metal flat-pattern development" -> "desarrollo de plantillas desplegadas (desarrollos en plano) de lámina metálica"
+     * "customer redlines" -> "marcas de revisión / correcciones sobre plano del cliente (redlines)"
+     * "nesting" -> "anidado de piezas para corte (nesting)"
+     * "open contours / duplicate geometry" -> "contornos abiertos / geometría duplicada"
+     * "title blocks" -> "cuadros de datos / membretes del plano"
+     * "turnaround times" -> "tiempos de entrega y respuesta"
+     * "human-in-the-loop" -> "esquema supervisado con validación humana en el ciclo (human-in-the-loop)"
+     * "proof of concept (PoC)" -> "prueba de concepto (PoC)"
+     * "return on investment" -> "retorno de inversión (ROI)"
+     * "foodservice equipment manufacturers" -> "fabricantes de equipamiento gastronómico comercial / cocinas industriales"
+     * "stainless steel fabrication shops" -> "talleres de fabricación y transformación de acero inoxidable"
+2. **Intocables técnicos y comerciales:**
+   - Conserva EXACTOS nombres propios de personas, empresas, marcas de software/maquinaria, lenguajes, protocolos, formatos de archivo, cifras, monedas y enlaces URL (ej. AutoCAD, Autodesk, AutoLISP, DWG, DXF, CNC, Bodor, API, SDK, ERP, CRM, KPIs, PPC Stainless, Fernando, https://...).
+3. **Fidelidad 100% y limpieza editorial para PDF:**
+   - NO resumas, NO omitas ningún párrafo, viñeta ni matiz legal o técnico del cliente: traduce el 100% del contenido conservando sus saltos de línea, numeraciones ("1.", "2.") y viñetas ("- " o "• ").
+   - Elimina marcas crudas de Markdown como "**" o "__" para que el texto luzca limpio en un PDF ejecutivo formal.
+   - Si algún fragmento o campo ya está en español correcto, consérvalo íntegro y natural. Si un campo está vacío (""), devuélvelo vacío ("").
+
+ENTRADA JSON DEL RFI A TRADUCIR:
+${JSON.stringify(translatableFields, null, 2)}
+
+Devuelve ESTRICTAMENTE un objeto JSON válido con EXACTAMENTE las mismas llaves de entrada y sus valores traducidos al español técnico profesional (manteniendo "targetUsers" y "channels" como arreglos de strings).
+`;
+
+        const responseText = await generateTextWithFallback(ai, translationPrompt, true);
+        let rawJson = (responseText || "{}").trim();
+        rawJson = rawJson.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+        const translatedPartial = JSON.parse(rawJson);
+
+        const answersTranslatedEs = {
+          ...answers,
+          ...translatedPartial,
+          // Garantizar que los metadatos legales y de contacto originales permanezcan idénticos
+          requestDate: answers.requestDate || "",
+          companyName: answers.companyName || "",
+          contactName: answers.contactName || "",
+          contactEmail: answers.contactEmail || "",
+          contactPhone: answers.contactPhone || "",
+          privacyConsentAccepted: Boolean(answers.privacyConsentAccepted),
+          privacyConsentAcceptedAt: answers.privacyConsentAcceptedAt || "",
+          attachments: Array.isArray(answers.attachments) ? answers.attachments : []
+        };
+        const translatedEsAt = new Date().toISOString();
+
+        await briefingRef.set(
+          {
+            answersTranslatedEs,
+            translatedEsAt
+          },
+          { merge: true }
+        );
+
+        await snap.ref.update({
+          status: "completed",
+          result: { answersTranslatedEs, translatedEsAt },
+          completedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        return;
+      }
+
       if (action === "business-insights") {
         const { totalClients, activeClients, recentTransactions } = payload;
         const ai = new GoogleGenAI({ apiKey });
