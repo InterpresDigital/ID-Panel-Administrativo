@@ -125,24 +125,72 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Load initial data from Firestore, fallback to Google Sheets if Firestore is empty
+  // Load initial data from Firestore in parallel (1 roundtrip instead of 13 sequential awaits) + instant session cache
   useEffect(() => {
+    const FAST_CACHE_KEY = "interpres_panel_fast_cache_v1";
+    let hydratedFromCache = false;
+
+    try {
+      const rawCache = sessionStorage.getItem(FAST_CACHE_KEY);
+      if (rawCache) {
+        const cached = JSON.parse(rawCache);
+        if (cached && typeof cached === "object") {
+          if (Array.isArray(cached.clients)) setClients(cached.clients);
+          if (Array.isArray(cached.transactions)) setTransactions(cached.transactions);
+          if (Array.isArray(cached.tasks)) setTasks(cached.tasks);
+          if (Array.isArray(cached.taxes)) setTaxes(cached.taxes);
+          if (Array.isArray(cached.agreements)) setAgreements(cached.agreements);
+          if (Array.isArray(cached.platforms)) setPlatforms(cached.platforms);
+          if (Array.isArray(cached.quotations)) setQuotations(cached.quotations);
+          if (Array.isArray(cached.bookings)) setBookings(cached.bookings);
+          if (Array.isArray(cached.workLogs)) setWorkLogs(cached.workLogs);
+          if (Array.isArray(cached.maintenanceLogs)) setMaintenanceLogs(cached.maintenanceLogs);
+          if (cached.bookingSettings) setBookingSettings(cached.bookingSettings);
+          if (Array.isArray(cached.incomeCategories)) setIncomeCategories(cached.incomeCategories);
+          if (Array.isArray(cached.expenseCategories)) setExpenseCategories(cached.expenseCategories);
+          if (cached.companyInfo) setCompanyInfo(cached.companyInfo);
+          hydratedFromCache = true;
+          setLoading(false);
+        }
+      }
+    } catch {
+      // ignore sessionStorage parse/quota errors
+    }
+
     const initData = async () => {
-      setLoading(true);
+      if (!hydratedFromCache) {
+        setLoading(true);
+      }
       try {
-        const clientsSnapshot = await getDocs(collection(db, "clients"));
-        const transactionsSnapshot = await getDocs(collection(db, "transactions"));
-        const tasksSnapshot = await getDocs(collection(db, "tasks"));
-        const taxesSnapshot = await getDocs(collection(db, "taxes"));
-        const agreementsSnapshot = await getDocs(collection(db, "agreements"));
-        const platformsSnapshot = await getDocs(collection(db, "platforms"));
-        const quotationsSnapshot = await getDocs(collection(db, "quotations"));
-        const bookingsSnapshot = await getDocs(collection(db, "bookings"));
-        const workLogsSnapshot = await getDocs(collection(db, "work_logs"));
-        const maintenanceLogsSnapshot = await getDocs(collection(db, "maintenance_logs"));
-        const categoriesDoc = await getDoc(doc(db, "settings", "categories"));
-        const companyInfoDoc = await getDoc(doc(db, "settings", "company_info"));
-        const bookingSettingsDoc = await getDoc(doc(db, "settings", "booking_settings"));
+        const [
+          clientsSnapshot,
+          transactionsSnapshot,
+          tasksSnapshot,
+          taxesSnapshot,
+          agreementsSnapshot,
+          platformsSnapshot,
+          quotationsSnapshot,
+          bookingsSnapshot,
+          workLogsSnapshot,
+          maintenanceLogsSnapshot,
+          categoriesDoc,
+          companyInfoDoc,
+          bookingSettingsDoc,
+        ] = await Promise.all([
+          getDocs(collection(db, "clients")),
+          getDocs(collection(db, "transactions")),
+          getDocs(collection(db, "tasks")),
+          getDocs(collection(db, "taxes")),
+          getDocs(collection(db, "agreements")),
+          getDocs(collection(db, "platforms")),
+          getDocs(collection(db, "quotations")),
+          getDocs(collection(db, "bookings")),
+          getDocs(collection(db, "work_logs")),
+          getDocs(collection(db, "maintenance_logs")),
+          getDoc(doc(db, "settings", "categories")),
+          getDoc(doc(db, "settings", "company_info")),
+          getDoc(doc(db, "settings", "booking_settings")),
+        ]);
 
         let loadedClients: Client[] = [];
         let loadedTransactions: Transaction[] = [];
@@ -250,20 +298,53 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           loadedMaintenanceLogs.push({ ...docSnap.data(), id: docSnap.id } as MaintenanceLog);
         });
 
+        const sortedTransactions = loadedTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const sortedTaxes = loadedTaxes.sort((a, b) => b.periodLabel.localeCompare(a.periodLabel));
+        const sortedAgreements = loadedAgreements.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const sortedPlatforms = loadedPlatforms.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const sortedQuotations = loadedQuotations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const sortedBookings = loadedBookings.sort((a, b) => new Date(`${b.date}T${b.startTime}`).getTime() - new Date(`${a.date}T${a.startTime}`).getTime());
+        const sortedWorkLogs = loadedWorkLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const sortedMaintenanceLogs = loadedMaintenanceLogs.sort((a, b) => b.period.localeCompare(a.period));
+
         setClients(loadedClients);
-        setTransactions(loadedTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setTransactions(sortedTransactions);
         setTasks(loadedTasks);
-        setTaxes(loadedTaxes.sort((a, b) => b.periodLabel.localeCompare(a.periodLabel)));
-        setAgreements(loadedAgreements.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        setPlatforms(loadedPlatforms.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        setQuotations(loadedQuotations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        setBookings(loadedBookings.sort((a, b) => new Date(`${b.date}T${b.startTime}`).getTime() - new Date(`${a.date}T${a.startTime}`).getTime()));
-        setWorkLogs(loadedWorkLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        setMaintenanceLogs(loadedMaintenanceLogs.sort((a, b) => b.period.localeCompare(a.period)));
+        setTaxes(sortedTaxes);
+        setAgreements(sortedAgreements);
+        setPlatforms(sortedPlatforms);
+        setQuotations(sortedQuotations);
+        setBookings(sortedBookings);
+        setWorkLogs(sortedWorkLogs);
+        setMaintenanceLogs(sortedMaintenanceLogs);
         setBookingSettings(loadedBookingSettings);
         setIncomeCategories(loadedIncomeCats);
         setExpenseCategories(loadedExpenseCats);
         setCompanyInfo(loadedCompanyInfo);
+
+        try {
+          sessionStorage.setItem(
+            FAST_CACHE_KEY,
+            JSON.stringify({
+              clients: loadedClients,
+              transactions: sortedTransactions,
+              tasks: loadedTasks,
+              taxes: sortedTaxes,
+              agreements: sortedAgreements,
+              platforms: sortedPlatforms,
+              quotations: sortedQuotations,
+              bookings: sortedBookings,
+              workLogs: sortedWorkLogs,
+              maintenanceLogs: sortedMaintenanceLogs,
+              bookingSettings: loadedBookingSettings,
+              incomeCategories: loadedIncomeCats,
+              expenseCategories: loadedExpenseCats,
+              companyInfo: loadedCompanyInfo,
+            })
+          );
+        } catch {
+          // Si supera la cuota de sessionStorage (ej. firmas grandes base64), omitir caché sin afectar operación
+        }
       } catch (error) {
         console.error("Error loading data from Firestore:", error);
       } finally {
@@ -273,6 +354,53 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initData();
   }, []);
+
+  // Mantener caché de sesión sincronizado tras cualquier alta, edición o baja para recargas instantáneas (SWR)
+  useEffect(() => {
+    if (loading) return;
+    const timer = window.setTimeout(() => {
+      try {
+        sessionStorage.setItem(
+          "interpres_panel_fast_cache_v1",
+          JSON.stringify({
+            clients,
+            transactions,
+            tasks,
+            taxes,
+            agreements,
+            platforms,
+            quotations,
+            bookings,
+            workLogs,
+            maintenanceLogs,
+            bookingSettings,
+            incomeCategories,
+            expenseCategories,
+            companyInfo,
+          })
+        );
+      } catch {
+        // Ignorar si excede cuota de sessionStorage; IndexedDB de Firestore sigue activo
+      }
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [
+    loading,
+    clients,
+    transactions,
+    tasks,
+    taxes,
+    agreements,
+    platforms,
+    quotations,
+    bookings,
+    workLogs,
+    maintenanceLogs,
+    bookingSettings,
+    incomeCategories,
+    expenseCategories,
+    companyInfo,
+  ]);
 
   // Actions
   const addClient = async (client: Client) => {
