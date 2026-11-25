@@ -17,6 +17,7 @@ import {
   getFirstIncompleteSection,
   getNextQuestionGuidance,
   hasAnySectionProgress,
+  isPlaceholderScreenSelection,
   isSectionFilled,
   isSectionPartial,
   navigateToStageTool,
@@ -146,6 +147,14 @@ export class AiVoiceBriefingSession {
 
   public getPaused(): boolean {
     return this.isPaused;
+  }
+
+  /**
+   * Sincroniza en memoria selecciones manuales hechas en pantalla durante la entrevista por voz
+   * (como tocar un botón de rango de presupuesto en la Etapa 8) sin alterar el audio ni el socket.
+   */
+  public syncExternalAnswers(updated: AiBriefingAnswers) {
+    this.latestAnswers = sanitizeLegacyAnswers(updated);
   }
 
   public setPaused(paused: boolean) {
@@ -764,6 +773,7 @@ export class AiVoiceBriefingSession {
 
             const cleaned: Partial<AiBriefingAnswers> = {};
             const useAppend = Boolean(appendMode);
+            let ignoredPlaceholderBudget = false;
 
             for (const [key, val] of Object.entries(fieldUpdates)) {
               if (val === undefined || val === null || val === "") continue;
@@ -783,6 +793,12 @@ export class AiVoiceBriefingSession {
               } else if (allowedStrings.has(key)) {
                 const incomingText = safeStr(val).trim();
                 if (!incomingText) continue;
+
+                // Jamás permitir que frases como "Rango seleccionado en pantalla" sobrescriban el rango real elegido con botón
+                if (key === "estimatedBudget" && isPlaceholderScreenSelection(incomingText)) {
+                  ignoredPlaceholderBudget = true;
+                  continue;
+                }
 
                 // Evitar que respuestas negativas genéricas ("No", "Ninguno") dichas en etapas tempranas
                 // marquen por error etapas futuras aún no preguntadas (ej. Etapa 7 sensitiveData)
@@ -853,16 +869,24 @@ export class AiVoiceBriefingSession {
               shouldWatchForNextQuestion = true;
             }
 
+            const waitingRealBudgetTap =
+              ignoredPlaceholderBudget &&
+              (!candidateAnswers.estimatedBudget.trim() ||
+                isPlaceholderScreenSelection(candidateAnswers.estimatedBudget));
+
             return {
               id: fc.id,
               name: fc.name,
               response: {
                 status: "saved",
                 activeStageOnScreen: nextGuidance.stage,
+                currentEstimatedBudget: candidateAnswers.estimatedBudget || "",
                 suggestedNextStage: nextGuidance.stage,
                 suggestedStageTitle: nextGuidance.stageTitle,
                 suggestedNextQuestion: nextGuidance.nextQuestion,
-                guidanceNote: nextGuidance.stage10ReadyToClose
+                guidanceNote: waitingRealBudgetTap
+                  ? "El cliente aún no ha tocado ninguno de los botones de rango de presupuesto en su pantalla. Pídele brevemente que toque ahora el botón del rango que prefiera en pantalla (o que te indique si prefiere dejarlo abierto a propuesta) y te avise cuando esté listo."
+                  : nextGuidance.stage10ReadyToClose
                   ? nextGuidance.nextQuestion
                   : alreadyAskedQuestionInTurn
                   ? "Datos guardados en pantalla. Como ya formulaste la pregunta en voz alta en este turno, NO la repitas; espera la respuesta del cliente."

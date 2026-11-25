@@ -17,6 +17,7 @@ import {
   AiBriefingRecord,
   AiPricingPackageOption,
   AI_RFI_SECTIONS,
+  formatBudgetDisplay,
   isLikelyNonSpanishBriefing,
   isSectionFilled,
   formatVoiceDuration,
@@ -891,7 +892,7 @@ const BriefingsAiAdmin: React.FC = () => {
               <InfoCard
                 title="8. Restricciones y Expectativas"
                 items={[
-                  ["Presupuesto aproximado", selectedBriefing.answers.estimatedBudget],
+                  ["Presupuesto aproximado", formatBudgetDisplay(selectedBriefing.answers.estimatedBudget)],
                   ["Fecha ideal de arranque", selectedBriefing.answers.idealLaunchDate],
                   ["Idiomas", selectedBriefing.answers.operatingLanguages],
                   ["Aprobador / Sponsor", selectedBriefing.answers.approverAndSponsor],
@@ -1054,7 +1055,8 @@ const BriefingsAiAdmin: React.FC = () => {
                         Implementación estimada: {selectedBriefing.aiPreDiagnostic.estimatedImplementationWeeks}
                       </span>
                       <span className="px-3.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-extrabold">
-                        Presupuesto declarado cliente: {selectedBriefing.answers.estimatedBudget || "Por definir"}
+                        Presupuesto declarado cliente:{" "}
+                        {formatBudgetDisplay(selectedBriefing.answers.estimatedBudget) || "Por definir"}
                       </span>
                       {selectedBriefing.aiPreDiagnostic.budgetFitStatus && (
                         <span className="px-3.5 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-xs font-extrabold">

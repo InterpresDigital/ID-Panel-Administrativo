@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import {
   AiBriefingAnswers,
   AiBriefingRecord,
+  formatBudgetDisplay,
   safeStr,
   sanitizeLegacyAnswers,
   toAttachmentArray,
@@ -252,7 +253,7 @@ export const generateAiBriefingPDF = async (
   ]);
 
   addSectionTable("8. Restricciones y Expectativas", [
-    ["Presupuesto aproximado", a.estimatedBudget],
+    ["Presupuesto aproximado", formatBudgetDisplay(a.estimatedBudget)],
     ["Fecha ideal de puesta en marcha", a.idealLaunchDate],
     ["Idioma(s) de operación", a.operatingLanguages],
     ["Aprobador y Sponsor clave", a.approverAndSponsor],
@@ -416,7 +417,7 @@ export const generateAiDiagnosticInternalPDF = async (briefing: AiBriefingRecord
   }
   block1Rows.push(
     ["Diagnóstico ejecutivo", safeStr(diag.executiveSummary)],
-    ["Presupuesto declarado por cliente", safeStr(a.estimatedBudget || "Por definir")],
+    ["Presupuesto declarado por cliente", formatBudgetDisplay(a.estimatedBudget) || "Por definir"],
     ["Ajuste presupuestal", safeStr(diag.budgetFitStatus || "Evaluado")],
     ["Análisis de presupuesto vs. necesidades", safeStr(diag.budgetVsNeedsAnalysis)]
   );

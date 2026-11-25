@@ -553,6 +553,29 @@ export const sanitizeLegacyAnswers = (raw?: Partial<AiBriefingAnswers> | null): 
 };
 
 /**
+ * Detecta frases comodín cuando el cliente dice verbalmente "ya lo seleccioné en pantalla"
+ * sin mencionar el monto, evitando que la IA sobrescriba el botón real elegido en la interfaz.
+ */
+export const isPlaceholderScreenSelection = (val?: unknown): boolean => {
+  const s = safeStr(val).trim();
+  if (!s) return false;
+  return (
+    /(rango\s+seleccionad|seleccionad[oa]\s+en\s+pantalla|elegir[aé]?\s+en\s+pantalla|elegid[oa]\s+en\s+pantalla|toque\s+en\s+pantalla|marcad[oa]\s+en\s+pantalla|bot[oó]n\s+en\s+pantalla|^en\s+pantalla\.?$)/i.test(
+      s
+    ) && !/(\$|usd|mxn|pesos|d[oó]lares|\d|abierto\s+a\s+propuesta)/i.test(s)
+  );
+};
+
+export const formatBudgetDisplay = (val?: unknown): string => {
+  const s = safeStr(val).trim();
+  if (!s) return "";
+  if (isPlaceholderScreenSelection(s)) {
+    return "Por confirmar con el cliente (indicó selección en pantalla)";
+  }
+  return s;
+};
+
+/**
  * Marca una etapa con check verde (✓) ÚNICAMENTE cuando sus campos esenciales ya fueron respondidos,
  * para que el progreso avance fielmente etapa por etapa conforme ocurre la conversación.
  */
@@ -584,7 +607,11 @@ export const isSectionFilled = (
     case 7:
       return hasStr(answers.sensitiveData);
     case 8:
-      return hasStr(answers.idealLaunchDate) && hasStr(answers.estimatedBudget);
+      return (
+        hasStr(answers.idealLaunchDate) &&
+        hasStr(answers.estimatedBudget) &&
+        !isPlaceholderScreenSelection(answers.estimatedBudget)
+      );
     case 9:
       return hasStr(answers.kpis) || hasStr(answers.successAt3And6Months);
     case 10:
@@ -853,7 +880,11 @@ export const updateRfiFieldsTool: FunctionDeclaration = {
       sensitiveData: { type: Type.STRING, description: "Datos sensibles o confidenciales que manejará" },
       compliancePolicies: { type: Type.STRING, description: "Normativas o políticas a cumplir (ej. LFPDPPP)" },
       dataResidency: { type: Type.STRING, description: "Restricciones de infraestructura o región de datos" },
-      estimatedBudget: { type: Type.STRING, description: "Presupuesto aproximado o preferencia de propuesta" },
+      estimatedBudget: {
+        type: Type.STRING,
+        description:
+          "Presupuesto aproximado real o preferencia de propuesta (ej. '$5,000 – $12,000 USD ($100k – $240k MXN)', '50,000 pesos' o 'Abierto a propuesta según alcance / ROI'). PROHIBIDO enviar frases comodín como 'Rango seleccionado en pantalla'; si el cliente elige un botón en pantalla, el sistema ya lo registra automáticamente.",
+      },
       idealLaunchDate: { type: Type.STRING, description: "Fecha ideal de puesta en marcha" },
       operatingLanguages: { type: Type.STRING, description: "Idiomas de operación" },
       approverAndSponsor: { type: Type.STRING, description: "Quién aprueba el diseño y quién es el sponsor" },

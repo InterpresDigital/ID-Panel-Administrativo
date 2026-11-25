@@ -55,6 +55,7 @@ import {
   clampSection,
   getFirstIncompleteSection,
   hasAnySectionProgress,
+  isPlaceholderScreenSelection,
   isSectionFilled,
   isSectionPartial,
   resolveResumeSection,
@@ -1004,6 +1005,13 @@ const PublicAiBriefing: React.FC = () => {
           }
 
           const nextPartial = { ...partial };
+          // Impedir que frases comodín de voz sobrescriban un rango de presupuesto elegido con botón en pantalla
+          if (
+            typeof nextPartial.estimatedBudget === "string" &&
+            isPlaceholderScreenSelection(nextPartial.estimatedBudget)
+          ) {
+            delete nextPartial.estimatedBudget;
+          }
           if (
             typeof nextPartial.additionalComments === "string" &&
             nextPartial.additionalComments.trim() &&
@@ -1120,6 +1128,7 @@ const PublicAiBriefing: React.FC = () => {
         lastActiveSection: activeSectionRef.current,
       };
       answersRef.current = next;
+      voiceRef.current?.syncExternalAnswers(next);
       if (step === "workspace") {
         scheduleDebouncedPersist(next);
       }
@@ -1139,6 +1148,7 @@ const PublicAiBriefing: React.FC = () => {
         lastActiveSection: activeSectionRef.current,
       };
       answersRef.current = next;
+      voiceRef.current?.syncExternalAnswers(next);
       if (step === "workspace") {
         scheduleDebouncedPersist(next);
       }
@@ -2064,7 +2074,7 @@ const PublicAiBriefing: React.FC = () => {
 
                 {/* Quick Budget Selector shown ONLY during Stage 8 so it never clutters Mobile */}
                 {activeSection === 8 && (
-                  <div className="w-full max-w-xl bg-slate-800/80 border border-indigo-400/40 rounded-2xl p-3.5 space-y-2">
+                  <div className="w-full max-w-xl bg-slate-800/80 border border-indigo-400/40 rounded-2xl p-3.5 space-y-2.5">
                     <div className="text-[11px] font-bold text-indigo-200">
                       Opcional — Selecciona tu rango estimado con un toque (Etapa 8):
                     </div>
@@ -2074,6 +2084,7 @@ const PublicAiBriefing: React.FC = () => {
                           key={opt}
                           type="button"
                           onClick={() => {
+                            setUsedManualOnce(true);
                             const next: AiBriefingAnswers = {
                               ...answersRef.current,
                               estimatedBudget: opt,
@@ -2081,19 +2092,29 @@ const PublicAiBriefing: React.FC = () => {
                             };
                             setAnswers(next);
                             answersRef.current = next;
+                            voiceRef.current?.syncExternalAnswers(next);
                             if (briefingId) persistDraft(next, briefingId, "draft");
                           }}
                           className={clsx(
                             "px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all text-left",
                             answers.estimatedBudget === opt
-                              ? "bg-indigo-600 border-indigo-400 text-white"
+                              ? "bg-emerald-600 border-emerald-400 text-white shadow-sm"
                               : "bg-slate-900/80 border-slate-600/90 text-slate-200 hover:border-indigo-400/70"
                           )}
                         >
-                          {opt}
+                          {answers.estimatedBudget === opt ? `✓ ${opt}` : opt}
                         </button>
                       ))}
                     </div>
+                    {answers.estimatedBudget &&
+                      !isPlaceholderScreenSelection(answers.estimatedBudget) && (
+                        <div className="text-[11px] font-semibold text-emerald-300 flex items-center gap-1.5 pt-0.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>
+                            Rango guardado: <strong>{answers.estimatedBudget}</strong> — Confírmale &quot;Listo&quot; a Nexia IA para continuar.
+                          </span>
+                        </div>
+                      )}
                   </div>
                 )}
 
