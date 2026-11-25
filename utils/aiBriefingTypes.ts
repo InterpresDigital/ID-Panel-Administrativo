@@ -809,7 +809,8 @@ export const getNextQuestionGuidance = (
       return {
         stage,
         stageTitle: stageMeta.shortTitle,
-        nextQuestion: "¿Tienen algún rango estimado de inversión, o prefieres seleccionarlo con un toque en pantalla?",
+        nextQuestion:
+          "¿Cuentan con algún rango aproximado de presupuesto para este proyecto, o prefieren recibir opciones según el alcance?",
         stage10ReadyToClose: false,
       };
 
