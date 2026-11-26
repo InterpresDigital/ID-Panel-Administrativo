@@ -7,6 +7,7 @@ import { sendBookingConfirmationEmail, sendBookingCancellationEmail, DEFAULT_EMA
 import { connectGoogleAccount1Click, openGoogleOAuthPopup, connectGoogleAccountOffline, isGoogleTokenExpired } from '../services/gmailApiService';
 import { COUNTRY_CODES } from './PublicBooking';
 import { createZoomMeeting } from '../services/zoomService';
+import { getAppBaseUrl } from '../utils/urlUtils';
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -42,8 +43,22 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 
+const formatCardDateParts = (isoDate: string) => {
+  if (!isoDate) return { day: '--', month: '---', weekday: 'Sin fecha', year: '' };
+  try {
+    const d = new Date(`${isoDate}T00:00:00`);
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = d.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '').toUpperCase();
+    const weekdayRaw = d.toLocaleDateString('es-MX', { weekday: 'long' });
+    const weekday = weekdayRaw.charAt(0).toUpperCase() + weekdayRaw.slice(1);
+    return { day, month, weekday, year: d.getFullYear().toString() };
+  } catch {
+    return { day: '--', month: '---', weekday: isoDate, year: '' };
+  }
+};
+
 const Bookings: React.FC = () => {
-  const { bookings, bookingSettings, updateBooking, deleteBooking, updateBookingSettings } = useData();
+  const { bookings, bookingSettings, addBooking, updateBooking, deleteBooking, updateBookingSettings, companyInfo } = useData();
 
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<'calendar' | 'availability' | 'platforms' | 'integrations'>('calendar');
@@ -418,7 +433,7 @@ const Bookings: React.FC = () => {
   };
 
   const copyBookingLink = (slug?: string) => {
-    const baseUrl = window.location.origin;
+    const baseUrl = getAppBaseUrl(companyInfo);
     const url = slug ? `${baseUrl}/#/book/${slug}` : `${baseUrl}/#/book`;
     navigator.clipboard.writeText(url);
     setCopiedId(slug || 'main');
@@ -598,140 +613,219 @@ const Bookings: React.FC = () => {
     return true;
   });
 
+  const scheduledCount = bookings.filter(b => b.status === 'Programada').length;
+  const completedCount = bookings.filter(b => b.status === 'Completada').length;
+
   return (
-    <div className="space-y-8">
-      {/* Header & Title */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
-            <Video className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-            Citas y Videollamadas
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-            Gestión de agendamiento en línea, salas de Zoom e integraciones con Telegram
-          </p>
+    <div className="space-y-6 pb-10">
+      {/* Executive Header & Actions */}
+      <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-5 sm:p-7 shadow-xs space-y-6">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1464B8] to-[#00A9B7] text-white flex items-center justify-center shadow-md shadow-[#1464B8]/20 flex-shrink-0">
+              <Video className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#102B4B] dark:text-white tracking-tight">
+                Citas y Videollamadas
+              </h1>
+              <p className="text-[#102B4B]/65 dark:text-slate-300 mt-0.5 text-xs sm:text-sm">
+                Control ejecutivo de sesiones Zoom, disponibilidad y enlaces públicos por plataforma.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+            <button
+              onClick={() => copyBookingLink()}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] text-[#102B4B] dark:text-slate-100 px-4 py-2.5 rounded-xl text-xs font-bold hover:border-[#1464B8] transition-all cursor-pointer"
+            >
+              {copiedId === 'main' ? <Check className="w-4 h-4 text-[#00A9B7]" /> : <Copy className="w-4 h-4 text-[#1464B8] dark:text-[#5FD9E4]" />}
+              <span>{copiedId === 'main' ? '¡Enlace Público Copiado!' : 'Copiar Link de Agenda'}</span>
+            </button>
+
+            <a
+              href="/#/book"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-1.5 bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] text-[#1464B8] dark:text-[#7CE8F0] px-3.5 py-2.5 rounded-xl text-xs font-bold hover:border-[#1464B8] transition-all"
+              title="Abrir vista pública de agendamiento"
+            >
+              <span>Ver Agenda</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+
+            <button
+              onClick={() => setManualModalOpen(true)}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-[#1464B8]/20 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Agendar Cita Manual</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setManualModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Agendar Cita Manualmente</span>
-          </button>
+        {/* KPI Summary Strip */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-[#C7D5E2]/70 dark:border-[#1B3C68]">
+          <div className="p-3.5 rounded-2xl bg-[#F6F9FC] dark:bg-[#071B36]/85 border border-[#C7D5E2]/80 dark:border-[#1B3C68] flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#102B4B]/60 dark:text-slate-400 block">
+                Programadas
+              </span>
+              <span className="font-display text-2xl font-extrabold text-[#1464B8] dark:text-[#66B2FF]">
+                {scheduledCount}
+              </span>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-[#1464B8]/12 text-[#1464B8] dark:text-[#66B2FF] flex items-center justify-center">
+              <CalendarIcon className="w-4 h-4" />
+            </div>
+          </div>
 
-          <button
-            onClick={() => copyBookingLink()}
-            className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-dark-border text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-gray-50 dark:hover:bg-gray-750 transition-all"
-          >
-            {copiedId === 'main' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-primary-500" />}
-            <span>{copiedId === 'main' ? '¡Enlace Copiado!' : 'Copiar Enlace Público General'}</span>
-          </button>
+          <div className="p-3.5 rounded-2xl bg-[#F6F9FC] dark:bg-[#071B36]/85 border border-[#C7D5E2]/80 dark:border-[#1B3C68] flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#102B4B]/60 dark:text-slate-400 block">
+                Hoy y Mañana
+              </span>
+              <span className="font-display text-2xl font-extrabold text-[#008995] dark:text-[#5FD9E4]">
+                {todayBookings.length + tomorrowBookings.length}
+              </span>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-[#00A9B7]/15 text-[#00A9B7] dark:text-[#5FD9E4] flex items-center justify-center">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-[#F6F9FC] dark:bg-[#071B36]/85 border border-[#C7D5E2]/80 dark:border-[#1B3C68] flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#102B4B]/60 dark:text-slate-400 block">
+                Completadas
+              </span>
+              <span className="font-display text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                {completedCount}
+              </span>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-[#F6F9FC] dark:bg-[#071B36]/85 border border-[#C7D5E2]/80 dark:border-[#1B3C68] flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#102B4B]/60 dark:text-slate-400 block">
+                Plataformas Activas
+              </span>
+              <span className="font-display text-2xl font-extrabold text-[#102B4B] dark:text-white">
+                {platformsList.length || bookingSettings.platforms?.length || 0}
+              </span>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-[#102B4B]/10 dark:bg-white/10 text-[#102B4B] dark:text-slate-200 flex items-center justify-center">
+              <Globe className="w-4 h-4" />
+            </div>
+          </div>
         </div>
       </div>
 
       {saveSuccessMsg && (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-2xl flex items-center gap-2 shadow-sm animate-fade-in">
+        <div className="p-4 bg-[#00A9B7]/12 border border-[#00A9B7]/40 text-[#007B86] dark:text-[#7CE8F0] text-xs font-bold rounded-2xl flex items-center gap-2 shadow-xs animate-fade-in">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
           <span>{saveSuccessMsg}</span>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-dark-border flex gap-4 text-sm font-semibold overflow-x-auto">
+      {/* Segmented Navigation Bar */}
+      <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] p-1.5 rounded-2xl flex gap-1.5 text-xs sm:text-sm font-bold overflow-x-auto shadow-2xs">
         <button
           onClick={() => setActiveTab('calendar')}
           className={clsx(
-            "pb-3.5 px-2 flex items-center gap-2 transition-colors border-b-2 whitespace-nowrap",
+            "py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer",
             activeTab === 'calendar'
-              ? "border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400 font-bold"
-              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "bg-[#1464B8] text-white shadow-sm"
+              : "text-[#102B4B]/70 dark:text-slate-300 hover:bg-[#F6F9FC] dark:hover:bg-[#071B36]"
           )}
         >
           <CalendarIcon className="w-4 h-4" />
-          Agenda de Citas ({bookings.length})
+          <span>Agenda de Citas ({bookings.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('availability')}
           className={clsx(
-            "pb-3.5 px-2 flex items-center gap-2 transition-colors border-b-2 whitespace-nowrap",
+            "py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer",
             activeTab === 'availability'
-              ? "border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400 font-bold"
-              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "bg-[#1464B8] text-white shadow-sm"
+              : "text-[#102B4B]/70 dark:text-slate-300 hover:bg-[#F6F9FC] dark:hover:bg-[#071B36]"
           )}
         >
           <Clock className="w-4 h-4" />
-          Horarios y Disponibilidad
+          <span>Horarios y Disponibilidad</span>
         </button>
 
         <button
           onClick={() => setActiveTab('platforms')}
           className={clsx(
-            "pb-3.5 px-2 flex items-center gap-2 transition-colors border-b-2 whitespace-nowrap",
+            "py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer",
             activeTab === 'platforms'
-              ? "border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400 font-bold"
-              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "bg-[#1464B8] text-white shadow-sm"
+              : "text-[#102B4B]/70 dark:text-slate-300 hover:bg-[#F6F9FC] dark:hover:bg-[#071B36]"
           )}
         >
           <Globe className="w-4 h-4" />
-          Plataformas ({bookingSettings.platforms?.length || 0})
+          <span>Plataformas ({platformsList.length || bookingSettings.platforms?.length || 0})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('integrations')}
           className={clsx(
-            "pb-3.5 px-2 flex items-center gap-2 transition-colors border-b-2 whitespace-nowrap",
+            "py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer",
             activeTab === 'integrations'
-              ? "border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400 font-bold"
-              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "bg-[#1464B8] text-white shadow-sm"
+              : "text-[#102B4B]/70 dark:text-slate-300 hover:bg-[#F6F9FC] dark:hover:bg-[#071B36]"
           )}
         >
           <Settings className="w-4 h-4" />
-          Integración Zoom & Telegram
+          <span>Integraciones (Zoom, Gmail & Telegram)</span>
         </button>
       </div>
 
       {/* TAB 1: CALENDAR / LIST */}
       {activeTab === 'calendar' && (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Barra de Alertas de Videollamadas de Hoy y Mañana */}
             {(todayBookings.length > 0 || tomorrowBookings.length > 0) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Alerta HOY */}
                 <div className={clsx(
-                  "p-5 rounded-2xl border transition-all space-y-3 shadow-sm",
+                  "p-5 rounded-2xl border transition-all space-y-3 shadow-xs",
                   todayBookings.length > 0 
-                    ? "bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/40" 
-                    : "bg-gray-50 dark:bg-gray-800/40 border-gray-200 dark:border-dark-border"
+                    ? "bg-[#00A9B7]/10 dark:bg-[#00A9B7]/15 border-[#00A9B7]/45" 
+                    : "bg-white dark:bg-[#0C2548] border-[#C7D5E2] dark:border-[#1B3C68]"
                 )}>
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2 font-bold text-xs text-rose-900 dark:text-rose-200">
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-                      <span>🔴 VIDEOLLAMADAS PARA HOY ({todayBookings.length})</span>
+                    <div className="flex items-center gap-2 font-extrabold text-xs text-[#102B4B] dark:text-white">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#00A9B7] animate-pulse"></span>
+                      <span>SESIONES PARA HOY ({todayBookings.length})</span>
                     </div>
-                    <span className="text-xxs font-extrabold uppercase px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300">
+                    <span className="text-xxs font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#00A9B7]/20 text-[#007B86] dark:text-[#7CE8F0]">
                       {todayStr}
                     </span>
                   </div>
 
                   {todayBookings.length === 0 ? (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">No tienes videollamadas pendientes para hoy.</p>
+                    <p className="text-xs text-[#102B4B]/60 dark:text-slate-400 italic">No tienes videollamadas pendientes para hoy.</p>
                   ) : (
                     <div className="space-y-2">
                       {todayBookings.map(b => (
-                        <div key={b.id} className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-rose-100 dark:border-rose-900/30 flex items-center justify-between gap-2 shadow-xs">
+                        <div key={b.id} className="bg-white dark:bg-[#071B36] p-3 rounded-xl border border-[#C7D5E2] dark:border-[#1B3C68] flex items-center justify-between gap-2">
                           <div>
-                            <div className="font-bold text-xs text-gray-900 dark:text-white">{b.clientName}</div>
-                            <div className="text-xxs font-semibold text-rose-600 dark:text-rose-400">{b.startTime} - {b.endTime} CDMX | {b.platformName}</div>
+                            <div className="font-bold text-xs text-[#102B4B] dark:text-white">{b.clientName}</div>
+                            <div className="text-xxs font-semibold text-[#008995] dark:text-[#5FD9E4]">{b.startTime} – {b.endTime} CDMX | {b.platformName}</div>
                           </div>
                           {b.zoomJoinUrl && (
                             <a
                               href={b.zoomStartUrl || b.zoomJoinUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xxs font-bold flex items-center gap-1 shadow-xs transition-colors flex-shrink-0"
+                              className="px-3 py-1.5 bg-[#1464B8] hover:bg-[#10539A] text-white rounded-lg text-xxs font-bold flex items-center gap-1 shadow-xs transition-colors flex-shrink-0"
                             >
                               <Video className="w-3 h-3" />
                               <span>Entrar Zoom</span>
@@ -745,37 +839,37 @@ const Bookings: React.FC = () => {
 
                 {/* Alerta MAÑANA */}
                 <div className={clsx(
-                  "p-5 rounded-2xl border transition-all space-y-3 shadow-sm",
+                  "p-5 rounded-2xl border transition-all space-y-3 shadow-xs",
                   tomorrowBookings.length > 0 
-                    ? "bg-amber-50/80 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/40" 
-                    : "bg-gray-50 dark:bg-gray-800/40 border-gray-200 dark:border-dark-border"
+                    ? "bg-[#1464B8]/8 dark:bg-[#1464B8]/15 border-[#1464B8]/40" 
+                    : "bg-white dark:bg-[#0C2548] border-[#C7D5E2] dark:border-[#1B3C68]"
                 )}>
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2 font-bold text-xs text-amber-900 dark:text-amber-200">
-                      <Clock className="w-4 h-4 text-amber-500" />
-                      <span>🟡 VIDEOLLAMADAS PARA MAÑANA ({tomorrowBookings.length})</span>
+                    <div className="flex items-center gap-2 font-extrabold text-xs text-[#102B4B] dark:text-white">
+                      <Clock className="w-4 h-4 text-[#1464B8] dark:text-[#66B2FF]" />
+                      <span>SESIONES PARA MAÑANA ({tomorrowBookings.length})</span>
                     </div>
-                    <span className="text-xxs font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                    <span className="text-xxs font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#1464B8]/15 text-[#1464B8] dark:text-[#7CE8F0]">
                       {tomorrowStr}
                     </span>
                   </div>
 
                   {tomorrowBookings.length === 0 ? (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">No tienes videollamadas agendadas para mañana.</p>
+                    <p className="text-xs text-[#102B4B]/60 dark:text-slate-400 italic">No tienes videollamadas agendadas para mañana.</p>
                   ) : (
                     <div className="space-y-2">
                       {tomorrowBookings.map(b => (
-                        <div key={b.id} className="bg-white dark:bg-gray-900 p-3 rounded-xl border border-amber-100 dark:border-amber-900/30 flex items-center justify-between gap-2 shadow-xs">
+                        <div key={b.id} className="bg-white dark:bg-[#071B36] p-3 rounded-xl border border-[#C7D5E2] dark:border-[#1B3C68] flex items-center justify-between gap-2">
                           <div>
-                            <div className="font-bold text-xs text-gray-900 dark:text-white">{b.clientName}</div>
-                            <div className="text-xxs font-semibold text-amber-600 dark:text-amber-400">{b.startTime} - {b.endTime} CDMX | {b.platformName}</div>
+                            <div className="font-bold text-xs text-[#102B4B] dark:text-white">{b.clientName}</div>
+                            <div className="text-xxs font-semibold text-[#1464B8] dark:text-[#66B2FF]">{b.startTime} – {b.endTime} CDMX | {b.platformName}</div>
                           </div>
                           {b.zoomJoinUrl && (
                             <a
                               href={b.zoomStartUrl || b.zoomJoinUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xxs font-bold flex items-center gap-1 shadow-xs transition-colors flex-shrink-0"
+                              className="px-3 py-1.5 bg-[#1464B8] hover:bg-[#10539A] text-white rounded-lg text-xxs font-bold flex items-center gap-1 shadow-xs transition-colors flex-shrink-0"
                             >
                               <Video className="w-3 h-3" />
                               <span>Ver Zoom</span>
@@ -789,19 +883,21 @@ const Bookings: React.FC = () => {
               </div>
             )}
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-dark-border/60 shadow-sm">
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtrar Estado:</span>
+            {/* Filters Bar */}
+            <div className="flex flex-col sm:flex-row justify-between gap-4 bg-white dark:bg-[#0C2548] p-4 rounded-2xl border border-[#C7D5E2] dark:border-[#1B3C68] shadow-2xs">
+              <div className="flex flex-wrap gap-1.5 items-center">
+                <span className="text-[11px] font-extrabold text-[#102B4B]/60 dark:text-slate-400 uppercase tracking-wider mr-1">
+                  Estado:
+                </span>
                 {['Todas', 'Programada', 'Completada', 'Cancelada'].map(st => (
                   <button
                     key={st}
                     onClick={() => setStatusFilter(st)}
                     className={clsx(
-                      "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                      "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
                       statusFilter === st
-                        ? "bg-primary-600 text-white shadow-sm"
-                        : "bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        ? "bg-[#1464B8] border-[#1464B8] text-white shadow-xs"
+                        : "bg-[#F6F9FC] dark:bg-[#071B36] border-[#C7D5E2] dark:border-[#1B3C68] text-[#102B4B]/75 dark:text-slate-300 hover:border-[#1464B8]"
                     )}
                   >
                     {st}
@@ -809,16 +905,18 @@ const Bookings: React.FC = () => {
                 ))}
               </div>
 
-              {bookingSettings.platforms && bookingSettings.platforms.length > 0 && (
+              {(platformsList.length > 0 || (bookingSettings.platforms && bookingSettings.platforms.length > 0)) && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Plataforma:</span>
+                  <span className="text-[11px] font-extrabold text-[#102B4B]/60 dark:text-slate-400 uppercase tracking-wider">
+                    Plataforma:
+                  </span>
                   <select
                     value={platformFilter}
                     onChange={e => setPlatformFilter(e.target.value)}
-                    className="bg-gray-100 dark:bg-gray-700 border-none rounded-lg p-2 text-xs font-semibold dark:text-white outline-none"
+                    className="bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl px-3 py-2 text-xs font-bold text-[#102B4B] dark:text-white outline-none focus:border-[#1464B8]"
                   >
                     <option value="Todas">Todas las plataformas</option>
-                    {bookingSettings.platforms.map(p => (
+                    {(platformsList.length > 0 ? platformsList : bookingSettings.platforms).map(p => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
@@ -828,147 +926,191 @@ const Bookings: React.FC = () => {
 
             {/* Bookings Grid */}
             {filteredBookings.length === 0 ? (
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border/60 rounded-3xl p-12 text-center space-y-4">
-                <div className="w-16 h-16 bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center mx-auto">
+              <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-12 text-center space-y-4">
+                <div className="w-16 h-16 bg-[#1464B8]/10 text-[#1464B8] dark:text-[#66B2FF] rounded-2xl flex items-center justify-center mx-auto">
                   <CalendarIcon className="w-8 h-8" />
                 </div>
                 <div className="space-y-1 max-w-sm mx-auto">
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">No hay citas agendadas</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Las reservaciones que realicen tus clientes desde tus sitios web o páginas de agendamiento aparecerán aquí automáticamente.
+                  <h3 className="font-display font-bold text-lg text-[#102B4B] dark:text-white">No hay citas en esta vista</h3>
+                  <p className="text-xs text-[#102B4B]/65 dark:text-slate-400">
+                    Las reservaciones realizadas desde tus enlaces públicos o agendadas manualmente aparecerán aquí.
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredBookings.map(b => (
-                  <div 
-                    key={b.id}
-                    className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border/60 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between"
-                  >
-                    <div className="space-y-3">
-                      {/* Header: Platform & Status */}
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="px-2.5 py-1 bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 font-bold text-[10px] rounded-lg uppercase tracking-wider">
-                          {b.platformName}
-                        </span>
-                        <span className={clsx(
-                          "px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1",
-                          b.status === 'Programada' ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400" :
-                          b.status === 'Completada' ? "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400" :
-                          "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-400"
-                        )}>
-                          {b.status}
-                        </span>
-                      </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredBookings.map(b => {
+                  const dateParts = formatCardDateParts(b.date);
+                  const matchedPlat = platformsList.find(p => p.id === b.platformId || p.name.toLowerCase() === (b.platformName || '').toLowerCase());
+                  const dotColor = matchedPlat?.color || '#1464B8';
+                  const initial = (b.clientName || 'C').trim().charAt(0).toUpperCase();
 
-                      {/* Date and Time */}
-                      <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-dark-border/40 space-y-1">
-                        <div className="flex items-center gap-2 text-xs font-bold text-gray-900 dark:text-white">
-                          <CalendarIcon className="w-4 h-4 text-emerald-500" />
-                          <span>{b.date}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs font-semibold text-primary-600 dark:text-primary-400">
-                          <Clock className="w-4 h-4" />
-                          <span>{b.startTime} - {b.endTime} (Hora CDMX)</span>
-                        </div>
-                      </div>
+                  return (
+                    <div 
+                      key={b.id}
+                      className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] hover:border-[#1464B8]/70 dark:hover:border-[#00A9B7]/60 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                    >
+                      <div className="space-y-3.5">
+                        {/* Header: Platform Pill & Status Pill */}
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] text-[#102B4B] dark:text-slate-100 font-extrabold text-[10px] rounded-lg uppercase tracking-wider truncate">
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }} />
+                            <span className="truncate">{b.platformName}</span>
+                          </span>
 
-                      {/* Client Information */}
-                      <div className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300">
-                        <div className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                          <User className="w-4 h-4 text-gray-400" />
-                          <span>{b.clientName}</span>
+                          <span className={clsx(
+                            "px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 flex-shrink-0 border",
+                            b.status === 'Programada'
+                              ? "bg-[#00A9B7]/12 border-[#00A9B7]/35 text-[#007B86] dark:text-[#7CE8F0]"
+                              : b.status === 'Completada'
+                              ? "bg-emerald-500/12 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+                              : "bg-rose-500/12 border-rose-500/30 text-rose-700 dark:text-rose-300"
+                          )}>
+                            {b.status}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                          <Mail className="w-3.5 h-3.5" />
-                          <a href={`mailto:${b.clientEmail}`} className="hover:underline">{b.clientEmail}</a>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                          <Phone className="w-3.5 h-3.5" />
-                          <a href={`tel:${b.clientPhone}`} className="hover:underline">{b.clientPhone}</a>
-                        </div>
-                        {b.topic && (
-                          <div className="pt-1 text-xxs text-gray-500 dark:text-gray-400 italic">
-                            "{b.topic}"
+
+                        {/* Executive Calendar Date & Time Box */}
+                        <div className="bg-[#F6F9FC] dark:bg-[#071B36]/90 p-3 rounded-xl border border-[#C7D5E2]/80 dark:border-[#1B3C68] flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] flex flex-col items-center justify-center flex-shrink-0 shadow-2xs">
+                            <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#1464B8] dark:text-[#66B2FF] leading-none">
+                              {dateParts.month}
+                            </span>
+                            <span className="font-display text-base font-extrabold text-[#102B4B] dark:text-white leading-tight mt-0.5">
+                              {dateParts.day}
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-extrabold text-[#102B4B] dark:text-white truncate">
+                              {dateParts.weekday} {dateParts.year && `• ${dateParts.year}`}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-[#008995] dark:text-[#5FD9E4] mt-0.5">
+                              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>{b.startTime} – {b.endTime} (CDMX)</span>
+                            </div>
+                          </div>
+                        </div>
 
-                    {/* Actions & Zoom Link & WhatsApp & Correo */}
-                    <div className="pt-3 border-t border-gray-100 dark:border-dark-border/50 space-y-2">
-                      <button
-                        onClick={() => {
-                          setWhatsAppModalBooking(b);
-                          const confirmTpl = WHATSAPP_TEMPLATES.find(t => t.id === 'confirmation');
-                          if (confirmTpl) {
-                            setCustomWhatsAppText(confirmTpl.getMessage(b));
-                          }
-                        }}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        <span>WhatsApp al Cliente</span>
-                      </button>
+                        {/* Client Profile Block */}
+                        <div className="space-y-2 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-[#1464B8]/12 dark:bg-[#1464B8]/25 text-[#1464B8] dark:text-[#7CE8F0] font-display font-extrabold text-xs flex items-center justify-center flex-shrink-0">
+                              {initial}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-display font-bold text-sm text-[#102B4B] dark:text-white truncate">
+                                {b.clientName}
+                              </div>
+                            </div>
+                          </div>
 
-                      <button
-                        onClick={() => {
-                          setEmailModalBooking(b);
-                          setSelectedEmailTplId('confirmation');
-                          const tpl = EMAIL_TEMPLATES.find(t => t.id === 'confirmation') || EMAIL_TEMPLATES[0];
-                          setCustomEmailSubject(interpolateEmailTemplate(tpl.subject, b));
-                          setCustomEmailBody(interpolateEmailTemplate(tpl.bodyTemplate, b));
-                        }}
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
-                      >
-                        <Mail className="w-4 h-4" />
-                        <span>Enviar Correo al Cliente</span>
-                      </button>
+                          <div className="pl-1 space-y-1 text-[#102B4B]/70 dark:text-slate-300">
+                            <div className="flex items-center gap-2 truncate">
+                              <Mail className="w-3.5 h-3.5 text-[#1464B8] dark:text-[#66B2FF] flex-shrink-0" />
+                              <a href={`mailto:${b.clientEmail}`} className="hover:text-[#1464B8] dark:hover:text-white hover:underline truncate">
+                                {b.clientEmail}
+                              </a>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-3.5 h-3.5 text-[#00A9B7] dark:text-[#5FD9E4] flex-shrink-0" />
+                              <a href={`tel:${b.clientPhone}`} className="hover:text-[#1464B8] dark:hover:text-white hover:underline font-mono text-[11px]">
+                                {b.clientPhone}
+                              </a>
+                            </div>
+                          </div>
 
-                      {b.zoomJoinUrl && (
-                        <a
-                          href={b.zoomStartUrl || b.zoomJoinUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
-                        >
-                          <Video className="w-4 h-4" />
-                          <span>Iniciar / Unirse a Zoom</span>
-                        </a>
-                      )}
-
-                    <div className="flex justify-between items-center pt-1 text-xs">
-                      <div className="flex items-center gap-1">
-                        {b.status === 'Programada' && (
-                          <button
-                            onClick={() => handleStatusChange(b, 'Completada')}
-                            className="text-xxs font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 underline"
-                          >
-                            Marcar Completada
-                          </button>
-                        )}
-                        {b.status !== 'Cancelada' && (
-                          <button
-                            onClick={() => handleStatusChange(b, 'Cancelada')}
-                            className="text-xxs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 underline ml-2"
-                          >
-                            Cancelar Cita
-                          </button>
-                        )}
+                          {b.topic && (
+                            <div className="mt-1.5 px-3 py-2 rounded-xl bg-[#F6F9FC] dark:bg-[#071B36]/60 border-l-2 border-[#00A9B7] text-[11px] text-[#102B4B]/75 dark:text-slate-300 italic line-clamp-2">
+                              &ldquo;{b.topic}&rdquo;
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      <button
-                        onClick={() => handleDeleteBooking(b.id)}
-                        className="p-1 text-gray-400 hover:text-rose-600 transition-colors"
-                        title="Eliminar registro"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Harmonious Executive Actions */}
+                      <div className="pt-3.5 border-t border-[#C7D5E2]/70 dark:border-[#1B3C68] space-y-2.5">
+                        {/* Primary Action: Zoom */}
+                        {b.zoomJoinUrl && (
+                          <a
+                            href={b.zoomStartUrl || b.zoomJoinUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
+                          >
+                            <Video className="w-4 h-4" />
+                            <span>Iniciar / Unirse a Zoom</span>
+                          </a>
+                        )}
+
+                        {/* Secondary 2-Column Clean Surface Buttons: WhatsApp & Correo */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWhatsAppModalBooking(b);
+                              const confirmTpl = WHATSAPP_TEMPLATES.find(t => t.id === 'confirmation');
+                              if (confirmTpl) {
+                                setCustomWhatsAppText(confirmTpl.getMessage(b));
+                              }
+                            }}
+                            className="bg-[#F6F9FC] dark:bg-[#071B36] hover:bg-[#E6F7F8] dark:hover:bg-[#10305C] border border-[#C7D5E2] dark:border-[#1B3C68] hover:border-[#00A9B7] text-[#102B4B] dark:text-slate-100 font-bold py-2 px-2.5 rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-[#00A9B7]" />
+                            <span>WhatsApp</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEmailModalBooking(b);
+                              setSelectedEmailTplId('confirmation');
+                              const tpl = EMAIL_TEMPLATES.find(t => t.id === 'confirmation') || EMAIL_TEMPLATES[0];
+                              setCustomEmailSubject(interpolateEmailTemplate(tpl.subject, b));
+                              setCustomEmailBody(interpolateEmailTemplate(tpl.bodyTemplate, b));
+                            }}
+                            className="bg-[#F6F9FC] dark:bg-[#071B36] hover:bg-[#EAF3FC] dark:hover:bg-[#10305C] border border-[#C7D5E2] dark:border-[#1B3C68] hover:border-[#1464B8] text-[#102B4B] dark:text-slate-100 font-bold py-2 px-2.5 rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-[#1464B8] dark:text-[#66B2FF]" />
+                            <span>Enviar Correo</span>
+                          </button>
+                        </div>
+
+                        {/* Status & Delete Footer */}
+                        <div className="flex justify-between items-center pt-1 text-[11px]">
+                          <div className="flex items-center gap-1.5">
+                            {b.status === 'Programada' && (
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(b, 'Completada')}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold transition-colors cursor-pointer"
+                              >
+                                ✓ Completar
+                              </button>
+                            )}
+                            {b.status !== 'Cancelada' && (
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(b, 'Cancelada')}
+                                className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-300 font-bold transition-colors cursor-pointer"
+                              >
+                                Cancelar
+                              </button>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBooking(b.id)}
+                            className="p-1.5 rounded-lg text-[#102B4B]/40 dark:text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title="Eliminar registro"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -980,7 +1122,7 @@ const Bookings: React.FC = () => {
           <form onSubmit={handleSaveAvailability} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* Columna Izquierda: Duración, Colchón y Horarios Recurrentes Semanales */}
-            <div className="lg:col-span-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border/60 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div className="lg:col-span-6 bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
               <div className="space-y-1 border-b border-gray-100 dark:border-dark-border/60 pb-4">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Horarios de Atención y Disponibilidad Recurrente</h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -995,7 +1137,7 @@ const Bookings: React.FC = () => {
                   <select
                     value={availabilityForm.slotDurationMinutes}
                     onChange={e => setAvailabilityForm({ ...availabilityForm, slotDurationMinutes: Number(e.target.value) })}
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-3 text-xs font-bold dark:text-white outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-3 text-xs font-bold dark:text-white outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value={15}>15 Minutos</option>
                     <option value={30}>30 Minutos</option>
@@ -1009,7 +1151,7 @@ const Bookings: React.FC = () => {
                   <select
                     value={availabilityForm.bufferMinutes}
                     onChange={e => setAvailabilityForm({ ...availabilityForm, bufferMinutes: Number(e.target.value) })}
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-3 text-xs font-bold dark:text-white outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-3 text-xs font-bold dark:text-white outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value={0}>0 Minutos</option>
                     <option value={10}>10 Minutos</option>
@@ -1217,7 +1359,7 @@ const Bookings: React.FC = () => {
             </div>
 
             {/* Columna Derecha: Excepciones por Fechas Específicas */}
-            <div className="lg:col-span-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border/60 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <div className="lg:col-span-6 bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
               <div className="space-y-1 border-b border-gray-100 dark:border-dark-border/60 pb-4">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <CalendarIcon className="w-5 h-5 text-indigo-500" />
@@ -1229,29 +1371,29 @@ const Bookings: React.FC = () => {
               </div>
 
               {/* Agregar Excepción por Fecha */}
-              <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-                <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+              <div className="p-4 bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-2xl space-y-3">
+                <span className="text-xs font-bold text-[#1464B8] dark:text-[#66B2FF] flex items-center gap-1.5">
                   <Plus className="w-4 h-4" />
                   Añadir fecha con horario personalizado:
                 </span>
 
                 <div className="flex flex-col sm:flex-row items-end gap-3">
                   <div className="flex-1 space-y-1 w-full">
-                    <label className="text-[10px] font-bold text-slate-400 block">Selecciona Fecha:</label>
+                    <label className="text-[10px] font-bold text-[#102B4B]/70 dark:text-slate-300 block">Selecciona Fecha:</label>
                     <input
                       type="date"
                       value={newCustomDate}
                       onChange={e => setNewCustomDate(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl p-2 text-xs outline-none"
+                      className="w-full bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] text-[#102B4B] dark:text-slate-100 rounded-xl p-2 text-xs outline-none"
                     />
                   </div>
 
                   <div className="space-y-1 w-full sm:w-auto">
-                    <label className="text-[10px] font-bold text-slate-400 block">Estatus Inicial:</label>
+                    <label className="text-[10px] font-bold text-[#102B4B]/70 dark:text-slate-300 block">Estatus Inicial:</label>
                     <select
                       value={newCustomDateEnabled ? 'yes' : 'no'}
                       onChange={e => setNewCustomDateEnabled(e.target.value === 'yes')}
-                      className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl p-2 text-xs outline-none"
+                      className="w-full bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] text-[#102B4B] dark:text-slate-100 rounded-xl p-2 text-xs outline-none"
                     >
                       <option value="yes">🟢 Disponible</option>
                       <option value="no">🔴 Cerrado / No Laboral</option>
@@ -1261,7 +1403,7 @@ const Bookings: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleAddCustomDateSchedule}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md flex-shrink-0 w-full sm:w-auto"
+                    className="px-4 py-2 bg-[#1464B8] hover:bg-[#10539A] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm flex-shrink-0 w-full sm:w-auto"
                   >
                     <span>Agregar Fecha</span>
                   </button>
@@ -1394,7 +1536,7 @@ const Bookings: React.FC = () => {
             <div className="col-span-1 lg:col-span-12 pt-4">
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-[0.99]"
+                className="w-full bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-white font-bold py-4 px-6 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-[0.99]"
               >
                 💾 Guardar Configuración de Horarios & Excepciones de Fecha
               </button>
@@ -1407,7 +1549,7 @@ const Bookings: React.FC = () => {
       {activeTab === 'platforms' && (
         <div className="space-y-8">
           {/* Add Platform */}
-          <form onSubmit={handleAddPlatform} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border/60 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
+          <form onSubmit={handleAddPlatform} className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Agregar Nueva Plataforma de Origen</h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Registra diferentes sitios web o marcas (ej. *Lumina Core*, *Interpres Digital*) para saber exactamente desde cuál se agendó cada videollamada.
@@ -1422,7 +1564,7 @@ const Bookings: React.FC = () => {
                   value={newPlatformName}
                   onChange={e => setNewPlatformName(e.target.value)}
                   placeholder="Ej. Lumina Core"
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                 />
               </div>
 
@@ -1433,7 +1575,7 @@ const Bookings: React.FC = () => {
                   value={newPlatformSlug}
                   onChange={e => setNewPlatformSlug(e.target.value)}
                   placeholder="ej. lumina-core"
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                 />
               </div>
 
@@ -1443,7 +1585,7 @@ const Bookings: React.FC = () => {
                   type="color"
                   value={newPlatformColor}
                   onChange={e => setNewPlatformColor(e.target.value)}
-                  className="w-full h-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-1 cursor-pointer"
+                  className="w-full h-10 bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-1 cursor-pointer"
                 />
               </div>
             </div>
@@ -1462,7 +1604,7 @@ const Bookings: React.FC = () => {
             {platformsList.map(p => (
               <div 
                 key={p.id}
-                className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border/60 rounded-2xl p-5 shadow-sm space-y-4"
+                className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-2xl p-5 shadow-sm space-y-4"
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
@@ -1517,7 +1659,7 @@ const Bookings: React.FC = () => {
           {/* Modal Modal para Editar Plataforma */}
           {editingPlatform && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-fade-in">
+              <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-fade-in">
                 <div className="flex justify-between items-center border-b border-gray-100 dark:border-dark-border pb-3">
                   <h3 className="font-bold text-lg text-gray-900 dark:text-white">Editar Plataforma de Origen</h3>
                   <button 
@@ -1536,7 +1678,7 @@ const Bookings: React.FC = () => {
                       required
                       value={editingPlatform.name}
                       onChange={e => setEditingPlatform({ ...editingPlatform, name: e.target.value })}
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                      className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                     />
                   </div>
 
@@ -1547,7 +1689,7 @@ const Bookings: React.FC = () => {
                       required
                       value={editingPlatform.slug}
                       onChange={e => setEditingPlatform({ ...editingPlatform, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') })}
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none font-mono"
+                      className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none font-mono"
                     />
                   </div>
 
@@ -1558,7 +1700,7 @@ const Bookings: React.FC = () => {
                         type="color"
                         value={editingPlatform.color}
                         onChange={e => setEditingPlatform({ ...editingPlatform, color: e.target.value })}
-                        className="w-12 h-10 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-1 cursor-pointer"
+                        className="w-12 h-10 bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-1 cursor-pointer"
                       />
                       <span className="text-xs font-mono text-gray-500 dark:text-gray-400">{editingPlatform.color}</span>
                     </div>
@@ -1571,7 +1713,7 @@ const Bookings: React.FC = () => {
                       value={editingPlatform.description || ''}
                       onChange={e => setEditingPlatform({ ...editingPlatform, description: e.target.value })}
                       placeholder="Ej. Sitio Web Principal"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                      className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                     />
                   </div>
 
@@ -1602,7 +1744,7 @@ const Bookings: React.FC = () => {
         <form onSubmit={handleSaveIntegrations} className="space-y-8">
           
           {/* Zoom Settings */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border/60 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
             <div className="flex justify-between items-center border-b border-gray-100 dark:border-dark-border/60 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center font-bold">
@@ -1633,7 +1775,7 @@ const Bookings: React.FC = () => {
                   value={zoomForm.accountId}
                   onChange={e => setZoomForm({ ...zoomForm, accountId: e.target.value })}
                   placeholder="Ej. abc123XYZ..."
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
                 />
               </div>
 
@@ -1644,7 +1786,7 @@ const Bookings: React.FC = () => {
                   value={zoomForm.clientId}
                   onChange={e => setZoomForm({ ...zoomForm, clientId: e.target.value })}
                   placeholder="Ej. client_id_123"
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
                 />
               </div>
 
@@ -1655,14 +1797,14 @@ const Bookings: React.FC = () => {
                   value={zoomForm.clientSecret}
                   onChange={e => setZoomForm({ ...zoomForm, clientSecret: e.target.value })}
                   placeholder="••••••••••••••••"
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
                 />
               </div>
             </div>
           </div>
 
           {/* Telegram Bot Settings */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border/60 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
             <div className="flex justify-between items-center border-b border-gray-100 dark:border-dark-border/60 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-sky-500/10 text-sky-500 rounded-2xl flex items-center justify-center font-bold">
@@ -1693,7 +1835,7 @@ const Bookings: React.FC = () => {
                   value={telegramForm.botToken}
                   onChange={e => setTelegramForm({ ...telegramForm, botToken: e.target.value })}
                   placeholder="Ej. 123456789:ABCdefGHIjklMNOpqrs..."
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
                 />
               </div>
 
@@ -1715,7 +1857,7 @@ const Bookings: React.FC = () => {
                   value={telegramForm.chatId}
                   onChange={e => setTelegramForm({ ...telegramForm, chatId: e.target.value })}
                   placeholder="Ej. 987654321 o -100123456789"
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
                 />
               </div>
             </div>
@@ -1744,7 +1886,7 @@ const Bookings: React.FC = () => {
           </div>
 
           {/* Email / Gmail Settings & Plantilla */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border/60 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
             <div className="flex justify-between items-center border-b border-gray-100 dark:border-dark-border/60 pb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-purple-500/10 text-purple-500 rounded-2xl flex items-center justify-center font-bold">
@@ -1801,7 +1943,7 @@ const Bookings: React.FC = () => {
                     value={emailForm.senderEmail || 'contacto@interpresdigital.com'}
                     onChange={e => setEmailForm({ ...emailForm, senderEmail: e.target.value })}
                     placeholder="contacto@interpresdigital.com"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white font-sans outline-none"
+                    className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white font-sans outline-none"
                   />
                 </div>
 
@@ -1812,7 +1954,7 @@ const Bookings: React.FC = () => {
                     value={emailForm.subject || DEFAULT_EMAIL_SUBJECT}
                     onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })}
                     placeholder="Ej. ¡Videollamada Agendada con Éxito! - {plataforma}"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                    className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                   />
                 </div>
               </div>
@@ -1829,7 +1971,7 @@ const Bookings: React.FC = () => {
                   rows={8}
                   value={emailForm.bodyTemplate || DEFAULT_EMAIL_BODY}
                   onChange={e => setEmailForm({ ...emailForm, bodyTemplate: e.target.value })}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-3 text-xs dark:text-white outline-none font-sans leading-relaxed"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-3 text-xs dark:text-white outline-none font-sans leading-relaxed"
                 />
               </div>
 
@@ -1837,7 +1979,7 @@ const Bookings: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEmailTestModalOpen(true)}
-                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md"
+                  className="bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-white font-bold py-2.5 px-5 rounded-xl text-xs flex items-center gap-2 transition-all shadow-md"
                 >
                   <Send className="w-4 h-4" />
                   <span>⚡ Enviar Correo de Prueba (Test Modal)</span>
@@ -1981,7 +2123,7 @@ const Bookings: React.FC = () => {
       {/* Modal de WhatsApp con Plantillas */}
       {whatsAppModalBooking && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-fade-in">
+          <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-fade-in">
             <div className="flex justify-between items-center border-b border-gray-100 dark:border-dark-border pb-3">
               <div>
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
@@ -2030,7 +2172,7 @@ const Bookings: React.FC = () => {
                   rows={6}
                   value={customWhatsAppText}
                   onChange={e => setCustomWhatsAppText(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-3 text-xs dark:text-white outline-none font-sans"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-3 text-xs dark:text-white outline-none font-sans"
                 />
               </div>
             </div>
@@ -2063,7 +2205,7 @@ const Bookings: React.FC = () => {
       {/* Modal de Prueba de Correo Electrónico */}
       {emailTestModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-fade-in">
+          <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-fade-in">
             <div className="flex justify-between items-center border-b border-gray-100 dark:border-dark-border pb-3">
               <div>
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
@@ -2090,7 +2232,7 @@ const Bookings: React.FC = () => {
                   value={testEmailTarget}
                   onChange={e => setTestEmailTarget(e.target.value)}
                   placeholder="experienciainfinity@gmail.com"
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-3 text-xs dark:text-white font-sans outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-3 text-xs dark:text-white font-sans outline-none"
                 />
               </div>
 
@@ -2170,7 +2312,7 @@ const Bookings: React.FC = () => {
                     setEmailTestModalOpen(false);
                   }
                 }}
-                className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 bg-[#1464B8] hover:bg-[#10539A] text-white font-bold py-3 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {sendingEmailTest ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <Send className="w-4 h-4" />}
                 <span>{sendingEmailTest ? "Enviando..." : "Enviar Correo de Prueba"}</span>
@@ -2183,7 +2325,7 @@ const Bookings: React.FC = () => {
       {/* Modal de Envío Directo de Correo para Cita Individual */}
       {emailModalBooking && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-fade-in">
+          <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-fade-in">
             <div className="flex justify-between items-center border-b border-gray-100 dark:border-dark-border pb-3">
               <div>
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
@@ -2237,7 +2379,7 @@ const Bookings: React.FC = () => {
                   type="text"
                   value={customEmailSubject}
                   onChange={e => setCustomEmailSubject(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white font-sans outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white font-sans outline-none"
                 />
               </div>
 
@@ -2249,7 +2391,7 @@ const Bookings: React.FC = () => {
                   rows={6}
                   value={customEmailBody}
                   onChange={e => setCustomEmailBody(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-3 text-xs dark:text-white outline-none font-sans leading-relaxed"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-3 text-xs dark:text-white outline-none font-sans leading-relaxed"
                 />
               </div>
             </div>
@@ -2287,7 +2429,7 @@ const Bookings: React.FC = () => {
                     setEmailModalBooking(null);
                   }
                 }}
-                className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 bg-[#1464B8] hover:bg-[#10539A] text-white font-bold py-3 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {sendingManualEmail ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <Send className="w-4 h-4" />}
                 <span>{sendingManualEmail ? "Enviando..." : "Enviar Correo al Cliente"}</span>
@@ -2299,7 +2441,7 @@ const Bookings: React.FC = () => {
       {/* Modal de Crear Cita Manualmente */}
       {manualModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-5 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-5 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-gray-100 dark:border-dark-border pb-3">
               <div>
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
@@ -2405,7 +2547,7 @@ const Bookings: React.FC = () => {
                     value={manualClientName}
                     onChange={e => setManualClientName(e.target.value)}
                     placeholder="Ej. Laura González"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                    className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                   />
                 </div>
 
@@ -2417,7 +2559,7 @@ const Bookings: React.FC = () => {
                     value={manualClientEmail}
                     onChange={e => setManualClientEmail(e.target.value)}
                     placeholder="laura@ejemplo.com"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                    className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                   />
                 </div>
               </div>
@@ -2429,7 +2571,7 @@ const Bookings: React.FC = () => {
                   <select
                     value={manualCountryCode}
                     onChange={e => setManualCountryCode(e.target.value)}
-                    className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl px-2.5 py-2.5 text-xs dark:text-white font-semibold outline-none"
+                    className="bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl px-2.5 py-2.5 text-xs dark:text-white font-semibold outline-none"
                   >
                     {COUNTRY_CODES.map((c, i) => (
                       <option key={i} value={c.code}>{c.flag} {c.code} ({c.country})</option>
@@ -2441,7 +2583,7 @@ const Bookings: React.FC = () => {
                     value={manualClientPhone}
                     onChange={e => setManualClientPhone(e.target.value)}
                     placeholder="415 123 4567"
-                    className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
+                    className="flex-1 bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white font-mono outline-none"
                   />
                 </div>
               </div>
@@ -2452,7 +2594,7 @@ const Bookings: React.FC = () => {
                   <select
                     value={manualPlatformId}
                     onChange={e => setManualPlatformId(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                    className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                   >
                     {platformsList.map(p => (
                       <option key={p.id} value={p.id}>{p.name}</option>
@@ -2467,7 +2609,7 @@ const Bookings: React.FC = () => {
                     required
                     value={manualDate}
                     onChange={e => setManualDate(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                    className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                   />
                 </div>
 
@@ -2479,7 +2621,7 @@ const Bookings: React.FC = () => {
                       value={manualStartTime}
                       onChange={e => setManualStartTime(e.target.value)}
                       placeholder="12:00"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2 text-xs dark:text-white text-center outline-none"
+                      className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2 text-xs dark:text-white text-center outline-none"
                     />
                     <span className="text-xs text-gray-400">-</span>
                     <input
@@ -2487,7 +2629,7 @@ const Bookings: React.FC = () => {
                       value={manualEndTime}
                       onChange={e => setManualEndTime(e.target.value)}
                       placeholder="12:45"
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2 text-xs dark:text-white text-center outline-none"
+                      className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2 text-xs dark:text-white text-center outline-none"
                     />
                   </div>
                 </div>
@@ -2500,7 +2642,7 @@ const Bookings: React.FC = () => {
                   value={manualTopic}
                   onChange={e => setManualTopic(e.target.value)}
                   placeholder="Ej. Demostración y cotización de servicios digitales"
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-dark-border rounded-xl p-2.5 text-xs dark:text-white outline-none"
+                  className="w-full bg-[#F6F9FC] dark:bg-[#071B36] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-xl p-2.5 text-xs dark:text-white outline-none"
                 />
               </div>
 

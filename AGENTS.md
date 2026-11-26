@@ -94,12 +94,13 @@ firebase deploy --only functions
    - **Candado de Cierre en Etapa 10:** `finishVoiceInterview` tiene prohibido cerrar la llamada antes de que el cliente responda la pregunta de observaciones finales (`additionalComments` o `observationsConfirmed` vía `noAdditionalComments: true`). Al cerrar, debe drenarse por completo el audio de despedida de Nexia IA sin cortarla, mostrando en Etapa 10: 1) Observaciones adicionales, 2) Resumen Ejecutivo de Etapas 1 a 9 editable, y 3) Carga de archivos opcional antes de **Enviar RFI**.
 
 5. **Orden de Plataformas en Agendamiento Online (`PublicBooking.tsx` y `settings/booking_settings`):**
-   - En *"1. Selecciona la Plataforma o Motivo"*, mantener siempre este orden exacto:
+   - En *"1. Selecciona la Plataforma o Motivo"*, mantener siempre este orden exacto (cuadrícula simétrica de 6 opciones):
      1. **Interpres Digital** (opción preseleccionada por defecto al entrar a `/#/book`)
      2. **Consultoría IA**
      3. **Lúmina Core**
-     4. **TKD Register**
-     5. **Check-up financiero**
+     4. **Bacco iA**
+     5. **TKD Register**
+     6. **Check-up financiero**
 
 6. **Tarjetas de Gráficas Financieras:**
    - En vistas de distribución por concepto (`Dashboard.tsx` / `Finance.tsx`), las leyendas de conceptos deben fluir con scroll o diseño adaptable dentro de la tarjeta sin desbordarse fuera del contenedor.

@@ -21,7 +21,16 @@ import {
   ArrowRight,
   ExternalLink,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Cpu,
+  Layers,
+  Globe,
+  TrendingUp,
+  Award,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Bot
 } from 'lucide-react';
 
 const defaultSettings: BookingSettings = {
@@ -38,12 +47,40 @@ const defaultSettings: BookingSettings = {
     { id: "p1", name: "Interpres Digital", slug: "interpres-digital", color: "#1464B8", description: "Desarrollo de Software y Automatizaciones" },
     { id: "p5", name: "Consultoría IA", slug: "consultoria-ia", color: "#00A9B7", description: "Diagnóstico Estratégico y Arquitectura de IA" },
     { id: "p2", name: "Lúmina Core", slug: "lumina-core", color: "#930687", description: "Plataforma Inteligente" },
-    { id: "p3", name: "TKD Register", slug: "tkd-register", color: "#f59e0b", description: "Plataforma Deportiva" },
+    { id: "p6", name: "Bacco iA", slug: "bacco-ia", color: "#8B1E3F", description: "Plataforma Inteligente con IA" },
+    { id: "p3", name: "TKD Register", slug: "tkd-register", color: "#D97706", description: "Plataforma Deportiva" },
     { id: "p4", name: "Check-up financiero", slug: "check-up-financiero", color: "#102B4B", description: "Diagnóstico Financiero" }
   ],
   zoomConfig: { accountId: "", clientId: "", clientSecret: "", enabled: false },
   telegramConfig: { botToken: "", chatId: "", enabled: false },
   blackoutDates: []
+};
+
+const getPlatformIcon = (slug?: string, name?: string) => {
+  const key = `${slug || ''} ${name || ''}`.toLowerCase();
+  if (key.includes('consultoria') || key.includes('consultoría')) return Cpu;
+  if (key.includes('bacco')) return Bot;
+  if (key.includes('lumina') || key.includes('lúmina')) return Sparkles;
+  if (key.includes('tkd')) return Award;
+  if (key.includes('financiero') || key.includes('check-up')) return TrendingUp;
+  if (key.includes('interpres')) return Layers;
+  return Globe;
+};
+
+const formatHumanDate = (isoDate: string): string => {
+  if (!isoDate) return '';
+  try {
+    const d = new Date(`${isoDate}T00:00:00`);
+    const formatted = d.toLocaleDateString('es-MX', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  } catch {
+    return isoDate;
+  }
 };
 
 export const COUNTRY_CODES = [
@@ -226,7 +263,7 @@ const PublicBooking: React.FC = () => {
             }
             return p;
           });
-          // Asegurar que la nueva opción oficial "Consultoría IA" esté siempre disponible
+          // Asegurar que las opciones oficiales "Consultoría IA" y "Bacco iA" estén siempre disponibles
           if (!normalizedPlatforms.some(p => p.slug === 'consultoria-ia')) {
             const consultoriaOption: BookingPlatform = {
               id: 'p5',
@@ -244,6 +281,25 @@ const PublicBooking: React.FC = () => {
               ];
             } else {
               normalizedPlatforms = [consultoriaOption, ...normalizedPlatforms];
+            }
+          }
+          if (!normalizedPlatforms.some(p => p.slug === 'bacco-ia' || p.name.toLowerCase() === 'bacco ia')) {
+            const baccoOption: BookingPlatform = {
+              id: 'p6',
+              name: 'Bacco iA',
+              slug: 'bacco-ia',
+              color: '#8B1E3F',
+              description: 'Plataforma Inteligente con IA'
+            };
+            const idxLumina = normalizedPlatforms.findIndex(p => p.slug === 'lumina-core');
+            if (idxLumina >= 0) {
+              normalizedPlatforms = [
+                ...normalizedPlatforms.slice(0, idxLumina + 1),
+                baccoOption,
+                ...normalizedPlatforms.slice(idxLumina + 1)
+              ];
+            } else {
+              normalizedPlatforms = [...normalizedPlatforms, baccoOption];
             }
           }
           currentSettings = {
@@ -647,212 +703,346 @@ const PublicBooking: React.FC = () => {
   }
 
   const availableSlots = selectedDate ? generateAvailableSlots(selectedDate) : [];
-  const upcomingDates = getUpcomingDates();
+  const SelectedHeroIcon = getPlatformIcon(selectedPlatform?.slug, selectedPlatform?.name);
 
   return (
-    <div className="min-h-screen bg-[#F6F9FC] text-[#102B4B] px-4 py-8 sm:px-8 sm:py-14 font-sans flex items-center justify-center">
-      <div className="max-w-[1240px] w-full bg-white border border-[#C7D5E2] rounded-3xl shadow-xl shadow-[#102B4B]/5 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+    <div className="min-h-screen bg-gradient-to-br from-[#E6EFF8] via-[#F2F7FC] to-[#E2F1F5] text-[#102B4B] px-3 py-6 sm:px-6 sm:py-10 lg:py-14 font-sans flex items-center justify-center relative overflow-hidden">
+      {/* Ambient Editorial Glows */}
+      <div className="pointer-events-none absolute -top-32 -left-24 w-[480px] h-[480px] rounded-full bg-[#1464B8]/12 blur-[110px]" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 w-[480px] h-[480px] rounded-full bg-[#00A9B7]/14 blur-[110px]" />
+
+      <div className="relative z-10 max-w-[1220px] w-full bg-white border border-[#BFD0E2] rounded-[28px] shadow-[0_30px_80px_-20px_rgba(7,27,54,0.18)] overflow-hidden grid grid-cols-1 lg:grid-cols-12">
         
-        {/* Left Immersive Editorial Sidebar (#071B36) */}
-        <div className="lg:col-span-5 bg-gradient-to-b from-[#071B36] to-[#0B264B] text-white p-7 sm:p-10 flex flex-col justify-between space-y-8">
-          <div className="space-y-5">
-            {/* Logotipo Horizontal Blanco Oficial sobre Azul Profundo #071B36 */}
-            <div>
+        {/* Left Immersive Executive Column (#071B36 -> #0D2E5C) */}
+        <div className="lg:col-span-5 bg-gradient-to-br from-[#071B36] via-[#0A254A] to-[#0F3466] text-white p-7 sm:p-10 flex flex-col justify-between gap-8 relative overflow-hidden">
+          {/* Subtle Decorative Orbs inside Dark Panel */}
+          <div className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full bg-[#00A9B7]/20 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-12 -left-20 w-56 h-56 rounded-full bg-[#1464B8]/25 blur-3xl" />
+
+          <div className="relative z-10 space-y-6">
+            {/* Official White Logo */}
+            <div className="flex items-center justify-between gap-3">
               <img 
                 src={LOGO_BLANCO_URL} 
                 alt="Interpres Digital Labs" 
-                className="h-12 sm:h-14 w-auto max-w-[260px] object-contain"
+                className="h-12 sm:h-14 w-auto max-w-[245px] object-contain"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="px-3.5 py-1 bg-[#00A9B7]/15 border border-[#00A9B7]/40 rounded-full text-[#00A9B7] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Agendamiento Ejecutivo
-              </span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#00A9B7]/18 border border-[#00A9B7]/45 rounded-full text-[#7CE8F0] text-[11px] font-extrabold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-[#5FD9E4]" />
+              <span>Sesión Ejecutiva Online</span>
             </div>
 
-            <h1 className="font-display text-[32px] sm:text-[40px] font-extrabold text-white tracking-tight leading-[1.12]">
-              Reserva tu Videollamada
-            </h1>
+            <div className="space-y-3">
+              <h1 className="font-display text-[32px] sm:text-[40px] font-extrabold text-white tracking-tight leading-[1.1]">
+                Reserva tu Videollamada
+              </h1>
+              <p className="text-slate-200/90 text-sm sm:text-[15px] leading-relaxed">
+                Elige el área o plataforma de tu interés, selecciona el día y horario que mejor se adapte a tu agenda y recibe tu acceso directo a Zoom al instante.
+              </p>
+            </div>
 
-            <p className="text-slate-200/85 text-sm sm:text-[16px] leading-relaxed max-w-[60ch]">
-              Selecciona la línea de servicio, el día y el horario de tu preferencia para conversar con nuestros especialistas. La sala de Zoom se genera automáticamente.
-            </p>
-
-            {/* Platform Selector Badge */}
-            {selectedPlatform && (
-              <div className="pt-2">
-                <span className="text-[11px] font-bold text-[#C7D5E2]/80 uppercase tracking-wider block mb-1.5">
-                  Servicio o Plataforma Seleccionada
+            {/* Live Interactive Booking Summary Card */}
+            <div className="bg-[#0C274E]/90 backdrop-blur-md border border-white/15 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-lg">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#7CE8F0]">
+                  Resumen de tu Selección
                 </span>
-                <div 
-                  className="p-3.5 rounded-2xl border flex items-center gap-3 bg-[#0C2548]/90"
-                  style={{ borderColor: `${selectedPlatform.color}70` }}
-                >
-                  <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: selectedPlatform.color }}></div>
-                  <div>
-                    <span className="font-bold text-sm text-white block">{selectedPlatform.name}</span>
-                    {selectedPlatform.description && <span className="text-xs text-[#C7D5E2] block">{selectedPlatform.description}</span>}
-                  </div>
+                <span className="text-[10px] font-semibold text-slate-300 bg-white/10 px-2.5 py-0.5 rounded-full">
+                  {selectedSlot ? 'Paso 3 de 3' : selectedDate ? 'Paso 2 de 3' : 'Paso 1 de 3'}
+                </span>
+              </div>
+
+              {/* Selected Platform */}
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1464B8] to-[#00A9B7] flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <SelectedHeroIcon className="w-4 h-4 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-slate-300 block">
+                    Línea o Plataforma
+                  </span>
+                  <span className="font-display font-bold text-sm text-white block truncate">
+                    {selectedPlatform?.name || 'Interpres Digital'}
+                  </span>
+                  {selectedPlatform?.description && (
+                    <span className="text-xs text-slate-300/90 block truncate">
+                      {selectedPlatform.description}
+                    </span>
+                  )}
                 </div>
               </div>
-            )}
+
+              {/* Selected Date */}
+              <div className="flex items-start gap-3 pt-2 border-t border-white/10">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border ${
+                  selectedDate ? 'bg-[#00A9B7]/20 border-[#00A9B7]/50 text-[#7CE8F0]' : 'bg-white/5 border-white/10 text-slate-400'
+                }`}>
+                  <CalendarIcon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-slate-300 block">
+                    Fecha Elegida
+                  </span>
+                  <span className={`text-xs sm:text-sm font-bold block ${selectedDate ? 'text-white' : 'text-slate-400 italic font-normal'}`}>
+                    {selectedDate ? formatHumanDate(selectedDate) : 'Selecciona un día disponible'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Selected Time */}
+              <div className="flex items-start gap-3 pt-2 border-t border-white/10">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border ${
+                  selectedSlot ? 'bg-[#00A9B7]/20 border-[#00A9B7]/50 text-[#7CE8F0]' : 'bg-white/5 border-white/10 text-slate-400'
+                }`}>
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-slate-300 block">
+                    Horario (Hora Centro México)
+                  </span>
+                  <span className={`text-xs sm:text-sm font-bold block ${selectedSlot ? 'text-[#7CE8F0]' : 'text-slate-400 italic font-normal'}`}>
+                    {selectedSlot ? `${selectedSlot.startTime} – ${selectedSlot.endTime} hrs (CDMX)` : 'Elige un bloque horario'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-3 pt-6 border-t border-white/15 text-xs text-[#C7D5E2]">
+          {/* Trust & Format Footer */}
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2.5 pt-5 border-t border-white/15 text-xs text-slate-200">
             <div className="flex items-center gap-2.5">
-              <Clock className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
-              <span>Duración: <strong className="text-white">{settings.availability.slotDurationMinutes || 45} minutos</strong></span>
+              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-3.5 h-3.5 text-[#5FD9E4]" />
+              </div>
+              <span>Duración estimada: <strong className="text-white">{settings.availability.slotDurationMinutes || 45} min</strong></span>
             </div>
             <div className="flex items-center gap-2.5">
-              <Video className="w-4 h-4 text-[#4993DA] flex-shrink-0" />
-              <span>Plataforma: <strong className="text-white">Zoom Video HD</strong></span>
+              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                <Video className="w-3.5 h-3.5 text-[#66B2FF]" />
+              </div>
+              <span>Sala privada <strong className="text-white">Zoom Video HD</strong></span>
             </div>
             <div className="flex items-center gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
-              <span>Confirmación instantánea por correo</span>
+              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#5FD9E4]" />
+              </div>
+              <span>Confirmación inmediata por correo</span>
             </div>
           </div>
         </div>
 
-        {/* Right Clean Editorial Form (#FFFFFF / #F6F9FC / #102B4B) */}
-        <div className="lg:col-span-7 p-6 sm:p-10 space-y-6 bg-white">
-          <form onSubmit={handleBookingSubmit} className="space-y-6">
+        {/* Right Interactive Column */}
+        <div className="lg:col-span-7 p-5 sm:p-8 md:p-10 bg-white">
+          <form onSubmit={handleBookingSubmit} className="space-y-7">
             
-            {/* Step 1: Select Platform (if multiple and not fixed by slug) */}
+            {/* Step 1: Select Platform (Symmetrical 2x3 Executive Cards) */}
             {settings.platforms.length > 1 && !platformSlug && (
-              <div className="space-y-2.5">
-                <label className="text-xs font-extrabold text-[#102B4B] uppercase tracking-wider block">
-                  1. Selecciona la Plataforma o Motivo
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {settings.platforms.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setSelectedPlatform(p)}
-                      className={`p-3.5 rounded-2xl border text-left transition-all text-xs flex items-center justify-between ${
-                        selectedPlatform?.id === p.id 
-                          ? 'bg-[#1464B8]/10 border-[#1464B8] text-[#102B4B] font-extrabold ring-2 ring-[#1464B8]/20 shadow-xs' 
-                          : 'bg-[#F6F9FC] border-[#C7D5E2] text-[#102B4B]/80 font-semibold hover:border-[#1464B8]/60 hover:bg-white'
-                      }`}
-                    >
-                      <div className="min-w-0 pr-2">
-                        <span className="block truncate">{p.name}</span>
-                        {p.description && (
-                          <span className="block text-[10px] font-normal text-[#102B4B]/60 truncate mt-0.5">
-                            {p.description}
-                          </span>
-                        )}
-                      </div>
-                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }}></div>
-                    </button>
-                  ))}
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-display text-xs sm:text-[13px] font-extrabold text-[#071B36] uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#1464B8] text-white text-[11px] font-extrabold inline-flex items-center justify-center shadow-xs">
+                      1
+                    </span>
+                    <span>Selecciona la Plataforma o Motivo</span>
+                  </label>
+                  <span className="text-[11px] font-semibold text-[#102B4B]/55 hidden sm:inline">
+                    {settings.platforms.length} opciones disponibles
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {settings.platforms.map(p => {
+                    const isSelected = selectedPlatform?.id === p.id;
+                    const PlatformIcon = getPlatformIcon(p.slug, p.name);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelectedPlatform(p)}
+                        className={`group p-3.5 rounded-2xl border text-left transition-all duration-200 flex items-center justify-between gap-3 ${
+                          isSelected 
+                            ? 'bg-gradient-to-r from-[#071B36] via-[#0E3568] to-[#1464B8] border-[#1464B8] text-white shadow-lg shadow-[#1464B8]/20 scale-[1.01]' 
+                            : 'bg-[#F6F9FC] border-[#C7D5E2] text-[#102B4B] hover:bg-[#EDF4FB] hover:border-[#1464B8]/70'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                            isSelected
+                              ? 'bg-white/15 text-[#7CE8F0] border border-white/20'
+                              : 'bg-white text-[#1464B8] border border-[#C7D5E2] group-hover:border-[#1464B8]/50 shadow-2xs'
+                          }`}>
+                            <PlatformIcon className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className={`font-display text-[13px] sm:text-sm font-extrabold block truncate ${
+                              isSelected ? 'text-white' : 'text-[#071B36]'
+                            }`}>
+                              {p.name}
+                            </span>
+                            {p.description && (
+                              <span className={`block text-[11px] truncate mt-0.5 ${
+                                isSelected ? 'text-slate-200' : 'text-[#102B4B]/65'
+                              }`}>
+                                {p.description}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 border transition-all ${
+                          isSelected
+                            ? 'bg-[#00A9B7] border-[#7CE8F0] text-white shadow-xs'
+                            : 'border-[#B5C7DA] bg-white group-hover:border-[#1464B8]'
+                        }`}>
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Step 2: Calendario Mensual Interactivo */}
+            {/* Step 2: High-Contrast Monthly Calendar */}
             {(() => {
               const currentMonthData = getDaysForMonthView();
 
               return (
-                <div className="space-y-3 bg-[#F6F9FC] p-4 sm:p-5 rounded-3xl border border-[#C7D5E2]">
-                  <div className="flex flex-wrap justify-between items-center gap-2">
-                    <label className="text-xs font-extrabold text-[#102B4B] uppercase tracking-wider flex items-center gap-2">
-                      <CalendarIcon className="w-4 h-4 text-[#1464B8]" />
-                      2. Selecciona una Fecha
+                <div className="space-y-4 bg-[#F6F9FC] p-4 sm:p-6 rounded-3xl border border-[#C7D5E2]">
+                  <div className="flex flex-wrap justify-between items-center gap-3">
+                    <label className="font-display text-xs sm:text-[13px] font-extrabold text-[#071B36] uppercase tracking-wider flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-[#1464B8] text-white text-[11px] font-extrabold inline-flex items-center justify-center shadow-xs">
+                        2
+                      </span>
+                      <span>Selecciona una Fecha</span>
                     </label>
 
-                    {/* Navegador de Meses */}
-                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#C7D5E2]">
+                    {/* Month Switcher */}
+                    <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-[#B8CCE0] shadow-2xs">
                       <button
                         type="button"
                         disabled={monthOffset <= 0}
                         onClick={() => setMonthOffset(prev => Math.max(0, prev - 1))}
-                        className="text-[#102B4B]/60 hover:text-[#1464B8] disabled:opacity-30 text-xs font-bold px-1"
+                        className="p-1 rounded-lg text-[#102B4B] hover:bg-[#F0F6FC] hover:text-[#1464B8] disabled:opacity-25 transition-colors"
+                        aria-label="Mes anterior"
                       >
-                        ◀
+                        <ChevronLeft className="w-4 h-4" />
                       </button>
-                      <span className="text-xs font-extrabold text-[#102B4B] min-w-[115px] text-center">
+                      <span className="font-display text-xs sm:text-[13px] font-extrabold text-[#071B36] min-w-[135px] text-center">
                         {currentMonthData.monthLabel}
                       </span>
                       <button
                         type="button"
                         disabled={monthOffset >= 3}
                         onClick={() => setMonthOffset(prev => Math.min(3, prev + 1))}
-                        className="text-[#102B4B]/60 hover:text-[#1464B8] disabled:opacity-30 text-xs font-bold px-1"
+                        className="p-1 rounded-lg text-[#102B4B] hover:bg-[#F0F6FC] hover:text-[#1464B8] disabled:opacity-25 transition-colors"
+                        aria-label="Mes siguiente"
                       >
-                        ▶
+                        <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Días de la semana header */}
-                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-[#102B4B]/60 uppercase tracking-wider py-1 border-b border-[#C7D5E2]/80">
-                    <div>Lun</div>
-                    <div>Mar</div>
-                    <div>Mié</div>
-                    <div>Jue</div>
-                    <div>Vie</div>
-                    <div>Sáb</div>
-                    <div>Dom</div>
-                  </div>
+                  {/* Calendar White Sheet */}
+                  <div className="bg-white rounded-2xl border border-[#C7D5E2] p-3 sm:p-4 shadow-2xs space-y-2.5">
+                    {/* Weekday Header */}
+                    <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] sm:text-[11px] font-extrabold text-[#102B4B]/70 uppercase tracking-wider pb-2 border-b border-[#E2EBF3]">
+                      <div>Lun</div>
+                      <div>Mar</div>
+                      <div>Mié</div>
+                      <div>Jue</div>
+                      <div>Vie</div>
+                      <div>Sáb</div>
+                      <div>Dom</div>
+                    </div>
 
-                  {/* Cuadrícula de días del mes */}
-                  <div className="grid grid-cols-7 gap-1.5 pt-1">
-                    {currentMonthData.daysList.map((dayItem, idx) => {
-                      if (!dayItem) {
-                        return <div key={`empty_${idx}`} className="h-10"></div>;
-                      }
+                    {/* Days Grid */}
+                    <div className="grid grid-cols-7 gap-1.5 pt-1">
+                      {currentMonthData.daysList.map((dayItem, idx) => {
+                        if (!dayItem) {
+                          return <div key={`empty_${idx}`} className="h-10 sm:h-11"></div>;
+                        }
 
-                      const isSelected = selectedDate === dayItem.isoDate;
+                        const isSelected = selectedDate === dayItem.isoDate;
 
-                      return (
-                        <button
-                          key={dayItem.isoDate}
-                          type="button"
-                          disabled={!dayItem.isAvailable}
-                          onClick={() => {
-                            setSelectedDate(dayItem.isoDate);
-                            setSelectedSlot(null);
-                          }}
-                          className={`h-11 rounded-xl text-center flex flex-col items-center justify-center transition-all border text-xs relative ${
-                            isSelected
-                              ? 'bg-[#1464B8] border-[#1464B8] text-white font-extrabold shadow-md shadow-[#1464B8]/25 scale-105 z-10'
-                              : dayItem.isAvailable
-                              ? 'bg-white hover:bg-[#1464B8]/10 border-[#C7D5E2] text-[#102B4B] font-bold hover:border-[#1464B8]'
-                              : 'bg-transparent border-transparent text-[#102B4B]/25 cursor-not-allowed font-normal'
-                          }`}
-                        >
-                          <span className="text-xs font-bold">{dayItem.dayNum}</span>
-                          {dayItem.isToday && !isSelected && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#00A9B7] absolute bottom-1"></span>
-                          )}
-                        </button>
-                      );
-                    })}
+                        return (
+                          <button
+                            key={dayItem.isoDate}
+                            type="button"
+                            disabled={!dayItem.isAvailable}
+                            onClick={() => {
+                              setSelectedDate(dayItem.isoDate);
+                              setSelectedSlot(null);
+                            }}
+                            className={`h-10 sm:h-11 rounded-xl text-center flex flex-col items-center justify-center transition-all border relative ${
+                              isSelected
+                                ? 'bg-gradient-to-br from-[#1464B8] to-[#00A9B7] border-[#1464B8] text-white font-extrabold shadow-md shadow-[#1464B8]/30 scale-[1.04] z-10'
+                                : dayItem.isAvailable
+                                ? 'bg-[#EAF3FC] hover:bg-[#1464B8] border-[#96C0EA] hover:border-[#1464B8] text-[#071B36] hover:text-white font-extrabold shadow-2xs cursor-pointer'
+                                : 'bg-[#F8FAFC] border-transparent text-[#94A8BE] cursor-not-allowed font-medium'
+                            }`}
+                          >
+                            <span className="text-xs sm:text-[13px] leading-none">{dayItem.dayNum}</span>
+                            {dayItem.isAvailable && !isSelected && (
+                              <span className={`w-1.5 h-1.5 rounded-full mt-1 ${dayItem.isToday ? 'bg-[#00A9B7]' : 'bg-[#1464B8]/60'}`}></span>
+                            )}
+                            {isSelected && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-white mt-1"></span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Visual Legend */}
+                    <div className="flex flex-wrap items-center justify-end gap-4 pt-2 border-t border-[#EDF2F7] text-[11px] font-semibold text-[#102B4B]/70">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded bg-[#EAF3FC] border border-[#96C0EA] inline-block" />
+                        Disponible
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded bg-gradient-to-br from-[#1464B8] to-[#00A9B7] inline-block" />
+                        Seleccionado
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded bg-[#F8FAFC] border border-[#E2EBF3] inline-block" />
+                        No disponible
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
             })()}
 
-            {/* Step 3: Select Timezone & Time Slot (Expanded Vertical Grid) */}
+            {/* Step 3: Select Timezone & Time Slot */}
             {selectedDate && (
               <div className="space-y-4 pt-2 border-t border-[#C7D5E2]/80 animate-fade-in">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <label className="font-display text-xs sm:text-[13px] font-extrabold text-[#071B36] uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#00A9B7] text-white text-[11px] font-extrabold inline-flex items-center justify-center shadow-xs">
+                      3
+                    </span>
+                    <span>Elige un Horario Disponible</span>
+                  </label>
+                  <span className="px-2.5 py-1 rounded-full bg-[#EAF3FC] text-[#1464B8] text-[11px] font-extrabold">
+                    {availableSlots.length} bloques libres
+                  </span>
+                </div>
+
                 <div className="space-y-1.5 bg-[#F6F9FC] p-3.5 rounded-2xl border border-[#C7D5E2]">
                   <div className="flex justify-between items-center text-xs">
                     <label className="font-bold text-[#102B4B] flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-[#1464B8]" />
-                      <span>Zona Horaria del Cliente:</span>
+                      <span>Tu Zona Horaria de Referencia:</span>
                     </label>
-                    <span className="text-[11px] font-bold text-[#00A9B7]">CDMX: Hora Centro México</span>
+                    <span className="text-[11px] font-bold text-[#008995]">Horarios en Hora Centro México</span>
                   </div>
                   <select
                     value={clientTimezone}
                     onChange={e => setClientTimezone(e.target.value)}
-                    className="w-full bg-white border border-[#C7D5E2] text-[#102B4B] text-xs rounded-xl p-2.5 font-medium outline-none focus:border-[#1464B8]"
+                    className="w-full bg-white border border-[#C7D5E2] text-[#102B4B] text-xs rounded-xl p-2.5 font-semibold outline-none focus:border-[#1464B8]"
                   >
                     {COMMON_TIMEZONES.map(tz => (
                       <option key={tz.zone} value={tz.zone}>{tz.label}</option>
@@ -860,36 +1050,33 @@ const PublicBooking: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-extrabold text-[#102B4B] uppercase tracking-wider flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[#00A9B7]" />
-                    Horarios Disponibles para el <span className="text-[#1464B8]">{selectedDate}</span>
-                  </label>
-                  <span className="text-xs text-[#102B4B]/65 font-semibold">{availableSlots.length} horarios libres</span>
-                </div>
-
                 {availableSlots.length === 0 ? (
-                  <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl text-amber-800 text-xs flex items-center gap-2">
+                  <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl text-amber-800 text-xs font-semibold flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>No hay horarios disponibles para esta fecha. Intenta seleccionando otro día en el calendario.</span>
+                    <span>No quedan horarios libres en esta fecha. Por favor selecciona otro día resaltado en azul en el calendario.</span>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {availableSlots.map((slot, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`p-3 rounded-2xl border text-xs font-semibold text-center transition-all ${
-                          selectedSlot?.startTime === slot.startTime 
-                            ? 'bg-[#00A9B7] border-[#00A9B7] text-white font-extrabold shadow-md shadow-[#00A9B7]/25 scale-105' 
-                            : 'bg-[#F6F9FC] border-[#C7D5E2] text-[#102B4B] hover:bg-white hover:border-[#00A9B7]'
-                        }`}
-                      >
-                        <div className="text-sm font-bold">{slot.startTime} - {slot.endTime}</div>
-                        <div className="text-[10px] opacity-75 font-normal">Hora CDMX</div>
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {availableSlots.map((slot, idx) => {
+                      const active = selectedSlot?.startTime === slot.startTime;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedSlot(slot)}
+                          className={`p-3.5 rounded-2xl border text-center transition-all ${
+                            active
+                              ? 'bg-gradient-to-r from-[#071B36] to-[#1464B8] border-[#1464B8] text-white shadow-lg shadow-[#1464B8]/25 scale-[1.02]' 
+                              : 'bg-[#F6F9FC] border-[#C7D5E2] text-[#071B36] hover:bg-[#EAF3FC] hover:border-[#1464B8]'
+                          }`}
+                        >
+                          <div className="text-sm font-extrabold">{slot.startTime} – {slot.endTime}</div>
+                          <div className={`text-[10px] mt-0.5 font-semibold ${active ? 'text-[#7CE8F0]' : 'text-[#102B4B]/60'}`}>
+                            Hora CDMX
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -897,39 +1084,41 @@ const PublicBooking: React.FC = () => {
 
             {/* Step 4: Client Info Form */}
             {selectedSlot && (
-              <div className="space-y-4 pt-4 border-t border-[#C7D5E2]/80 animate-fade-in">
-                <h3 className="font-display text-sm font-extrabold text-[#102B4B] uppercase tracking-wider flex items-center gap-2">
-                  <User className="w-4 h-4 text-[#1464B8]" />
-                  Tus Datos de Contacto
+              <div className="space-y-4 pt-4 border-t border-[#C7D5E2]/80 animate-fade-in bg-[#F6F9FC] p-4 sm:p-6 rounded-3xl border">
+                <h3 className="font-display text-xs sm:text-[13px] font-extrabold text-[#071B36] uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-[#00A9B7] text-white text-[11px] font-extrabold inline-flex items-center justify-center shadow-xs">
+                    4
+                  </span>
+                  <span>Tus Datos para Enviar el Acceso Zoom</span>
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-[#102B4B]/80">Nombre Completo *</label>
+                    <label className="text-[11px] font-bold text-[#102B4B]">Nombre Completo *</label>
                     <div className="relative">
-                      <User className="w-4 h-4 text-[#102B4B]/45 absolute left-3 top-3" />
+                      <User className="w-4 h-4 text-[#102B4B]/45 absolute left-3.5 top-3" />
                       <input
                         type="text"
                         required
                         value={clientName}
                         onChange={e => setClientName(e.target.value)}
                         placeholder="Ej. Juan Pérez"
-                        className="w-full bg-[#F6F9FC] border border-[#C7D5E2] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#102B4B] placeholder:text-[#102B4B]/40 outline-none focus:bg-white focus:border-[#1464B8]"
+                        className="w-full bg-white border border-[#C7D5E2] rounded-xl pl-10 pr-3 py-2.5 text-xs text-[#102B4B] placeholder:text-[#102B4B]/40 outline-none focus:border-[#1464B8]"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-[#102B4B]/80">Correo Electrónico *</label>
+                    <label className="text-[11px] font-bold text-[#102B4B]">Correo Electrónico *</label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-[#102B4B]/45 absolute left-3 top-3" />
+                      <Mail className="w-4 h-4 text-[#102B4B]/45 absolute left-3.5 top-3" />
                       <input
                         type="email"
                         required
                         value={clientEmail}
                         onChange={e => setClientEmail(e.target.value)}
-                        placeholder="juan@ejemplo.com"
-                        className="w-full bg-[#F6F9FC] border border-[#C7D5E2] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#102B4B] placeholder:text-[#102B4B]/40 outline-none focus:bg-white focus:border-[#1464B8]"
+                        placeholder="juan@empresa.com"
+                        className="w-full bg-white border border-[#C7D5E2] rounded-xl pl-10 pr-3 py-2.5 text-xs text-[#102B4B] placeholder:text-[#102B4B]/40 outline-none focus:border-[#1464B8]"
                       />
                     </div>
                   </div>
@@ -938,15 +1127,15 @@ const PublicBooking: React.FC = () => {
                 {/* WhatsApp con Selector de Clave LADA Internacional */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <label className="text-[11px] font-bold text-[#102B4B]/80">WhatsApp / Teléfono de Contacto *</label>
-                    <span className="text-[10px] text-[#00A9B7] font-bold">📍 Clave LADA Internacional</span>
+                    <label className="text-[11px] font-bold text-[#102B4B]">WhatsApp / Teléfono de Contacto *</label>
+                    <span className="text-[10px] text-[#008995] font-bold">Clave LADA Internacional</span>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <select
                       value={selectedCountryCode}
                       onChange={e => setSelectedCountryCode(e.target.value)}
-                      className="bg-[#F6F9FC] border border-[#C7D5E2] rounded-xl px-2.5 py-2.5 text-xs text-[#102B4B] outline-none focus:bg-white focus:border-[#1464B8] font-semibold"
+                      className="bg-white border border-[#C7D5E2] rounded-xl px-3 py-2.5 text-xs text-[#102B4B] outline-none focus:border-[#1464B8] font-semibold"
                     >
                       {COUNTRY_CODES.map((c, i) => (
                         <option key={i} value={c.code}>
@@ -956,32 +1145,29 @@ const PublicBooking: React.FC = () => {
                     </select>
 
                     <div className="relative flex-1">
-                      <Phone className="w-4 h-4 text-[#102B4B]/45 absolute left-3 top-3" />
+                      <Phone className="w-4 h-4 text-[#102B4B]/45 absolute left-3.5 top-3" />
                       <input
                         type="tel"
                         required
                         value={clientPhone}
                         onChange={e => setClientPhone(e.target.value)}
                         placeholder="415 123 4567"
-                        className="w-full bg-[#F6F9FC] border border-[#C7D5E2] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#102B4B] placeholder:text-[#102B4B]/40 outline-none focus:bg-white focus:border-[#1464B8] font-mono"
+                        className="w-full bg-white border border-[#C7D5E2] rounded-xl pl-10 pr-3 py-2.5 text-xs text-[#102B4B] placeholder:text-[#102B4B]/40 outline-none focus:border-[#1464B8] font-mono"
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-[#102B4B]/55 italic">
-                    Selecciona tu país para incluir la clave LADA internacional y recibir confirmación directa.
-                  </p>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-[#102B4B]/80">Tema o Motivo de la Cita (Opcional)</label>
+                  <label className="text-[11px] font-bold text-[#102B4B]">Tema o Motivo de la Reunión (Opcional)</label>
                   <div className="relative">
-                    <MessageSquare className="w-4 h-4 text-[#102B4B]/45 absolute left-3 top-3" />
+                    <MessageSquare className="w-4 h-4 text-[#102B4B]/45 absolute left-3.5 top-3" />
                     <textarea
                       rows={2}
                       value={topic}
                       onChange={e => setTopic(e.target.value)}
-                      placeholder="Escribe brevemente qué te gustaría tratar en la reunión..."
-                      className="w-full bg-[#F6F9FC] border border-[#C7D5E2] rounded-xl pl-9 pr-3 py-2 text-xs text-[#102B4B] placeholder:text-[#102B4B]/40 outline-none focus:bg-white focus:border-[#1464B8] resize-none"
+                      placeholder="Cuéntanos brevemente el objetivo de tu proyecto o consulta..."
+                      className="w-full bg-white border border-[#C7D5E2] rounded-xl pl-10 pr-3 py-2.5 text-xs text-[#102B4B] placeholder:text-[#102B4B]/40 outline-none focus:border-[#1464B8] resize-none"
                     />
                   </div>
                 </div>
@@ -996,7 +1182,7 @@ const PublicBooking: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-[#1464B8] hover:bg-[#10539B] disabled:opacity-50 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-[#1464B8]/25 flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider"
+                  className="w-full bg-gradient-to-r from-[#071B36] via-[#1464B8] to-[#00A9B7] hover:from-[#0A254A] hover:to-[#008C99] disabled:opacity-50 text-white font-extrabold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-[#1464B8]/25 flex items-center justify-center gap-2 text-xs sm:text-sm uppercase tracking-wider cursor-pointer"
                 >
                   {submitting ? (
                     <>
@@ -1005,7 +1191,7 @@ const PublicBooking: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <span>Confirmar y Reservar Cita</span>
+                      <span>Confirmar y Reservar Videollamada</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}

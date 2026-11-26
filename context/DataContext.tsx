@@ -92,7 +92,8 @@ const defaultBookingSettings: BookingSettings = {
     { id: "p1", name: "Interpres Digital", slug: "interpres-digital", color: "#1464B8", description: "Desarrollo de Software y Automatizaciones" },
     { id: "p5", name: "Consultoría IA", slug: "consultoria-ia", color: "#00A9B7", description: "Diagnóstico Estratégico y Arquitectura de IA" },
     { id: "p2", name: "Lúmina Core", slug: "lumina-core", color: "#930687", description: "Plataforma Inteligente" },
-    { id: "p3", name: "TKD Register", slug: "tkd-register", color: "#f59e0b", description: "Plataforma Deportiva" },
+    { id: "p6", name: "Bacco iA", slug: "bacco-ia", color: "#8B1E3F", description: "Plataforma Inteligente con IA" },
+    { id: "p3", name: "TKD Register", slug: "tkd-register", color: "#D97706", description: "Plataforma Deportiva" },
     { id: "p4", name: "Check-up financiero", slug: "check-up-financiero", color: "#102B4B", description: "Diagnóstico Financiero" }
   ],
   zoomConfig: {
