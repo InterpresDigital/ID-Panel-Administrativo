@@ -50,6 +50,7 @@ import {
   MessageSquare,
   Bot,
   Workflow,
+  Monitor,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -1737,6 +1738,13 @@ const PublicAiBriefing: React.FC = () => {
 
               <div className="p-5 sm:p-6 space-y-3 flex-1 bg-gradient-to-b from-white to-[#F7FAFE]">
                 {[
+                  {
+                    Icon: Monitor,
+                    badgeBg: "from-[#0B2D5C] to-[#1464B8]",
+                    borderAccent: "border-l-[#00A9B7]",
+                    title: "Disponible en móvil o escritorio",
+                    body: "Puedes realizarlo desde tu celular o computadora; te recomendamos hacerlo en escritorio o laptop para mejorar tu experiencia, visualizar el avance completo y adjuntar archivos con mayor comodidad.",
+                  },
                   {
                     Icon: Clock,
                     badgeBg: "from-[#1464B8] to-[#1D78D8]",
