@@ -17,14 +17,14 @@ import {
 } from "./pdfLogoHelper";
 
 const COLORS = {
-  inkBlack: [10, 15, 25] as [number, number, number], // Tinta negra profunda de máxima legibilidad
-  titleNavy: [15, 23, 42] as [number, number, number], // Slate 900
-  labelSlate: [51, 65, 85] as [number, number, number], // Slate 700 nítido (nunca gris pálido)
-  accent: [79, 70, 229] as [number, number, number], // Indigo 600
-  darkHeaderFill: [30, 41, 59] as [number, number, number], // Slate 800 para encabezados de tabla comparativa
-  cardBg: [248, 250, 252] as [number, number, number], // Fondo suave de tarjeta resumen
-  stripe: [249, 250, 252] as [number, number, number], // Cebra muy sutil para no restar contraste a la tinta
-  border: [203, 213, 225] as [number, number, number], // Borde limpio Slate 300
+  inkBlack: [16, 43, 75] as [number, number, number], // Tinta corporativa #102B4B
+  titleNavy: [7, 27, 54] as [number, number, number], // Azul profundo #071B36
+  labelSlate: [42, 74, 110] as [number, number, number], // Etiqueta nítida de alto contraste
+  accent: [20, 100, 184] as [number, number, number], // Azul corporativo #1464B8
+  darkHeaderFill: [7, 27, 54] as [number, number, number], // Azul profundo #071B36 para encabezados de tabla comparativa
+  cardBg: [246, 249, 252] as [number, number, number], // Base clara #F6F9FC
+  stripe: [246, 249, 252] as [number, number, number], // Cebra suave #F6F9FC
+  border: [199, 213, 226] as [number, number, number], // Plata corporativo #C7D5E2
 };
 
 /**
@@ -80,10 +80,10 @@ const drawCleanExecutiveHeader = (
 
   drawProportionalLogo(doc, logo, {
     x: margin,
-    boxTopY: 6,
-    boxHeight: 24,
-    maxWidth: 52,
-    maxHeight: 13.5,
+    boxTopY: 5,
+    boxHeight: 25,
+    maxWidth: 54,
+    maxHeight: 17.5,
     fallbackText: "INTERPRES DIGITAL",
     fallbackColor: COLORS.titleNavy,
   });

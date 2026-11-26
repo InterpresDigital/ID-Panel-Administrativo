@@ -359,16 +359,23 @@ const SignAgreement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white p-4 md:p-8 transition-colors duration-300">
+    <div className="min-h-screen bg-[#F6F9FC] dark:bg-[#071B36] text-[#102B4B] dark:text-white p-4 md:p-8 transition-colors duration-300">
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Header Logo */}
-        <div className="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-dark-surface p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-dark-border shadow-sm gap-3 text-center sm:text-right">
-          <img 
-            src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/3.png" 
-            alt="Interpres Logo" 
-            className="h-8 sm:h-10 w-auto object-contain"
-          />
+        <div className="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-[#0C2548] p-4 sm:p-5 rounded-2xl border border-[#C7D5E2] dark:border-[#1B3C68] shadow-sm gap-3 text-center sm:text-right">
+          <div>
+            <img 
+              src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logo%20futurista%20INTERPRES%20DIGITAL%20LABS.png" 
+              alt="Interpres Digital Labs" 
+              className="h-9 sm:h-11 w-auto object-contain dark:hidden"
+            />
+            <img 
+              src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logotipo%20blanco%20de%20Interpres%20Digital%20Labs%20HOR.png" 
+              alt="Interpres Digital Labs" 
+              className="h-9 sm:h-11 w-auto object-contain hidden dark:block"
+            />
+          </div>
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3">
             {agreement && !agreement.includeRepSignature && (
               <span className="text-[9px] sm:text-[10px] font-bold bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-200 dark:border-amber-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider select-none animate-pulse">

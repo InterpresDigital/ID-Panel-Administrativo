@@ -4,13 +4,13 @@ import { Quotation, Client, CompanyInfo } from '../types';
 import { loadPdfLogo, drawProportionalLogo, LoadedPdfLogo } from './pdfLogoHelper';
 
 const COLORS = {
-  headerBg: [30, 41, 59], // Slate 800
-  textDark: [15, 23, 42], // Slate 900
-  textGray: [100, 116, 139], // Slate 500
-  accent: [14, 165, 233], // Sky 500
-  success: [22, 163, 74], // Green 600
-  border: [226, 232, 240], // Slate 200
-  stripe: [248, 250, 252], // Slate 50
+  headerBg: [7, 27, 54], // #071B36
+  textDark: [16, 43, 75], // #102B4B
+  textGray: [71, 95, 122], // Tinta secundaria editorial
+  accent: [20, 100, 184], // #1464B8
+  success: [0, 169, 183], // #00A9B7
+  border: [199, 213, 226], // #C7D5E2
+  stripe: [246, 249, 252], // #F6F9FC
 };
 
 const formatLocalDate = (dateStr: string) => {
@@ -29,13 +29,13 @@ const drawQuoteHeader = (doc: jsPDF, quotation: Quotation, logo: LoadedPdfLogo |
   const pageWidth = doc.internal.pageSize.width;
   const headerHeight = 32;
 
-  // Proportional Interpres Digital Logo
+  // Proportional Interpres Digital Logo (3.0:1)
   drawProportionalLogo(doc, logo, {
     x: 18,
     boxTopY: 3,
     boxHeight: 30,
     maxWidth: 54,
-    maxHeight: 14,
+    maxHeight: 17.5,
     fallbackText: "INTERPRES DIGITAL",
     fallbackColor: [COLORS.textDark[0], COLORS.textDark[1], COLORS.textDark[2]],
   });
@@ -53,8 +53,8 @@ const drawQuoteHeader = (doc: jsPDF, quotation: Quotation, logo: LoadedPdfLogo |
   const cleanFolio = quotation.id.replace(/^quote_/, '').substring(0, 8).toUpperCase();
   doc.text(`Fecha: ${new Date(quotation.createdAt).toLocaleDateString()} | Folio: INT-COT-${cleanFolio}`, pageWidth - 18, 23.5, { align: 'right' });
 
-  // Indigo Accent Bottom line
-  doc.setDrawColor(99, 102, 241); // Indigo 500
+  // Corporate Blue Accent Bottom line
+  doc.setDrawColor(20, 100, 184); // #1464B8
   doc.setLineWidth(0.8);
   doc.line(18, headerHeight + 3, pageWidth - 18, headerHeight + 3);
 

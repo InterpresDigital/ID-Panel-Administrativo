@@ -467,71 +467,71 @@ const PublicGeneralBriefing: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-6 text-white text-center">
-        <div className="max-w-md w-full bg-slate-900/60 backdrop-blur-md rounded-3xl p-8 border border-indigo-500/20 shadow-2xl space-y-6 animate-scale-up">
+      <div className="min-h-screen bg-[#071B36] flex items-center justify-center p-6 text-white text-center">
+        <div className="max-w-md w-full bg-[#0C2548] backdrop-blur-md rounded-3xl p-8 border border-[#1B3C68] shadow-2xl space-y-6 animate-scale-up">
           <div className="mb-2">
             <img 
-              src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png" 
-              alt="Lúmina Core Logo" 
-              className="h-10 mx-auto object-contain"
+              src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logotipo%20blanco%20de%20Interpres%20Digital%20Labs%20HOR.png" 
+              alt="Interpres Digital Labs" 
+              className="h-12 mx-auto object-contain"
             />
           </div>
-          <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/30">
+          <div className="w-16 h-16 bg-[#00A9B7]/20 text-[#5FD9E4] rounded-full flex items-center justify-center mx-auto border border-[#00A9B7]/40">
             <CheckCircle2 className="w-10 h-10" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-black uppercase tracking-wider">¡Briefing Guardado!</h2>
-            <p className="text-sm text-slate-300">
+            <h2 className="font-display text-2xl font-extrabold uppercase tracking-wider">¡Briefing Guardado!</h2>
+            <p className="text-sm text-slate-200">
               Muchas gracias por completar la información. Hemos registrado tu establecimiento y tus preferencias visuales para personalizar tu sitio web o plataforma digital.
             </p>
           </div>
-          <p className="text-xs text-slate-400">Nuestro equipo de diseño y desarrollo comenzará a trabajar con tus colores y estilos visuales.</p>
+          <p className="text-xs text-slate-300">Nuestro equipo de diseño y desarrollo comenzará a trabajar con tus colores y estilos visuales.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 text-white pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-[#071B36] via-[#0C2548] to-[#102B4B] text-white pb-20">
       {/* Header Banner */}
       <div className="max-w-3xl mx-auto pt-12 px-6">
         <div className="text-center space-y-3">
           <div className="mb-2">
             <img 
-              src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png" 
-              alt="Lúmina Core Logo" 
+              src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logotipo%20blanco%20de%20Interpres%20Digital%20Labs%20HOR.png" 
+              alt="Interpres Digital Labs" 
               className="h-14 mx-auto object-contain hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <h1 className="text-3xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-white">
+          <h1 className="font-display text-3xl font-extrabold uppercase tracking-wider text-white">
             Briefing General de Desarrollo
           </h1>
-          <p className="text-sm text-slate-400 max-w-xl mx-auto">
+          <p className="text-sm text-slate-300 max-w-xl mx-auto">
             Configura y personaliza la identidad de tu marca para tu nueva página web o plataforma digital a la medida.
           </p>
         </div>
 
         {/* Step progress bar */}
-        <div className="mt-8 bg-slate-950/60 backdrop-blur-md border border-indigo-500/30 p-5 rounded-2xl flex items-center justify-between gap-2 shadow-[0_0_30px_rgba(99,102,241,0.15)]">
+        <div className="mt-8 bg-[#0C2548]/90 backdrop-blur-md border border-[#1B3C68] p-5 rounded-2xl flex items-center justify-between gap-2 shadow-lg">
           {[1, 2, 3, 4, 5].map((num) => (
             <React.Fragment key={num}>
               <div className="flex items-center">
                 <div className={clsx(
                   "w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border transition-all duration-300",
                   step >= num 
-                    ? "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/35" 
-                    : "bg-slate-950/40 border-slate-800 text-slate-500"
+                    ? "bg-[#1464B8] border-[#5FD9E4]/60 text-white shadow-lg shadow-[#1464B8]/30" 
+                    : "bg-[#071B36] border-[#1B3C68] text-slate-400"
                 )}>
                   {num}
                 </div>
               </div>
-              {num < 5 && <div className={clsx("flex-1 h-0.5 rounded-full transition-all duration-300", step > num ? "bg-indigo-600" : "bg-slate-800")} />}
+              {num < 5 && <div className={clsx("flex-1 h-0.5 rounded-full transition-all duration-300", step > num ? "bg-[#00A9B7]" : "bg-[#1B3C68]")} />}
             </React.Fragment>
           ))}
         </div>
 
         {/* Active step title label */}
-        <div className="mt-4 text-center text-xs font-black uppercase tracking-widest text-indigo-400">
+        <div className="mt-4 text-center text-xs font-extrabold uppercase tracking-widest text-[#7CE8F0]">
           Paso {step} de 5: {
             step === 1 ? "Información de Contacto" :
             step === 2 ? "Datos de Facturación" :
@@ -542,7 +542,7 @@ const PublicGeneralBriefing: React.FC = () => {
         </div>
 
         {/* Form panel */}
-        <div className="mt-6 bg-slate-950/75 backdrop-blur-xl rounded-3xl p-6 md:p-8 border border-indigo-500/40 shadow-[0_0_40px_rgba(99,102,241,0.25)] space-y-8">
+        <div className="mt-6 bg-[#071B36]/90 backdrop-blur-xl rounded-3xl p-6 md:p-8 border border-[#1B3C68] shadow-2xl space-y-8">
           
           {/* STEP 1: CONTACT INFO */}
           {step === 1 && (

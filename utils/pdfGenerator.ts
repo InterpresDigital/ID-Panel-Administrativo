@@ -20,15 +20,15 @@ interface TaxPDFData {
 
 // --- CONFIGURACIÓN DE ESTILO PREMIUM ---
 const COLORS = {
-    headerBg: [30, 41, 59], // Slate 800
+    headerBg: [7, 27, 54], // #071B36
     headerText: [255, 255, 255], // White
-    textDark: [15, 23, 42], // Slate 900
-    textGray: [100, 116, 139], // Slate 500
-    accent: [14, 165, 233], // Sky 500
-    success: [22, 163, 74], // Green 600
+    textDark: [16, 43, 75], // #102B4B
+    textGray: [71, 95, 122], // Tinta secundaria
+    accent: [20, 100, 184], // #1464B8
+    success: [0, 169, 183], // #00A9B7
     danger: [225, 29, 72], // Rose 600
     warning: [234, 88, 12], // Orange 600
-    tableStripe: [248, 250, 252], // Slate 50
+    tableStripe: [246, 249, 252], // #F6F9FC
 };
 
 // --- COMPONENTES DE DISEÑO ---
@@ -41,13 +41,13 @@ const drawPremiumHeader = (doc: jsPDF, title: string, subtitle: string, logo: Lo
     doc.setFillColor(COLORS.headerBg[0], COLORS.headerBg[1], COLORS.headerBg[2]);
     doc.rect(0, 0, pageWidth, headerHeight, 'F');
 
-    // 2. Logotipo Proporcional (Sobre fondo oscuro)
+    // 2. Logotipo Proporcional (Sobre fondo oscuro, 3.0:1)
     drawProportionalLogo(doc, logo, {
         x: 14,
         boxTopY: 0,
         boxHeight: headerHeight,
-        maxWidth: 60,
-        maxHeight: 16,
+        maxWidth: 62,
+        maxHeight: 20,
         fallbackText: "INTERPRES DIGITAL",
         fallbackColor: [255, 255, 255],
     });

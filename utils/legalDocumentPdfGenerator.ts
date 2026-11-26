@@ -3,27 +3,27 @@ import { LegalDocument, CompanyInfo } from '../types';
 import { loadPdfLogo, drawProportionalLogo, drawProportionalSignature, LoadedPdfLogo } from './pdfLogoHelper';
 
 const COLORS = {
-  headerBg: [30, 41, 59], // Slate 800
-  textDark: [15, 23, 42], // Slate 900
-  textGray: [100, 116, 139], // Slate 500
-  accent: [99, 102, 241], // Indigo 500
-  success: [22, 163, 74], // Green 600
+  headerBg: [7, 27, 54], // #071B36
+  textDark: [16, 43, 75], // #102B4B
+  textGray: [71, 95, 122], // Tinta secundaria editorial
+  accent: [20, 100, 184], // #1464B8
+  success: [0, 169, 183], // #00A9B7
   pending: [217, 119, 6], // Amber 600
-  border: [226, 232, 240], // Slate 200
-  stripe: [248, 250, 252], // Slate 50
+  border: [199, 213, 226], // #C7D5E2
+  stripe: [246, 249, 252], // #F6F9FC
 };
 
 const drawDocHeader = (doc: jsPDF, legalDoc: LegalDocument, logo: LoadedPdfLogo | null) => {
   const pageWidth = doc.internal.pageSize.width;
   const headerHeight = 32;
 
-  // Proportional Interpres Digital Logo
+  // Proportional Interpres Digital Logo (3.0:1)
   drawProportionalLogo(doc, logo, {
     x: 18,
     boxTopY: 3,
     boxHeight: 30,
     maxWidth: 54,
-    maxHeight: 14,
+    maxHeight: 17.5,
     fallbackText: "INTERPRES DIGITAL",
     fallbackColor: [COLORS.textDark[0], COLORS.textDark[1], COLORS.textDark[2]],
   });

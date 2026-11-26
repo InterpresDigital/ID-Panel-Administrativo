@@ -77,17 +77,18 @@ firebase deploy --only functions
    - Los enlaces de briefings, contratos, cotizaciones y citas se envían a clientes externos. Está **prohibido** mostrar banners o ventanas emergentes de instalación de aplicación PWA en celulares.
    - Mantener en `index.html` el bloqueo `window.addEventListener('beforeinstallprompt', e => e.preventDefault())` y el desregistro automático de Service Workers, `display: "browser"` en `public/manifest.json` y la baja automática en `public/sw.js`.
 
-2. **Favicon e Imagen Open Graph (OG Card):**
-   - Favicon oficial basado en el isotipo de Interpres Digital centrado proporcionalmente en `public/favicon.png`, `public/icon-192.png` y `public/icon-512.png`.
-   - Metadatos `og:*` y `twitter:*` (`summary_large_image`) al inicio de `<head>` en `index.html` utilizando `https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/agentes%20ia.jpg`.
+2. **Favicon, Logotipos Oficiales e Imagen Open Graph (OG Card):**
+   - Símbolo cuadrado oficial (`Emblema iD`) en `public/favicon-16.png`, `public/favicon-32.png`, `public/favicon-48.png`, `public/favicon.png`, `public/apple-touch-icon.png`, `public/icon-192.png` y `public/icon-512.png` (centralizado en `utils/brandAssets.ts`).
+   - Metadatos `og:*` y `twitter:*` (`summary_large_image`, `1200×630`) al inicio de `<head>` en `index.html` utilizando `OG_IMAGE_URL` (`Banner tecnológico futurista de Interpres Digital Labs.png`).
+   - Paleta editorial corporativa: Base clara `#F6F9FC`, Blanco `#FFFFFF`, Tinta `#102B4B`, Azul profundo `#071B36` (secciones inmersivas), Azul `#1464B8`, Turquesa `#00A9B7`, Plata `#C7D5E2`. Tipografía `Manrope` en títulos y `Inter` en cuerpo; sin negro como fondo dominante.
 
 3. **Proporción Exacta del Logotipo y Firmas en TODOS los PDFs:**
-   - El logotipo horizontal de Interpres Digital tiene relación de aspecto `4.96:1` (`1200x242 px` en `public/logos/interpres-color.png` para fondos claros y `public/logos/interpres-white.png` para encabezados oscuros).
+   - El logotipo horizontal oficial de Interpres Digital Labs tiene relación de aspecto `3.0:1` (`1629x543 px` en `public/logos/interpres-color.png` para fondos claros y `public/logos/interpres-white.png` para encabezados oscuros; Lúmina Core conserva su activo oficial independiente en `public/logos/lumina-core.png`).
    - **Prohibido** usar `doc.addImage` con cajas cuadradas o dimensiones fijas que deformen el logo o las firmas. Siempre utilizar `loadPdfLogo`, `drawProportionalLogo` y `drawProportionalSignature` de `utils/pdfLogoHelper.ts`.
 
 4. **Módulo Briefing de IA (`PublicAiBriefing.tsx` + `aiVoiceBriefingService.ts` + `aiBriefingTypes.ts`):**
-   - **Consultora de Voz:** Se presenta como **Nexia IA**, inteligencia artificial de Interpres Digital (voz `Aoede`, español mexicano), haciendo **estrictamente 1 sola pregunta corta por turno** y avanzando en orden de Etapa 1 a Etapa 10.
-   - **Diseño y Campos:** Portada en dos líneas balanceadas (*Diagnóstico Ejecutivo para* / *Diseño de Agentes de IA*), sin campo de *"Fecha límite ideal para recibir propuesta"* (`responseDeadline` retirado), tarjetas de campos con contornos visibles (`border-slate-600/80+`, `bg-slate-800/75`).
+   - **Consultora de Voz:** Se presenta como **Nexia IA**, inteligencia artificial de Interpres Digital (voz `Aoede`, español mexicano, retrato oficial `NEXIA_URL`), haciendo **estrictamente 1 sola pregunta corta por turno** y avanzando en orden de Etapa 1 a Etapa 10.
+   - **Diseño y Campos:** Portada en dos líneas balanceadas (*Diagnóstico Ejecutivo para* / *Diseño de Agentes de IA*), sin campo de *"Fecha límite ideal para recibir propuesta"* (`responseDeadline` retirado), tarjetas de campos con contornos visibles (`border-[#C7D5E2]`).
    - **Consentimiento Legal Obligatorio en Portada:** Casilla y modal con cláusulas alineadas al Aviso de Privacidad Integral (LFPDPPP) y Términos de **INTERPRES S.A. de C.V.** (`admin@interpresdigital.com`), garantizando confidencialidad, **cero entrenamiento de modelos públicos de IA** con datos del cliente y autorización para compartir la información ingresada. Se audita fecha/hora en Firestore y en el PDF.
    - **Persistencia Anti-Bloqueo de Pantalla:** Mantener activo el `Screen Wake Lock` durante sesiones de voz, el respaldo instantáneo en `localStorage` + Firestore al ocultar pestaña (`visibilitychange`/`pagehide`), la recuperación de borrador por `?draft=`, `:clientId` o correo electrónico, y el cálculo de etapa mediante `resolveResumeSection` (`lastActiveSection` de `1` a `10`) para que jamás reinicie en la Etapa 1 tras actualizar o bloquear pantalla.
    - **Candado de Cierre en Etapa 10:** `finishVoiceInterview` tiene prohibido cerrar la llamada antes de que el cliente responda la pregunta de observaciones finales (`additionalComments` o `observationsConfirmed` vía `noAdditionalComments: true`). Al cerrar, debe drenarse por completo el audio de despedida de Nexia IA sin cortarla, mostrando en Etapa 10: 1) Observaciones adicionales, 2) Resumen Ejecutivo de Etapas 1 a 9 editable, y 3) Carga de archivos opcional antes de **Enviar RFI**.
@@ -95,9 +96,10 @@ firebase deploy --only functions
 5. **Orden de Plataformas en Agendamiento Online (`PublicBooking.tsx` y `settings/booking_settings`):**
    - En *"1. Selecciona la Plataforma o Motivo"*, mantener siempre este orden exacto:
      1. **Interpres Digital** (opción preseleccionada por defecto al entrar a `/#/book`)
-     2. **Lúmina Core**
-     3. **TKD Register**
-     4. **Check-up financiero**
+     2. **Consultoría IA**
+     3. **Lúmina Core**
+     4. **TKD Register**
+     5. **Check-up financiero**
 
 6. **Tarjetas de Gráficas Financieras:**
    - En vistas de distribución por concepto (`Dashboard.tsx` / `Finance.tsx`), las leyendas de conceptos deben fluir con scroll o diseño adaptable dentro de la tarjeta sin desbordarse fuera del contenedor.

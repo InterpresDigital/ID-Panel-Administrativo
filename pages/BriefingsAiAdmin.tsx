@@ -35,6 +35,7 @@ import {
   generateAiRfiPreDiagnostic,
   translateAiBriefingToTechnicalSpanish,
 } from "../services/geminiService";
+import { NEXIA_URL } from "../utils/brandAssets";
 import {
   Sparkles,
   Copy,
@@ -949,16 +950,22 @@ const BriefingsAiAdmin: React.FC = () => {
             /* PRE-DIAGNOSTIC & AI QUOTER TAB */
             <div className="space-y-6">
               {/* Top Action & Custom Guidance Card */}
-              <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 md:p-7 border border-gray-100 dark:border-dark-border space-y-4">
+              <div className="bg-white dark:bg-dark-surface rounded-2xl p-6 md:p-7 border border-[#C7D5E2]/80 dark:border-dark-border space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-indigo-500" />
-                      Nexia IA — Arquitecta de Soluciones y Cotizadora (Ecosistema Google)
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Entrenada con el stack oficial de Interpres Digital (Google Gemini, Firebase, Google Workspace, Bot de Telegram y WhatsApp API) para diagnosticar, estructurar la arquitectura y armar tus propuestas en MXN.
-                    </p>
+                  <div className="flex items-start gap-3.5">
+                    <img
+                      src={NEXIA_URL}
+                      alt="Nexia IA"
+                      className="w-12 h-12 rounded-2xl object-cover border border-[#00A9B7]/50 shadow-sm flex-shrink-0"
+                    />
+                    <div className="space-y-1">
+                      <h3 className="font-display text-lg font-extrabold text-[#102B4B] dark:text-white flex items-center gap-2">
+                        <span>Nexia IA — Arquitecta de Soluciones y Cotizadora</span>
+                      </h3>
+                      <p className="text-xs text-[#102B4B]/65 dark:text-slate-300">
+                        Diagnóstico universal de arquitectura empresarial, ciberseguridad y costeo ingenieril por horas hombre para propuestas en MXN.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2.5">

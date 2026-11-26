@@ -79,12 +79,12 @@ interface BriefingData {
 }
 
 const COLORS = {
-  headerBg: [15, 23, 42], // Slate 900
-  accent: [99, 102, 241], // Indigo 500
-  textDark: [30, 41, 59], // Slate 800
-  textGray: [100, 116, 139], // Slate 500
-  border: [226, 232, 240], // Slate 200
-  tableStripe: [248, 250, 252] // Slate 50
+  headerBg: [7, 27, 54], // #071B36
+  accent: [20, 100, 184], // #1464B8
+  textDark: [16, 43, 75], // #102B4B
+  textGray: [71, 95, 122], // Tinta secundaria
+  border: [199, 213, 226], // #C7D5E2
+  tableStripe: [246, 249, 252] // #F6F9FC
 };
 
 export const generateGeneralBriefingPDF = async (briefing: BriefingData) => {
@@ -119,13 +119,13 @@ export const generateGeneralBriefingPDF = async (briefing: BriefingData) => {
     doc.setFillColor(COLORS.headerBg[0], COLORS.headerBg[1], COLORS.headerBg[2]);
     doc.rect(0, 0, pageWidth, 38, 'F');
 
-    // Proportional Interpres Digital Logo
+    // Proportional Interpres Digital Logo (3.0:1)
     drawProportionalLogo(doc, logo, {
       x: margin,
       boxTopY: 0,
       boxHeight: 38,
-      maxWidth: 54,
-      maxHeight: 14,
+      maxWidth: 56,
+      maxHeight: 18.5,
       fallbackText: "INTERPRES DIGITAL",
       fallbackColor: [255, 255, 255],
     });
@@ -382,7 +382,7 @@ export const generateGeneralBriefingPDF = async (briefing: BriefingData) => {
         body: bCombinedHours,
         theme: 'grid',
         styles: { font: 'helvetica', fontSize: 7.5, cellPadding: 1, textColor: COLORS.textDark },
-        headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold' }, // Indigo table header
+        headStyles: { fillColor: [20, 100, 184], textColor: [255, 255, 255], fontStyle: 'bold' }, // #1464B8 table header
         columnStyles: {
           0: { fontStyle: 'bold', cellWidth: 20 },
           1: { cellWidth: 35 },

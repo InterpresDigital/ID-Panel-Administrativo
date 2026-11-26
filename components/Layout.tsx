@@ -27,8 +27,9 @@ import {
   Cpu
 } from 'lucide-react';
 import { useTheme } from './ThemeContext';
-import { useAuth } from '../context/AuthContext'; // New Import
-import { useData } from '../context/DataContext'; // New Import
+import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
+import { LOGO_COLOR_URL, LOGO_BLANCO_URL, FAVICON_URL } from '../utils/brandAssets';
 import clsx from 'clsx';
 
 const NavItem = ({ to, icon: Icon, label, isCollapsed }: { to: string; icon: any; label: string; isCollapsed: boolean }) => (
@@ -38,8 +39,8 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed }: { to: string; icon: any
       clsx(
         "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group my-1",
         isActive 
-          ? "bg-primary-500 text-white shadow-lg shadow-primary-500/30" 
-          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-surface hover:text-primary-600 dark:hover:text-primary-400"
+          ? "bg-[#1464B8] text-white shadow-lg shadow-[#1464B8]/25" 
+          : "text-[#102B4B]/75 dark:text-slate-300 hover:bg-[#F6F9FC] dark:hover:bg-[#102B4B]/60 hover:text-[#1464B8] dark:hover:text-[#38C4D0]"
       )
     }
   >
@@ -57,30 +58,30 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { logout } = useAuth(); // Auth Hook
-  const { loading } = useData(); // Loading State
+  const { logout } = useAuth();
+  const { loading } = useData();
 
-  // Nuevo logotipo provisto por el usuario
-  const logoUrl = "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png";
+  const horizontalLogoUrl = theme === 'dark' ? LOGO_BLANCO_URL : LOGO_COLOR_URL;
+  const collapsedEmblemUrl = FAVICON_URL;
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-dark-bg">
+      <div className="flex h-screen w-full items-center justify-center bg-[#F6F9FC] dark:bg-[#071B36]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-gray-500 dark:text-gray-400 font-medium">Cargando base de datos...</p>
+          <div className="w-12 h-12 border-4 border-[#1464B8] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[#102B4B]/70 dark:text-slate-300 font-medium">Cargando base de datos...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-full bg-gray-50 dark:bg-dark-bg transition-colors duration-300">
+    <div className="flex h-screen w-full bg-[#F6F9FC] dark:bg-[#071B36] text-[#102B4B] dark:text-slate-100 transition-colors duration-300">
       
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-[#071B36]/55 z-20 lg:hidden backdrop-blur-sm"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -88,7 +89,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Sidebar */}
       <aside 
         className={clsx(
-          "fixed lg:relative z-30 h-full bg-white dark:bg-dark-surface border-r border-gray-200 dark:border-dark-border transition-all duration-300 flex flex-col",
+          "fixed lg:relative z-30 h-full bg-white dark:bg-[#0C2548] border-r border-[#C7D5E2]/80 dark:border-[#1B3C68] transition-all duration-300 flex flex-col",
           isCollapsed ? "w-20" : "w-72",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
@@ -96,18 +97,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {/* Floating Collapse Button */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden lg:flex absolute top-7 -right-3 w-6 h-6 bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-full items-center justify-center text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:scale-110 shadow-md cursor-pointer transition-all z-40"
+          className="hidden lg:flex absolute top-7 -right-3 w-6 h-6 bg-white dark:bg-[#0C2548] border border-[#C7D5E2] dark:border-[#1B3C68] rounded-full items-center justify-center text-[#102B4B]/65 dark:text-slate-300 hover:text-[#1464B8] hover:scale-110 shadow-md cursor-pointer transition-all z-40"
           title={isCollapsed ? "Expandir Menú" : "Colapsar Menú"}
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
-        <div className="h-20 flex items-center justify-center px-4 border-b border-gray-100 dark:border-dark-border">
+        <div className="h-20 flex items-center justify-center px-4 border-b border-[#C7D5E2]/60 dark:border-[#1B3C68]">
           <img 
-            src={logoUrl}
-            alt="Interpres Logo" 
+            src={isCollapsed ? collapsedEmblemUrl : horizontalLogoUrl}
+            alt="Interpres Digital Labs" 
             className={clsx(
               "object-contain transition-all duration-300", 
-              isCollapsed ? "h-8 w-full" : "h-12 w-auto"
+              isCollapsed ? "h-10 w-10" : "h-12 w-auto max-w-[215px]"
             )}
           />
         </div>
@@ -172,18 +173,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* Header (Mobile Only) */}
-        <header className="lg:hidden h-16 bg-white dark:bg-dark-surface border-b border-gray-200 dark:border-dark-border flex items-center px-4 justify-between z-10">
+        <header className="lg:hidden h-16 bg-white dark:bg-[#0C2548] border-b border-[#C7D5E2]/80 dark:border-[#1B3C68] flex items-center px-4 justify-between z-10">
           <div className="flex items-center">
             <img 
-              src={logoUrl}
-              alt="Interpres Logo" 
+              src={horizontalLogoUrl}
+              alt="Interpres Digital Labs" 
               className="h-10 w-auto object-contain" 
             />
           </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+              className="p-2 text-[#102B4B] dark:text-slate-200 hover:bg-[#F6F9FC] dark:hover:bg-[#102B4B]/60 rounded-lg"
             >
               <Menu className="w-6 h-6" />
             </button>

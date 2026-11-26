@@ -446,18 +446,25 @@ const SignLegalDocument: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f172a] text-gray-900 dark:text-white p-4 md:p-8 transition-colors duration-300">
+    <div className="min-h-screen bg-[#F6F9FC] dark:bg-[#071B36] text-[#102B4B] dark:text-white p-4 md:p-8 transition-colors duration-300">
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Header Branding */}
-        <div className="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-dark-surface p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-dark-border shadow-sm gap-3 text-center sm:text-right">
-          <img 
-            src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png" 
-            alt="Interpres Logo" 
-            className="h-10 w-auto object-contain"
-          />
+        <div className="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-[#0C2548] p-4 sm:p-5 rounded-2xl border border-[#C7D5E2] dark:border-[#1B3C68] shadow-sm gap-3 text-center sm:text-right">
           <div>
-            <span className="text-xxs font-extrabold bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/30 px-3 py-1 rounded-full uppercase tracking-wider select-none animate-pulse">
+            <img 
+              src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logo%20futurista%20INTERPRES%20DIGITAL%20LABS.png" 
+              alt="Interpres Digital Labs" 
+              className="h-10 sm:h-11 w-auto object-contain dark:hidden"
+            />
+            <img 
+              src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logotipo%20blanco%20de%20Interpres%20Digital%20Labs%20HOR.png" 
+              alt="Interpres Digital Labs" 
+              className="h-10 sm:h-11 w-auto object-contain hidden dark:block"
+            />
+          </div>
+          <div>
+            <span className="text-xxs font-extrabold bg-[#1464B8]/10 dark:bg-[#00A9B7]/20 text-[#1464B8] dark:text-[#7CE8F0] border border-[#1464B8]/30 dark:border-[#00A9B7]/40 px-3 py-1 rounded-full uppercase tracking-wider select-none">
               Firma Electrónica Multilateral
             </span>
           </div>

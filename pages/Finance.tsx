@@ -383,8 +383,8 @@ const Finance: React.FC = () => {
          <div className="flex items-center justify-between border-b-2 border-gray-900 pb-6">
             <div className="flex items-center gap-6">
                <img 
-                 src="/logos/interpres-color.png?v=20261112" 
-                 alt="Interpres Digital Logo" 
+                 src="/logos/interpres-color.png?v=20261126" 
+                 alt="Interpres Digital Labs Logo" 
                  className="h-12 w-auto object-contain"
                />
                <div>

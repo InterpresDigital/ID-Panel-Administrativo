@@ -152,13 +152,13 @@ export function generateExecutiveHtmlEmail(
       <td align="center">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08); border: 1px solid #e2e8f0;">
           
-          <!-- Encabezado Oscuro de Lujo con Logo -->
+          <!-- Encabezado Corporativo con Logo Blanco -->
           <tr>
-            <td style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); padding: 32px 40px; text-align: center;">
+            <td style="background: linear-gradient(135deg, #071B36 0%, #102B4B 100%); padding: 32px 40px; text-align: center;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td align="center">
-                    <img src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png" alt="Interpres Digital" style="max-width: 220px; height: auto; display: block; margin: 0 auto 12px auto;" />
+                    <img src="https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logotipo%20blanco%20de%20Interpres%20Digital%20Labs%20HOR.png" alt="Interpres Digital Labs" style="max-width: 230px; height: auto; display: block; margin: 0 auto 12px auto;" />
                   </td>
                 </tr>
                 <tr>
@@ -213,16 +213,16 @@ export function generateExecutiveHtmlEmail(
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 30px 0 20px 0;">
                 <tr>
                   <td align="center">
-                    <a href="${zoomUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; font-weight: 700; font-size: 15px; text-decoration: none; padding: 14px 32px; border-radius: 12px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
+                    <a href="${zoomUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #1464B8 0%, #00A9B7 100%); color: #ffffff; font-weight: 700; font-size: 15px; text-decoration: none; padding: 14px 32px; border-radius: 12px; box-shadow: 0 4px 14px rgba(20, 100, 184, 0.35);">
                       🎥 Unirme a la Videollamada de Zoom
                     </a>
                   </td>
                 </tr>
               </table>
               
-              <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 10px;">
+              <p style="text-align: center; color: #64748b; font-size: 12px; margin-top: 10px;">
                 Si el botón no funciona, puedes copiar y pegar este enlace en tu navegador:<br/>
-                <a href="${zoomUrl}" style="color: #6366f1; text-decoration: underline; word-break: break-all;">${zoomUrl}</a>
+                <a href="${zoomUrl}" style="color: #1464B8; text-decoration: underline; word-break: break-all;">${zoomUrl}</a>
               </p>
 
               <!-- Enlace de Cancelación Directa por parte del cliente -->
@@ -292,7 +292,7 @@ export async function sendBookingConfirmationEmail(
  * Genera el cuerpo HTML corporativo para notificar la cancelación de una cita con enlace para volver a agendar.
  */
 export function generateCancellationHtmlEmail(booking: Booking, rescheduleUrl: string): string {
-  const logoUrl = "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png";
+  const logoUrl = "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logotipo%20blanco%20de%20Interpres%20Digital%20Labs%20HOR.png";
   
   return `
 <!DOCTYPE html>
@@ -390,7 +390,7 @@ export async function sendBookingCancellationEmail(
  * Genera el cuerpo HTML corporativo para envío de Contratos
  */
 export function generateAgreementHtmlEmail(agreement: Agreement, signUrl: string, customSubject?: string, customNote?: string): string {
-  const logoUrl = "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png";
+  const logoUrl = "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logotipo%20blanco%20de%20Interpres%20Digital%20Labs%20HOR.png";
   
   return `
 <!DOCTYPE html>
@@ -458,7 +458,7 @@ export function generateAgreementHtmlEmail(agreement: Agreement, signUrl: string
  * Genera el cuerpo HTML corporativo para envío de Cotizaciones
  */
 export function generateQuotationHtmlEmail(quotation: Quotation, quoteUrl: string, customSubject?: string, customNote?: string): string {
-  const logoUrl = "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png";
+  const logoUrl = "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logotipo%20blanco%20de%20Interpres%20Digital%20Labs%20HOR.png";
   
   return `
 <!DOCTYPE html>
@@ -597,7 +597,7 @@ export async function sendQuotationEmail(
  * Genera el HTML corporativo para correos personalizados redactados directamente desde el panel.
  */
 export function generateCustomHtmlEmail(subject: string, bodyText: string, imageUrl?: string): string {
-  const logoUrl = "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png";
+  const logoUrl = "https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/NUEVO%20LOGO/Logotipo%20blanco%20de%20Interpres%20Digital%20Labs%20HOR.png";
   
   let formattedBody = bodyText
     .replace(/&/g, "&amp;")

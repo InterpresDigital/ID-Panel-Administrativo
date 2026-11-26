@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { LOGO_COLOR_URL, LOGO_BLANCO_URL } from './brandAssets';
 
 export type PdfLogoVariant = 'color' | 'white' | 'lumina';
 
@@ -9,14 +10,14 @@ export interface LoadedPdfLogo {
 }
 
 const LOCAL_LOGO_PATHS: Record<PdfLogoVariant, string> = {
-  color: '/logos/interpres-color.png?v=20261112',
-  white: '/logos/interpres-white.png?v=20261112',
+  color: '/logos/interpres-color.png?v=20261126',
+  white: '/logos/interpres-white.png?v=20261126',
   lumina: '/logos/lumina-core.png?v=20261112',
 };
 
 const FALLBACK_REMOTE_URLS: Record<PdfLogoVariant, string> = {
-  color: 'https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/1.png',
-  white: 'https://pub-de208707a70b434880056475d98329db.r2.dev/INTERPRES%20DIGITAL/PNG/8.png',
+  color: LOGO_COLOR_URL,
+  white: LOGO_BLANCO_URL,
   lumina: 'https://pub-de208707a70b434880056475d98329db.r2.dev/L%C3%9AMINA%20CORE/l%C3%BAmina-core-logo-2.png',
 };
 
