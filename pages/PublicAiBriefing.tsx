@@ -1355,8 +1355,8 @@ const PublicAiBriefing: React.FC = () => {
 
   if (loadingInit) {
     return (
-      <div className="min-h-screen bg-[#071B36] text-white flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-[#5FD9E4] animate-spin" />
+      <div className="min-h-screen bg-[#F3F7FC] text-[#102B4B] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-[#1464B8] animate-spin" />
       </div>
     );
   }
@@ -1364,32 +1364,35 @@ const PublicAiBriefing: React.FC = () => {
   // SUBMITTED SCREEN
   if (step === "submitted") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#071B36] via-[#0B264B] to-[#081E3B] text-white flex items-center justify-center p-6 relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-28 -right-24 w-80 h-80 rounded-full bg-[#00A9B7]/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-28 -left-24 w-80 h-80 rounded-full bg-[#1464B8]/25 blur-3xl" />
+      <div className="min-h-screen bg-gradient-to-b from-[#EEF4FA] via-[#F6F9FC] to-[#EAF2FA] text-[#102B4B] flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-28 -right-24 w-80 h-80 rounded-full bg-[#00A9B7]/12 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 -left-24 w-80 h-80 rounded-full bg-[#1464B8]/12 blur-3xl" />
 
-        <div className="relative z-10 max-w-xl w-full bg-[#0B2548]/95 backdrop-blur-xl border border-[#234E86] rounded-3xl p-8 md:p-10 text-center shadow-[0_30px_80px_-15px_rgba(4,14,30,0.65)] space-y-6">
-          <img src={LOGO_BLANCO_URL} alt="Interpres Digital Labs" className="h-14 mx-auto object-contain" />
-          <div className="w-16 h-16 rounded-2xl bg-[#00A9B7]/20 border border-[#00A9B7]/50 flex items-center justify-center mx-auto shadow-lg shadow-[#00A9B7]/15">
-            <CheckCircle2 className="w-9 h-9 text-[#5FD9E4]" />
+        <div className="relative z-10 max-w-xl w-full bg-white border border-[#C5D7EA] rounded-3xl overflow-hidden text-center shadow-[0_24px_60px_-15px_rgba(16,43,75,0.14)]">
+          <div className="h-2 w-full bg-gradient-to-r from-[#1464B8] via-[#00A9B7] to-[#1464B8]" />
+          <div className="p-8 md:p-10 space-y-6">
+            <img src={LOGO_COLOR_URL} alt="Interpres Digital Labs" className="h-14 mx-auto object-contain" />
+            <div className="w-16 h-16 rounded-2xl bg-[#E8F8FA] border border-[#00A9B7]/40 flex items-center justify-center mx-auto shadow-xs">
+              <CheckCircle2 className="w-9 h-9 text-[#00A9B7]" />
+            </div>
+            <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-[#102B4B]">
+              ¡RFI Recibido con Éxito!
+            </h1>
+            <p className="text-[#3A5472] text-sm leading-relaxed">
+              Gracias, <strong className="text-[#102B4B]">{answers.contactName}</strong>. Nuestro equipo de Arquitectura de IA en{" "}
+              <strong className="text-[#1464B8]">Interpres Digital Labs</strong> ya recibió la especificación de{" "}
+              <strong className="text-[#102B4B]">{answers.companyName}</strong> y preparará tu propuesta técnica y económica a la medida.
+            </p>
+            <button
+              onClick={() => {
+                setStep("workspace");
+                setActiveMode("manual");
+              }}
+              className="px-6 py-3 rounded-xl bg-[#EEF4FB] hover:bg-[#1464B8] border border-[#C2D6EB] hover:border-[#1464B8] text-xs font-bold text-[#102B4B] hover:text-white transition-all cursor-pointer"
+            >
+              Revisar o complementar mis respuestas
+            </button>
           </div>
-          <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-white">
-            ¡RFI Recibido con Éxito!
-          </h1>
-          <p className="text-slate-200 text-sm leading-relaxed">
-            Gracias, <strong className="text-white">{answers.contactName}</strong>. Nuestro equipo de Arquitectura de IA en{" "}
-            <strong className="text-[#5FD9E4]">Interpres Digital Labs</strong> ya recibió la especificación de{" "}
-            <strong className="text-white">{answers.companyName}</strong> y preparará tu propuesta técnica y económica a la medida.
-          </p>
-          <button
-            onClick={() => {
-              setStep("workspace");
-              setActiveMode("manual");
-            }}
-            className="px-6 py-3 rounded-xl bg-[#10315E] hover:bg-[#1464B8] border border-[#2A5B98] text-xs font-bold text-white transition-all cursor-pointer"
-          >
-            Revisar o complementar mis respuestas
-          </button>
         </div>
       </div>
     );
@@ -1397,9 +1400,9 @@ const PublicAiBriefing: React.FC = () => {
 
   const renderLegalModal = () =>
     showLegalModal ? (
-      <div className="fixed inset-0 z-50 bg-[#041022]/80 backdrop-blur-md flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full bg-[#0B2548] border border-[#285691] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] text-white">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#21487A] bg-[#071B36]">
+      <div className="fixed inset-0 z-50 bg-[#071B36]/65 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-white border border-[#C5D7EA] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] text-[#102B4B]">
+          <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#071B36] to-[#11386B] text-white">
             <div className="flex items-center gap-2.5">
               <ShieldCheck className="w-5 h-5 text-[#5FD9E4]" />
               <h2 className="font-display text-sm md:text-base font-extrabold text-white">
@@ -1415,33 +1418,33 @@ const PublicAiBriefing: React.FC = () => {
             </button>
           </div>
 
-          <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-200 leading-relaxed">
+          <div className="p-6 overflow-y-auto space-y-4 text-xs text-[#334E6E] leading-relaxed bg-white">
             <p>
-              En cumplimiento con la <strong className="text-white">Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong> y los Términos y Condiciones de{" "}
-              <strong className="text-white">INTERPRES DIGITAL</strong> (marca comercial y plataforma tecnológica de <strong className="text-white">INTERPRES S.A. de C.V.</strong>, con domicilio en San Miguel de Allende, Guanajuato, México), se informa lo siguiente respecto al presente Diagnóstico Ejecutivo (RFI):
+              En cumplimiento con la <strong className="text-[#102B4B]">Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong> y los Términos y Condiciones de{" "}
+              <strong className="text-[#102B4B]">INTERPRES DIGITAL</strong> (marca comercial y plataforma tecnológica de <strong className="text-[#102B4B]">INTERPRES S.A. de C.V.</strong>, con domicilio en San Miguel de Allende, Guanajuato, México), se informa lo siguiente respecto al presente Diagnóstico Ejecutivo (RFI):
             </p>
 
-            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
-              <h3 className="font-extrabold text-[#5FD9E4] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#F2F8FE] border border-[#CBE0F5] border-l-4 border-l-[#00A9B7] space-y-1.5">
+              <h3 className="font-extrabold text-[#00828F] uppercase text-[11px] tracking-wider">
                 1. Garantía de Uso Ético de Inteligencia Artificial (No Entrenamiento)
               </h3>
               <p>
                 Este diagnóstico incorpora asistencia conversacional y procesamiento mediante Inteligencia Artificial empresarial exclusivamente para transcribir, estructurar tus requerimientos y apoyar en el pre-diagnóstico técnico.{" "}
-                <strong className="text-white">Ninguna grabación de voz, respuesta escrita ni documento adjunto se utiliza para entrenar, alimentar o mejorar modelos públicos o de terceros.</strong>
+                <strong className="text-[#102B4B]">Ninguna grabación de voz, respuesta escrita ni documento adjunto se utiliza para entrenar, alimentar o mejorar modelos públicos o de terceros.</strong>
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
-              <h3 className="font-extrabold text-[#66B2FF] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#F4F8FC] border border-[#CFDFEE] border-l-4 border-l-[#1464B8] space-y-1.5">
+              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
                 2. Titularidad de la Información y Confidencialidad (Cláusulas 15 y 47)
               </h3>
               <p>
-                La empresa solicitante conserva en todo momento la titularidad única y exclusiva sobre su información operativa, comercial, flujos de trabajo y documentos adjuntos. <strong className="text-white">INTERPRES S.A. de C.V.</strong> resguarda dicha información bajo estricta confidencialidad y no vende ni comercializa datos personales o corporativos con terceros.
+                La empresa solicitante conserva en todo momento la titularidad única y exclusiva sobre su información operativa, comercial, flujos de trabajo y documentos adjuntos. <strong className="text-[#102B4B]">INTERPRES S.A. de C.V.</strong> resguarda dicha información bajo estricta confidencialidad y no vende ni comercializa datos personales o corporativos con terceros.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
-              <h3 className="font-extrabold text-[#66B2FF] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#F4F8FC] border border-[#CFDFEE] border-l-4 border-l-[#1464B8] space-y-1.5">
+              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
                 3. Finalidad del Tratamiento e Infraestructura Segura
               </h3>
               <p>
@@ -1449,8 +1452,8 @@ const PublicAiBriefing: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
-              <h3 className="font-extrabold text-[#66B2FF] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#F4F8FC] border border-[#CFDFEE] border-l-4 border-l-[#1464B8] space-y-1.5">
+              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
                 4. Declaración de Autorización y Licitud (Cláusula 30)
               </h3>
               <p>
@@ -1458,13 +1461,13 @@ const PublicAiBriefing: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
-              <h3 className="font-extrabold text-[#66B2FF] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#F4F8FC] border border-[#CFDFEE] border-l-4 border-l-[#00A9B7] space-y-1.5">
+              <h3 className="font-extrabold text-[#00828F] uppercase text-[11px] tracking-wider">
                 5. Derechos ARCO y Consulta Integral
               </h3>
               <p>
                 Puedes ejercer tus derechos de Acceso, Rectificación, Cancelación u Oposición (ARCO) o revocar tu consentimiento escribiendo a{" "}
-                <a href="mailto:admin@interpresdigital.com" className="text-[#5FD9E4] font-bold underline">
+                <a href="mailto:admin@interpresdigital.com" className="text-[#1464B8] font-bold underline">
                   admin@interpresdigital.com
                 </a>
                 . El Aviso de Privacidad Integral y los Términos y Condiciones completos están disponibles permanentemente en el pie de página de{" "}
@@ -1472,7 +1475,7 @@ const PublicAiBriefing: React.FC = () => {
                   href="https://interpresdigital.com/"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[#5FD9E4] font-bold underline"
+                  className="text-[#1464B8] font-bold underline"
                 >
                   interpresdigital.com
                 </a>
@@ -1481,11 +1484,11 @@ const PublicAiBriefing: React.FC = () => {
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-[#21487A] bg-[#071B36] flex flex-wrap items-center justify-end gap-3">
+          <div className="px-6 py-4 border-t border-[#D8E5F2] bg-[#F6F9FC] flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
               onClick={() => setShowLegalModal(false)}
-              className="px-4 py-2 rounded-xl bg-[#0F2F5A] hover:bg-[#153D73] border border-[#26538C] text-xs font-bold text-slate-200 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-white hover:bg-[#EDF3FA] border border-[#C5D7EA] text-xs font-bold text-[#334E6E] cursor-pointer"
             >
               Cerrar
             </button>
@@ -1518,33 +1521,33 @@ const PublicAiBriefing: React.FC = () => {
       </div>
     ) : null;
 
-  // STEP PRE-0: PÁGINA PREVIA INFORMATIVA DE BIENVENIDA Y ACCESO CON NEXIA IA
+  // STEP PRE-0: PÁGINA PREVIA INFORMATIVA DE BIENVENIDA Y ACCESO CON NEXIA IA (BASE EDITORIAL LUMINOSA + ACENTOS EJECUTIVOS)
   if (step === "intro") {
     const attachedList = toAttachmentArray(answers.attachments);
 
     return (
       <div
-        className="min-h-screen bg-gradient-to-b from-[#071B36] via-[#0A2345] to-[#071B36] text-white flex flex-col relative overflow-x-hidden"
+        className="min-h-screen bg-[#EEF4FA] text-[#102B4B] flex flex-col relative overflow-x-hidden"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 18% 12%, rgba(20,100,184,0.22) 0%, transparent 42%), radial-gradient(circle at 85% 28%, rgba(0,169,183,0.18) 0%, transparent 40%), linear-gradient(180deg, #071B36 0%, #0A2447 52%, #071B36 100%)",
+            "radial-gradient(circle at 12% 8%, rgba(20,100,184,0.09) 0%, transparent 38%), radial-gradient(circle at 88% 24%, rgba(0,169,183,0.09) 0%, transparent 38%), linear-gradient(180deg, #EEF4FA 0%, #F6F9FC 50%, #EAF2FA 100%)",
         }}
       >
-        {/* Top Corporate Bar (alineada en una sola fila limpia en móvil y escritorio) */}
-        <header className="bg-[#071B36]/90 backdrop-blur-xl border-b border-[#1E4373] px-3.5 sm:px-8 py-2.5 sm:py-3.5 sticky top-0 z-30 shadow-lg shadow-[#041022]/30">
+        {/* Top Corporate Bar (clara, limpia y alineada en una sola fila en móvil) */}
+        <header className="bg-white/95 backdrop-blur-md border-b border-[#CFE0F0] px-3.5 sm:px-8 py-2.5 sm:py-3.5 sticky top-0 z-30 shadow-[0_4px_20px_-8px_rgba(16,43,75,0.08)]">
           <div className="max-w-[1160px] mx-auto flex items-center justify-between gap-2.5">
             <img
-              src={LOGO_BLANCO_URL}
+              src={LOGO_COLOR_URL}
               alt="Interpres Digital Labs"
               className="h-8 sm:h-11 w-auto max-w-[146px] sm:max-w-none object-contain flex-shrink-0"
             />
-            <div className="inline-flex items-center gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-2xl bg-[#0C274C] border border-[#26548E] flex-shrink-0 shadow-inner">
+            <div className="inline-flex items-center gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-2xl bg-[#F0F6FD] border border-[#BED5EC] flex-shrink-0">
               <ShieldCheck className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
               <div className="flex flex-col text-left leading-[1.15]">
-                <span className="text-[10px] sm:text-[11px] font-extrabold text-white">
+                <span className="text-[10px] sm:text-[11px] font-extrabold text-[#102B4B]">
                   Diagnóstico Confidencial
                 </span>
-                <span className="text-[9.5px] sm:text-[10.5px] font-semibold text-[#66B2FF]">
+                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-[#1464B8]">
                   Interpres Digital Labs
                 </span>
               </div>
@@ -1552,18 +1555,18 @@ const PublicAiBriefing: React.FC = () => {
           </div>
         </header>
 
-        <main className="max-w-[1160px] w-full mx-auto px-3.5 py-6 sm:px-6 sm:py-10 space-y-7 relative z-10">
-          {/* 1. HERO CON NEXIA IA: ¿QUÉ ES EL BRIEFING DE IA Y CUÁL ES SU OBJETIVO? */}
-          <section className="bg-gradient-to-br from-[#0B274C] via-[#0E3262] to-[#092040] text-white rounded-[28px] border border-[#285792] shadow-[0_28px_80px_-18px_rgba(3,12,26,0.65)] overflow-hidden relative">
+        <main className="max-w-[1160px] w-full mx-auto px-3.5 py-6 sm:px-6 sm:py-9 space-y-7 relative z-10">
+          {/* 1. HERO INMERSIVO CON NEXIA IA (Único bloque protagonista en azul profundo #071B36 sobre el lienzo claro) */}
+          <section className="bg-gradient-to-br from-[#071B36] via-[#0D2C56] to-[#0A2244] text-white rounded-[28px] border border-[#1E457A] shadow-[0_24px_60px_-16px_rgba(7,27,54,0.32)] overflow-hidden relative">
             <div className="h-1.5 w-full bg-gradient-to-r from-[#1464B8] via-[#00A9B7] to-[#1464B8]" />
             <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#00A9B7]/22 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-[#1464B8]/28 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-[#1464B8]/25 blur-3xl" />
 
             <div className="relative z-10 p-6 sm:p-9 md:p-11 grid grid-cols-1 lg:grid-cols-12 gap-7 items-center">
               {/* Nexia IA Portrait Column */}
               <div className="lg:col-span-4 flex flex-col items-center text-center space-y-4">
                 <div className="relative">
-                  <div className="absolute -inset-3 rounded-[30px] bg-gradient-to-tr from-[#1464B8]/50 via-[#00A9B7]/50 to-transparent blur-xl pointer-events-none" />
+                  <div className="absolute -inset-3 rounded-[30px] bg-gradient-to-tr from-[#1464B8]/45 via-[#00A9B7]/45 to-transparent blur-xl pointer-events-none" />
                   <img
                     src={NEXIA_URL}
                     alt="Nexia IA — Consultora de Inteligencia Artificial"
@@ -1576,13 +1579,13 @@ const PublicAiBriefing: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2">
-                  <span className="px-2.5 py-1 rounded-lg bg-[#071B36]/80 border border-[#234E86] text-[10px] font-bold text-slate-200">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 text-[10px] font-bold text-slate-100">
                     ⏱ 8–12 min
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-[#071B36]/80 border border-[#234E86] text-[10px] font-bold text-[#7CE8F0]">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 text-[10px] font-bold text-[#7CE8F0]">
                     💾 Autoguardado
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-[#071B36]/80 border border-[#234E86] text-[10px] font-bold text-slate-200">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 text-[10px] font-bold text-slate-100">
                     🔒 Cifrado SSL
                   </span>
                 </div>
@@ -1591,7 +1594,7 @@ const PublicAiBriefing: React.FC = () => {
               {/* Welcome & Objective Explanation */}
               <div className="lg:col-span-8 space-y-5">
                 <div className="flex justify-center">
-                  <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-[#00A9B7]/20 border border-[#00A9B7]/55 text-[#8FF0F7] text-[10.5px] sm:text-[11px] font-extrabold uppercase tracking-wider text-center shadow-sm">
+                  <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-[#00A9B7]/20 border border-[#00A9B7]/55 text-[#8FF0F7] text-[10.5px] sm:text-[11px] font-extrabold uppercase tracking-wider text-center shadow-xs">
                     <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>Guía Previa e Instrucciones de Acceso</span>
                   </div>
@@ -1611,7 +1614,7 @@ const PublicAiBriefing: React.FC = () => {
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-                  <div className="p-4 rounded-2xl bg-[#071B36]/85 border border-[#25528C] border-l-4 border-l-[#00A9B7] space-y-1.5 shadow-md">
+                  <div className="p-4 rounded-2xl bg-white/8 border border-white/15 border-l-4 border-l-[#00A9B7] space-y-1.5">
                     <div className="flex items-center gap-2">
                       <Cpu className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
                       <h2 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#7CE8F0]">
@@ -1623,10 +1626,10 @@ const PublicAiBriefing: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#071B36]/85 border border-[#25528C] border-l-4 border-l-[#1464B8] space-y-1.5 shadow-md">
+                  <div className="p-4 rounded-2xl bg-white/8 border border-white/15 border-l-4 border-l-[#66B2FF] space-y-1.5">
                     <div className="flex items-center gap-2">
                       <Target className="w-4 h-4 text-[#66B2FF] flex-shrink-0" />
-                      <h2 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#66B2FF]">
+                      <h2 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#8CC5FF]">
                         ¿Cuál es el objetivo?
                       </h2>
                     </div>
@@ -1639,28 +1642,33 @@ const PublicAiBriefing: React.FC = () => {
             </div>
           </section>
 
-          {/* 2. MODALIDADES DE PARTICIPACIÓN */}
-          <section className="bg-[#0B2447]/95 backdrop-blur-md rounded-[28px] border border-[#224B80] p-6 sm:p-8 shadow-2xl space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-[#1D4170] pb-4">
+          {/* 2. MODALIDADES DE PARTICIPACIÓN (Superficie luminosa editorial con acentos de color y título en 2 líneas) */}
+          <section className="bg-white rounded-[28px] border border-[#C5D7EA] shadow-[0_16px_40px_-14px_rgba(16,43,75,0.10)] overflow-hidden">
+            <div className="px-6 py-5 sm:px-8 sm:py-6 bg-gradient-to-r from-[#F2F7FD] via-[#F7FAFE] to-[#EDFAFB] border-b border-[#D5E3F2] flex flex-col sm:flex-row sm:items-end justify-between gap-2.5">
               <div className="space-y-1">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5FD9E4] flex items-center gap-1.5">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#008C99] flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5" />
                   <span>Dinámica de levantamiento</span>
                 </span>
-                <h2 className="font-display text-xl sm:text-2xl font-extrabold text-white">
-                  3 Modalidades Flexibles (Tú decides cómo avanzar)
+                <h2 className="font-display tracking-tight leading-tight">
+                  <span className="block text-xl sm:text-2xl font-extrabold text-[#102B4B]">
+                    Tres modalidades flexibles
+                  </span>
+                  <span className="block text-sm sm:text-base font-bold text-[#1464B8] mt-0.5">
+                    Tú decides cómo avanzar
+                  </span>
                 </h2>
               </div>
-              <p className="text-xs text-slate-300 max-w-md">
+              <p className="text-xs text-[#476282] max-w-md font-medium">
                 Puedes alternar entre voz y escritura en cualquier momento sin perder tu progreso.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Featured Voice Card */}
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0F3366] via-[#124280] to-[#0D3966] border-2 border-[#00A9B7]/70 shadow-lg shadow-[#00A9B7]/10 space-y-3 relative overflow-hidden">
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0A264B] via-[#12468A] to-[#008391] text-white border border-[#1464B8] shadow-[0_14px_30px_-10px_rgba(20,100,184,0.35)] space-y-3 relative overflow-hidden">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="w-11 h-11 rounded-xl bg-[#071B36]/80 border border-[#5FD9E4]/50 text-[#5FD9E4] flex items-center justify-center shadow-sm">
+                  <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/25 text-[#8FF0F7] flex items-center justify-center">
                     <Mic className="w-5 h-5" />
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-[#00A9B7] text-white text-[10px] font-extrabold uppercase tracking-wider shadow-xs">
@@ -1670,107 +1678,114 @@ const PublicAiBriefing: React.FC = () => {
                 <h3 className="font-display text-base font-extrabold text-white">
                   1. Entrevista por Voz con Nexia IA
                 </h3>
-                <p className="text-xs text-slate-100/90 leading-relaxed">
+                <p className="text-xs text-slate-100 leading-relaxed">
                   Conversa con voz natural como en una sesión consultiva. Nexia formula <strong>una sola pregunta breve por turno</strong>, interpreta tus respuestas y llena cada bloque en tiempo real.
                 </p>
               </div>
 
               {/* Written Form Card */}
-              <div className="p-5 rounded-2xl bg-[#0E2C56] border border-[#26528C] hover:border-[#66B2FF]/60 transition-colors space-y-3">
+              <div className="p-5 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] border-t-4 border-t-[#1464B8] hover:shadow-md transition-all space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="w-11 h-11 rounded-xl bg-[#1464B8]/25 border border-[#66B2FF]/40 text-[#66B2FF] flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-xl bg-[#1464B8] text-white flex items-center justify-center shadow-xs">
                     <PenTool className="w-5 h-5" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-[#071B36] border border-[#26528C] text-slate-300 text-[10px] font-bold uppercase tracking-wider">
+                  <span className="px-2.5 py-1 rounded-full bg-white border border-[#C2D6EB] text-[#1464B8] text-[10px] font-extrabold uppercase tracking-wider">
                     Paso a Paso
                   </span>
                 </div>
-                <h3 className="font-display text-base font-extrabold text-white">
+                <h3 className="font-display text-base font-extrabold text-[#102B4B]">
                   2. Formulario Ejecutivo Escrito
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-[#3A5575] leading-relaxed">
                   Redacta directamente tus respuestas en los 10 bloques a tu propio ritmo, apoyándote en selectores rápidos de canales, usuarios, nivel de autonomía y presupuesto.
                 </p>
               </div>
 
               {/* Hybrid / IT Team Card */}
-              <div className="p-5 rounded-2xl bg-[#0E2C56] border border-[#26528C] hover:border-[#5FD9E4]/60 transition-colors space-y-3">
+              <div className="p-5 rounded-2xl bg-[#F1FAFB] border border-[#BEE3E8] border-t-4 border-t-[#00A9B7] hover:shadow-md transition-all space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="w-11 h-11 rounded-xl bg-[#00A9B7]/20 border border-[#00A9B7]/45 text-[#5FD9E4] flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-xl bg-[#00A9B7] text-white flex items-center justify-center shadow-xs">
                     <Share2 className="w-5 h-5" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-[#071B36] border border-[#26528C] text-[#7CE8F0] text-[10px] font-bold uppercase tracking-wider">
+                  <span className="px-2.5 py-1 rounded-full bg-white border border-[#B8E0E6] text-[#00828F] text-[10px] font-extrabold uppercase tracking-wider">
                     Colaborativa
                   </span>
                 </div>
-                <h3 className="font-display text-base font-extrabold text-white">
+                <h3 className="font-display text-base font-extrabold text-[#102B4B]">
                   3. Híbrida con tu Equipo de TI
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-[#3A5575] leading-relaxed">
                   Si algún dato técnico (APIs, arquitectura o bases de datos) lo conoce otro colega, márcalo como <strong>&ldquo;Pendiente para TI&rdquo;</strong> y compártele tu enlace directo de avance.
                 </p>
               </div>
             </div>
           </section>
 
-          {/* 3. INSTRUCCIONES DE USO Y MAPA ARQUITECTÓNICO DE LAS 10 ETAPAS */}
+          {/* 3. INSTRUCCIONES DE USO Y MAPA DE LAS 10 ETAPAS (Cuerpo claro con bandas superiores ejecutivas para contraste limpio) */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column: Practical Instructions with Structured Icon Cards */}
-            <div className="lg:col-span-5 bg-gradient-to-b from-[#0C274D] to-[#091F3E] rounded-[28px] border border-[#244F87] p-6 sm:p-7 shadow-2xl space-y-5">
-              <div className="space-y-1 border-b border-[#1D4170] pb-3.5">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5FD9E4] flex items-center gap-1.5">
+            {/* Left Column: Practical Instructions */}
+            <div className="lg:col-span-5 bg-white rounded-[28px] border border-[#C5D7EA] shadow-[0_16px_40px_-14px_rgba(16,43,75,0.10)] overflow-hidden flex flex-col">
+              <div className="px-6 py-4 sm:px-7 sm:py-5 bg-gradient-to-r from-[#071B36] to-[#123A6F] text-white">
+                <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#7CE8F0] flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Instrucciones de uso</span>
                 </span>
-                <h2 className="font-display text-lg sm:text-xl font-extrabold text-white">
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-white mt-0.5">
                   Recomendaciones para tu sesión
                 </h2>
               </div>
 
-              <div className="space-y-3">
+              <div className="p-5 sm:p-6 space-y-3 flex-1 bg-gradient-to-b from-white to-[#F7FAFE]">
                 {[
                   {
                     Icon: Clock,
-                    accent: "text-[#5FD9E4] bg-[#00A9B7]/20 border-[#00A9B7]/45",
+                    badgeBg: "from-[#1464B8] to-[#1D78D8]",
+                    borderAccent: "border-l-[#1464B8]",
                     title: "Duración y autoguardado continuo",
                     body: "Toma de 8 a 12 minutos. Cada respuesta se respalda al instante; si cierras la pestaña o se bloquea tu pantalla, retomarás exactamente en la misma etapa.",
                   },
                   {
                     Icon: MessageSquare,
-                    accent: "text-[#66B2FF] bg-[#1464B8]/25 border-[#66B2FF]/40",
+                    badgeBg: "from-[#008C99] to-[#00A9B7]",
+                    borderAccent: "border-l-[#00A9B7]",
                     title: "Habla en términos de tu negocio",
                     body: "No requieres vocabulario de programación; describe tus procesos actuales, cuellos de botella y el resultado comercial u operativo que buscas.",
                   },
                   {
                     Icon: Mic,
-                    accent: "text-[#5FD9E4] bg-[#00A9B7]/20 border-[#00A9B7]/45",
+                    badgeBg: "from-[#1464B8] to-[#00A9B7]",
+                    borderAccent: "border-l-[#1464B8]",
                     title: "Control total de audio en vivo",
                     body: "En modo Voz tendrás botones visibles para Pausar a Nexia IA, Silenciar tu micrófono o cambiar al modo escrito cuando lo necesites.",
                   },
                   {
                     Icon: CheckCircle2,
-                    accent: "text-emerald-300 bg-emerald-500/20 border-emerald-400/40",
+                    badgeBg: "from-[#0E7C66] to-[#10B981]",
+                    borderAccent: "border-l-emerald-500",
                     title: "Revisión ejecutiva antes de enviar",
                     body: "Al llegar a la Etapa 10 visualizarás un resumen completo y editable de tus respuestas antes de confirmar el envío definitivo.",
                   },
                 ].map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-3.5 rounded-2xl bg-[#071B36]/80 border border-[#1F4577] flex items-start gap-3"
+                    className={clsx(
+                      "p-3.5 rounded-2xl bg-[#F3F8FE] border border-[#CFE0F2] border-l-4 flex items-start gap-3",
+                      item.borderAccent
+                    )}
                   >
                     <div
                       className={clsx(
-                        "w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 mt-0.5",
-                        item.accent
+                        "w-9 h-9 rounded-xl bg-gradient-to-br text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs",
+                        item.badgeBg
                       )}
                     >
                       <item.Icon className="w-4 h-4" />
                     </div>
                     <div className="space-y-0.5 text-xs leading-relaxed">
-                      <div className="font-display font-extrabold text-white">
+                      <div className="font-display font-extrabold text-[#102B4B]">
                         {idx + 1}. {item.title}
                       </div>
-                      <p className="text-slate-300 text-[11.5px] leading-snug">{item.body}</p>
+                      <p className="text-[#3B5575] text-[11.5px] leading-snug">{item.body}</p>
                     </div>
                   </div>
                 ))}
@@ -1778,23 +1793,23 @@ const PublicAiBriefing: React.FC = () => {
             </div>
 
             {/* Right Column: 10 Stages Architectural Blueprint Grid */}
-            <div className="lg:col-span-7 bg-gradient-to-b from-[#0C274D] to-[#091F3E] rounded-[28px] border border-[#244F87] p-6 sm:p-7 shadow-2xl space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1D4170] pb-3.5">
-                <div className="space-y-1">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#66B2FF] flex items-center gap-1.5">
+            <div className="lg:col-span-7 bg-white rounded-[28px] border border-[#C5D7EA] shadow-[0_16px_40px_-14px_rgba(16,43,75,0.10)] overflow-hidden flex flex-col">
+              <div className="px-6 py-4 sm:px-7 sm:py-5 bg-gradient-to-r from-[#0B2548] via-[#123D74] to-[#0E5C76] text-white flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-[#8FF0F7] flex items-center gap-1.5">
                     <Workflow className="w-3.5 h-3.5" />
                     <span>Estructura completa del RFI</span>
                   </span>
-                  <h2 className="font-display text-lg sm:text-xl font-extrabold text-white">
+                  <h2 className="font-display text-lg sm:text-xl font-extrabold text-white mt-0.5">
                     ¿Qué temas revisaremos en las 10 etapas?
                   </h2>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-[#1464B8]/25 border border-[#66B2FF]/40 text-[11px] font-extrabold text-[#8CC5FF]">
+                <span className="px-3 py-1 rounded-full bg-white/15 border border-white/25 text-[11px] font-extrabold text-white">
                   10 Bloques Ejecutivos
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-gradient-to-b from-white to-[#F7FAFE] flex-1">
                 {[
                   { num: "01", Icon: Target, title: "Contexto y Objetivo", desc: "Problema operativo a resolver, resultado esperado e iniciativas previas." },
                   { num: "02", Icon: Workflow, title: "Proceso Actual", desc: "Rol o flujo que hoy ejecuta una persona, frecuencia e impacto." },
@@ -1809,17 +1824,17 @@ const PublicAiBriefing: React.FC = () => {
                 ].map((st) => (
                   <div
                     key={st.num}
-                    className="p-3.5 rounded-2xl bg-[#0F2F5C]/90 hover:bg-[#133A70] border border-[#27548E] transition-colors flex items-start gap-3"
+                    className="p-3.5 rounded-2xl bg-[#F3F8FE] hover:bg-[#E9F3FC] border border-[#CBE0F3] transition-colors flex items-start gap-3"
                   >
-                    <span className="px-2 py-1 rounded-lg bg-gradient-to-br from-[#1464B8] to-[#00A9B7] text-white font-mono text-[11px] font-extrabold leading-none flex-shrink-0 mt-0.5 shadow-xs">
+                    <span className="px-2 py-1 rounded-lg bg-gradient-to-br from-[#102B4B] to-[#1464B8] text-white font-mono text-[11px] font-extrabold leading-none flex-shrink-0 mt-0.5 shadow-xs">
                       {st.num}
                     </span>
-                    <div className="space-y-1 min-w-0">
-                      <div className="font-display font-extrabold text-white text-xs flex items-center gap-1.5">
-                        <st.Icon className="w-3.5 h-3.5 text-[#5FD9E4] flex-shrink-0" />
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="font-display font-extrabold text-[#102B4B] text-xs flex items-center gap-1.5">
+                        <st.Icon className="w-3.5 h-3.5 text-[#0092A0] flex-shrink-0" />
                         <span className="truncate">{st.title}</span>
                       </div>
-                      <p className="text-[11px] text-slate-300 leading-snug">{st.desc}</p>
+                      <p className="text-[11px] text-[#3E5878] leading-snug">{st.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -1828,110 +1843,112 @@ const PublicAiBriefing: React.FC = () => {
           </section>
 
           {/* 4. CARGA OPCIONAL DE DOCUMENTOS O ARCHIVOS DE APOYO DESDE EL INICIO */}
-          <section className="bg-gradient-to-br from-[#0B2548] to-[#0E2F5A] rounded-[28px] border border-[#25528C] p-6 sm:p-8 shadow-2xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-1">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5FD9E4] flex items-center gap-1.5">
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Documentación de apoyo (Opcional)</span>
-                </span>
-                <h2 className="font-display text-lg sm:text-xl font-extrabold text-white">
-                  ¿Deseas compartir archivos o documentos que ayuden al diagnóstico?
-                </h2>
-                <p className="text-xs text-slate-300">
-                  Sube desde aquí diagramas de flujo, presentaciones, requerimientos técnicos, formatos actuales o manuales operativos (también podrás anexar archivos en la Etapa 10).
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-center flex-shrink-0">
-                {["PDF", "DOCX", "XLSX", "IMG"].map((fmt) => (
-                  <span
-                    key={fmt}
-                    className="px-2 py-0.5 rounded-md bg-[#071B36] border border-[#27548E] text-[10px] font-mono font-bold text-[#7CE8F0]"
-                  >
-                    {fmt}
+          <section className="bg-white rounded-[28px] border border-[#C5D7EA] shadow-[0_14px_36px_-14px_rgba(16,43,75,0.09)] overflow-hidden">
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#1464B8] via-[#00A9B7] to-[#1464B8]" />
+            <div className="p-6 sm:p-8 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#008C99] flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Documentación de apoyo (Opcional)</span>
                   </span>
-                ))}
-                <span className="px-2.5 py-0.5 rounded-md bg-[#1464B8]/30 border border-[#66B2FF]/40 text-[10px] font-bold text-white">
-                  Máx. 15 MB
-                </span>
-              </div>
-            </div>
-
-            <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#00A9B7]/60 hover:border-[#5FD9E4] rounded-2xl p-6 bg-[#071B36]/75 hover:bg-[#092347] cursor-pointer transition-all text-center group">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1464B8]/30 to-[#00A9B7]/30 border border-[#5FD9E4]/50 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
-                {uploadingFiles ? (
-                  <Loader2 className="w-6 h-6 text-[#5FD9E4] animate-spin" />
-                ) : (
-                  <Upload className="w-6 h-6 text-[#5FD9E4]" />
-                )}
-              </div>
-              <span className="text-xs sm:text-sm font-extrabold text-white">
-                {uploadingFiles
-                  ? "Subiendo tus documentos con cifrado..."
-                  : "Toca o haz clic aquí para adjuntar documentos de referencia"}
-              </span>
-              <span className="text-[11px] text-slate-300 mt-1">
-                Resguardados bajo confidencialidad estricta y vinculados automáticamente a tu expediente.
-              </span>
-              <input
-                type="file"
-                multiple
-                onChange={handleFileUpload}
-                disabled={uploadingFiles}
-                className="hidden"
-              />
-            </label>
-
-            {attachedList.length > 0 && (
-              <div className="space-y-2 pt-1">
-                <div className="text-xs font-extrabold text-[#7CE8F0] flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#00A9B7]" />
-                  <span>{attachedList.length} documento(s) listo(s) para tu Briefing:</span>
+                  <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#102B4B]">
+                    ¿Deseas compartir archivos o documentos que ayuden al diagnóstico?
+                  </h2>
+                  <p className="text-xs text-[#476282]">
+                    Sube desde aquí diagramas de flujo, presentaciones, requerimientos técnicos, formatos actuales o manuales operativos (también podrás anexar archivos en la Etapa 10).
+                  </p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {attachedList.map((att, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#071B36] border border-[#285792] text-xs"
+                <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-center flex-shrink-0">
+                  {["PDF", "DOCX", "XLSX", "IMG"].map((fmt) => (
+                    <span
+                      key={fmt}
+                      className="px-2 py-0.5 rounded-md bg-[#EEF5FC] border border-[#C6DAEE] text-[10px] font-mono font-bold text-[#1464B8]"
                     >
-                      <div className="flex items-center gap-2 truncate pr-2">
-                        <FileText className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
-                        <a
-                          href={att.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-white font-bold hover:text-[#7CE8F0] hover:underline truncate"
-                        >
-                          {att.name}
-                        </a>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAttachment(idx)}
-                        className="text-rose-400 hover:text-rose-300 p-1 cursor-pointer"
-                        title="Quitar archivo"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                      {fmt}
+                    </span>
                   ))}
+                  <span className="px-2.5 py-0.5 rounded-md bg-[#E8F8FA] border border-[#B2E2E8] text-[10px] font-bold text-[#007C88]">
+                    Máx. 15 MB
+                  </span>
                 </div>
               </div>
-            )}
+
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#00A9B7]/60 hover:border-[#1464B8] rounded-2xl p-6 bg-gradient-to-b from-[#F3F8FE] to-[#ECFAFB] hover:from-[#EAF3FC] hover:to-[#E3F7F9] cursor-pointer transition-all text-center group">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1464B8] to-[#00A9B7] text-white flex items-center justify-center mb-2.5 shadow-md shadow-[#1464B8]/20 group-hover:scale-105 transition-transform">
+                  {uploadingFiles ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <Upload className="w-6 h-6" />
+                  )}
+                </div>
+                <span className="text-xs sm:text-sm font-extrabold text-[#102B4B]">
+                  {uploadingFiles
+                    ? "Subiendo tus documentos con cifrado..."
+                    : "Toca o haz clic aquí para adjuntar documentos de referencia"}
+                </span>
+                <span className="text-[11px] text-[#476282] mt-1">
+                  Resguardados bajo confidencialidad estricta y vinculados automáticamente a tu expediente.
+                </span>
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  disabled={uploadingFiles}
+                  className="hidden"
+                />
+              </label>
+
+              {attachedList.length > 0 && (
+                <div className="space-y-2 pt-1">
+                  <div className="text-xs font-extrabold text-[#00828F] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#00A9B7]" />
+                    <span>{attachedList.length} documento(s) listo(s) para tu Briefing:</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {attachedList.map((att, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#F3F8FE] border border-[#C6DAEE] text-xs"
+                      >
+                        <div className="flex items-center gap-2 truncate pr-2">
+                          <FileText className="w-4 h-4 text-[#1464B8] flex-shrink-0" />
+                          <a
+                            href={att.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[#102B4B] font-bold hover:text-[#1464B8] hover:underline truncate"
+                          >
+                            {att.name}
+                          </a>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAttachment(idx)}
+                          className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                          title="Quitar archivo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
 
           {/* 5. CANDADO OBLIGATORIO DE AVISO DE PRIVACIDAD, USO ÉTICO DE IA Y BOTÓN DE ACCESO */}
           <section
             className={clsx(
-              "rounded-[28px] border-2 p-6 sm:p-8 shadow-[0_24px_60px_-15px_rgba(3,12,26,0.65)] transition-all space-y-5",
-              answers.privacyConsentAccepted
-                ? "bg-gradient-to-br from-[#0B2A4F] via-[#0D335E] to-[#082240] border-[#00A9B7]"
-                : "bg-gradient-to-br from-[#0B2548] via-[#0E2E58] to-[#081F3D] border-[#2A5B98]"
+              "rounded-[28px] border-2 overflow-hidden shadow-[0_18px_45px_-14px_rgba(16,43,75,0.14)] transition-all bg-white",
+              answers.privacyConsentAccepted ? "border-[#00A9B7]" : "border-[#BDD3EA]"
             )}
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/12 pb-4">
+            {/* Header Band */}
+            <div className="px-6 py-4 sm:px-8 sm:py-5 bg-gradient-to-r from-[#071B36] via-[#0E3160] to-[#0A2549] text-white flex flex-col md:flex-row md:items-center justify-between gap-3.5">
               <div className="space-y-1">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5FD9E4] flex items-center gap-1.5">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#7CE8F0] flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#00A9B7]" />
                   Paso Requerido para Desbloquear el Acceso
                 </span>
@@ -1943,71 +1960,50 @@ const PublicAiBriefing: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowLegalModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-[#071B36] hover:bg-[#1464B8] border border-[#356AB0] text-xs font-extrabold text-[#8CC5FF] hover:text-white inline-flex items-center justify-center gap-2 transition-all cursor-pointer flex-shrink-0 shadow-sm"
+                className="px-4 py-2.5 rounded-xl bg-white/12 hover:bg-white/20 border border-white/25 text-xs font-extrabold text-white inline-flex items-center justify-center gap-2 transition-all cursor-pointer flex-shrink-0"
               >
-                <FileText className="w-4 h-4" />
+                <FileText className="w-4 h-4 text-[#7CE8F0]" />
                 <span>Leer Aviso Legal y Ético Completo</span>
               </button>
             </div>
 
-            {/* Key Ethical & Legal Guarantees */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#234E86] space-y-1">
-                <div className="font-extrabold text-[#5FD9E4] flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-[#00A9B7]" />
-                  <span>Cero Entrenamiento de IA</span>
+            <div className="p-6 sm:p-8 space-y-5 bg-white">
+              {/* Key Ethical & Legal Guarantees */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3.5 rounded-2xl bg-[#F2FAFB] border border-[#BCE2E8] space-y-1">
+                  <div className="font-extrabold text-[#007F8C] flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-[#00A9B7]" />
+                    <span>Cero Entrenamiento de IA</span>
+                  </div>
+                  <p className="text-[11px] text-[#3B5575] leading-snug">
+                    Tus respuestas de voz, textos y documentos adjuntos <strong className="text-[#102B4B]">jamás</strong> se usan para entrenar modelos públicos o de terceros.
+                  </p>
                 </div>
-                <p className="text-[11px] text-slate-300 leading-snug">
-                  Tus respuestas de voz, textos y documentos adjuntos <strong className="text-white">jamás</strong> se usan para entrenar modelos públicos o de terceros.
-                </p>
+
+                <div className="p-3.5 rounded-2xl bg-[#F3F8FE] border border-[#C8DCF1] space-y-1">
+                  <div className="font-extrabold text-[#1464B8] flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#1464B8]" />
+                    <span>Confidencialidad y LFPDPPP</span>
+                  </div>
+                  <p className="text-[11px] text-[#3B5575] leading-snug">
+                    Tu empresa conserva la titularidad exclusiva de su información bajo resguardo confidencial de <strong className="text-[#102B4B]">INTERPRES S.A. de C.V.</strong>
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-[#F2FBF7] border border-[#BFE6D4] space-y-1">
+                  <div className="font-extrabold text-emerald-700 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Uso Exclusivo de Propuesta</span>
+                  </div>
+                  <p className="text-[11px] text-[#3B5575] leading-snug">
+                    La información se utiliza únicamente para estructurar tu diagnóstico arquitectónico y cotización comercial.
+                  </p>
+                </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#234E86] space-y-1">
-                <div className="font-extrabold text-[#66B2FF] flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#66B2FF]" />
-                  <span>Confidencialidad y LFPDPPP</span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-snug">
-                  Tu empresa conserva la titularidad exclusiva de su información bajo resguardo confidencial de <strong className="text-white">INTERPRES S.A. de C.V.</strong>
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#234E86] space-y-1">
-                <div className="font-extrabold text-emerald-300 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Uso Exclusivo de Propuesta</span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-snug">
-                  La información se utiliza únicamente para estructurar tu diagnóstico arquitectónico y cotización comercial.
-                </p>
-              </div>
-            </div>
-
-            {/* Mandatory Checkbox */}
-            <div
-              onClick={() => {
-                const nextVal = !answers.privacyConsentAccepted;
-                setWelcomeError(null);
-                setAnswers((prev) => {
-                  const next = {
-                    ...prev,
-                    privacyConsentAccepted: nextVal,
-                    privacyConsentAcceptedAt: nextVal
-                      ? new Date().toLocaleString("es-MX", {
-                          timeZone: "America/Mexico_City",
-                        })
-                      : "",
-                  };
-                  answersRef.current = next;
-                  return next;
-                });
-              }}
-              role="checkbox"
-              aria-checked={answers.privacyConsentAccepted}
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === " " || e.key === "Enter") {
-                  e.preventDefault();
+              {/* Mandatory Checkbox */}
+              <div
+                onClick={() => {
                   const nextVal = !answers.privacyConsentAccepted;
                   setWelcomeError(null);
                   setAnswers((prev) => {
@@ -2023,80 +2019,103 @@ const PublicAiBriefing: React.FC = () => {
                     answersRef.current = next;
                     return next;
                   });
-                }
-              }}
-              className={clsx(
-                "p-4 rounded-2xl border-2 flex items-start gap-3.5 cursor-pointer select-none transition-all",
-                answers.privacyConsentAccepted
-                  ? "bg-[#00A9B7]/18 border-[#00A9B7]"
-                  : "bg-[#071B36]/90 border-[#2E62A1] hover:border-[#5FD9E4]"
-              )}
-            >
-              <div
-                className={clsx(
-                  "w-6 h-6 mt-0.5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all",
-                  answers.privacyConsentAccepted
-                    ? "bg-[#00A9B7] border-[#7CE8F0] text-white shadow-md shadow-[#00A9B7]/30"
-                    : "bg-[#0B2548] border-[#6B93C4]"
-                )}
-              >
-                {answers.privacyConsentAccepted && <Check className="w-4 h-4 stroke-[3]" />}
-              </div>
-
-              <div className="space-y-1 text-xs sm:text-sm text-white">
-                <span className="font-extrabold block text-white">
-                  He leído y acepto el Aviso de Privacidad, Confidencialidad, Uso Ético de IA y Autorización de Información *
-                </span>
-                <span className="text-xs text-slate-300 block leading-relaxed">
-                  Confirmo que cuento con autorización para compartir la información y documentos ingresados con <strong className="text-white">INTERPRES DIGITAL (INTERPRES S.A. de C.V.)</strong> para fines de diagnóstico técnico y elaboración de propuesta.
-                </span>
-              </div>
-            </div>
-
-            {/* Gate Action Button */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
-              <div className="text-xs text-slate-300 flex items-center gap-2">
-                {answers.privacyConsentAccepted ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
-                    <span className="font-bold text-[#7CE8F0]">
-                      Consentimiento verificado. Ya puedes ingresar al Briefing de IA.
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                    <span>
-                      Marca la casilla de aceptación superior para habilitar el botón de ingreso al Briefing.
-                    </span>
-                  </>
-                )}
-              </div>
-
-              <button
-                type="button"
-                disabled={!answers.privacyConsentAccepted}
-                onClick={() => {
-                  setStep("welcome");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                role="checkbox"
+                aria-checked={answers.privacyConsentAccepted}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === " " || e.key === "Enter") {
+                    e.preventDefault();
+                    const nextVal = !answers.privacyConsentAccepted;
+                    setWelcomeError(null);
+                    setAnswers((prev) => {
+                      const next = {
+                        ...prev,
+                        privacyConsentAccepted: nextVal,
+                        privacyConsentAcceptedAt: nextVal
+                          ? new Date().toLocaleString("es-MX", {
+                              timeZone: "America/Mexico_City",
+                            })
+                          : "",
+                      };
+                      answersRef.current = next;
+                      return next;
+                    });
+                  }
                 }}
                 className={clsx(
-                  "w-full sm:w-auto px-8 py-3.5 rounded-2xl font-display flex items-center justify-center gap-3 transition-all",
+                  "p-4 rounded-2xl border-2 flex items-start gap-3.5 cursor-pointer select-none transition-all",
                   answers.privacyConsentAccepted
-                    ? "bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#1972CE] hover:to-[#00BDCB] text-white shadow-[0_12px_32px_-6px_rgba(0,169,183,0.5)] cursor-pointer active:scale-[0.99]"
-                    : "bg-[#112E57] border border-[#234B80] text-slate-400/70 cursor-not-allowed"
+                    ? "bg-[#ECFAFB] border-[#00A9B7]"
+                    : "bg-[#F4F8FD] border-[#BED5EC] hover:border-[#1464B8]"
                 )}
               >
-                <span className="flex flex-col items-center leading-[1.12] text-center">
-                  <span className="text-[11px] font-bold uppercase tracking-wider opacity-95">
-                    Ingresar al
+                <div
+                  className={clsx(
+                    "w-6 h-6 mt-0.5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all",
+                    answers.privacyConsentAccepted
+                      ? "bg-[#00A9B7] border-[#00A9B7] text-white shadow-sm"
+                      : "bg-white border-[#8BAAC9]"
+                  )}
+                >
+                  {answers.privacyConsentAccepted && <Check className="w-4 h-4 stroke-[3]" />}
+                </div>
+
+                <div className="space-y-1 text-xs sm:text-sm text-[#102B4B]">
+                  <span className="font-extrabold block text-[#102B4B]">
+                    He leído y acepto el Aviso de Privacidad, Confidencialidad, Uso Ético de IA y Autorización de Información *
                   </span>
-                  <span className="text-sm sm:text-[15px] font-extrabold">
-                    Briefing de IA
+                  <span className="text-xs text-[#425D7D] block leading-relaxed">
+                    Confirmo que cuento con autorización para compartir la información y documentos ingresados con <strong className="text-[#102B4B]">INTERPRES DIGITAL (INTERPRES S.A. de C.V.)</strong> para fines de diagnóstico técnico y elaboración de propuesta.
                   </span>
-                </span>
-                <ArrowRight className="w-4 h-4 flex-shrink-0" />
-              </button>
+                </div>
+              </div>
+
+              {/* Gate Action Button */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+                <div className="text-xs text-[#425D7D] flex items-center gap-2">
+                  {answers.privacyConsentAccepted ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
+                      <span className="font-bold text-[#007F8C]">
+                        Consentimiento verificado. Ya puedes ingresar al Briefing de IA.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                      <span>
+                        Marca la casilla de aceptación superior para habilitar el botón de ingreso al Briefing.
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!answers.privacyConsentAccepted}
+                  onClick={() => {
+                    setStep("welcome");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className={clsx(
+                    "w-full sm:w-auto px-8 py-3.5 rounded-2xl font-display flex items-center justify-center gap-3 transition-all",
+                    answers.privacyConsentAccepted
+                      ? "bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008E9B] text-white shadow-[0_12px_28px_-6px_rgba(20,100,184,0.4)] cursor-pointer active:scale-[0.99]"
+                      : "bg-[#E2ECF6] border border-[#C9DBED] text-[#7D97B5] cursor-not-allowed"
+                  )}
+                >
+                  <span className="flex flex-col items-center leading-[1.12] text-center">
+                    <span className="text-[11px] font-bold uppercase tracking-wider opacity-95">
+                      Ingresar al
+                    </span>
+                    <span className="text-sm sm:text-[15px] font-extrabold">
+                      Briefing de IA
+                    </span>
+                  </span>
+                  <ArrowRight className="w-4 h-4 flex-shrink-0" />
+                </button>
+              </div>
             </div>
           </section>
         </main>
@@ -2106,23 +2125,23 @@ const PublicAiBriefing: React.FC = () => {
     );
   }
 
-  // STEP 0: REGISTRO DEL SOLICITANTE Y ELECCIÓN DE MODALIDAD (UNA VEZ ACEPTADA LA BIENVENIDA)
+  // STEP 0: REGISTRO DEL SOLICITANTE Y ELECCIÓN DE MODALIDAD (LIENZO CLARO + ENCABEZADO EJECUTIVO Y CUERPO BLANCO)
   if (step === "welcome") {
     const attachedCount = toAttachmentArray(answers.attachments).length;
 
     return (
       <div
-        className="min-h-screen bg-[#071B36] text-white flex items-center justify-center px-3 py-6 sm:p-6 md:p-10"
+        className="min-h-screen bg-[#EEF4FA] text-[#102B4B] flex items-center justify-center px-3 py-6 sm:p-6 md:p-10"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 15% 15%, rgba(20,100,184,0.22) 0%, transparent 45%), radial-gradient(circle at 85% 80%, rgba(0,169,183,0.18) 0%, transparent 45%), linear-gradient(180deg, #071B36 0%, #0A2447 100%)",
+            "radial-gradient(circle at 15% 15%, rgba(20,100,184,0.09) 0%, transparent 42%), radial-gradient(circle at 85% 80%, rgba(0,169,183,0.09) 0%, transparent 42%), linear-gradient(180deg, #EEF4FA 0%, #F6F9FC 100%)",
         }}
       >
-        <div className="max-w-[940px] w-full bg-[#0B2548]/95 backdrop-blur-xl border border-[#26538D] rounded-[28px] overflow-hidden shadow-[0_30px_80px_-18px_rgba(3,12,26,0.7)]">
+        <div className="max-w-[940px] w-full bg-white border border-[#C5D7EA] rounded-[28px] overflow-hidden shadow-[0_24px_65px_-16px_rgba(16,43,75,0.16)]">
           <div className="h-1.5 w-full bg-gradient-to-r from-[#1464B8] via-[#00A9B7] to-[#1464B8]" />
 
-          {/* Header Banner */}
-          <div className="bg-[#071B36]/85 text-white px-4 py-5 sm:px-8 sm:py-7 md:px-10 border-b border-[#1E4373] relative overflow-hidden">
+          {/* Immersive Header Banner */}
+          <div className="bg-gradient-to-br from-[#071B36] via-[#0D2C56] to-[#0A2244] text-white px-4 py-5 sm:px-8 sm:py-7 md:px-10 relative overflow-hidden">
             <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#1464B8]/25 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-20 left-10 w-56 h-56 rounded-full bg-[#00A9B7]/20 blur-3xl pointer-events-none" />
 
@@ -2135,7 +2154,7 @@ const PublicAiBriefing: React.FC = () => {
                     setStep("intro");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-[#0E2E5A] hover:bg-[#1464B8] border border-[#2C5D9E] text-slate-100 text-[10.5px] sm:text-[11px] font-bold transition-colors cursor-pointer flex-shrink-0"
+                  className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-slate-100 text-[10.5px] sm:text-[11px] font-bold transition-colors cursor-pointer flex-shrink-0"
                 >
                   <ArrowLeft className="w-3.5 h-3.5 text-[#7CE8F0] flex-shrink-0" />
                   <span className="sm:hidden">Guía previa</span>
@@ -2155,7 +2174,7 @@ const PublicAiBriefing: React.FC = () => {
                 </div>
 
                 {/* Official Nexia Portrait Badge */}
-                <div className="hidden sm:flex items-center gap-3 bg-[#0C2850] border border-[#285792] rounded-2xl p-2.5 pr-4 flex-shrink-0 shadow-lg">
+                <div className="hidden sm:flex items-center gap-3 bg-white/8 border border-white/15 rounded-2xl p-2.5 pr-4 flex-shrink-0">
                   <img
                     src={NEXIA_URL}
                     alt="Nexia IA"
@@ -2171,18 +2190,18 @@ const PublicAiBriefing: React.FC = () => {
             </div>
           </div>
 
-          {/* Deep Sapphire Body */}
-          <div className="p-4 sm:p-8 md:p-10 space-y-6">
+          {/* Crisp White Form Body */}
+          <div className="p-4 sm:p-8 md:p-10 space-y-6 bg-white">
             {attachedCount > 0 && (
-              <div className="px-4 py-2.5 rounded-2xl bg-[#00A9B7]/18 border border-[#00A9B7]/55 text-xs text-[#8FF0F7] font-bold flex items-center justify-between gap-2">
+              <div className="px-4 py-2.5 rounded-2xl bg-[#ECFAFB] border border-[#9FE0E8] text-xs text-[#007B87] font-bold flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
+                  <FileText className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
                   <span>{attachedCount} documento(s) de apoyo adjuntado(s) y listos para tu expediente.</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setStep("intro")}
-                  className="text-[11px] text-white underline font-extrabold cursor-pointer"
+                  className="text-[11px] text-[#1464B8] underline font-extrabold cursor-pointer"
                 >
                   Gestionar archivos
                 </button>
@@ -2191,66 +2210,66 @@ const PublicAiBriefing: React.FC = () => {
 
             {/* Identification Form */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3.5 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors">
-                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9CC6F5] mb-1.5">
+              <div className="p-3.5 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] focus-within:border-[#1464B8] focus-within:bg-white transition-colors">
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#102B4B] mb-1.5">
                   Empresa solicitante *
                 </label>
                 <div className="relative">
-                  <Building2 className="w-4 h-4 text-[#66B2FF] absolute left-3.5 top-3" />
+                  <Building2 className="w-4 h-4 text-[#1464B8] absolute left-3.5 top-3" />
                   <input
                     type="text"
                     value={answers.companyName}
                     onChange={(e) => updateField("companyName", e.target.value)}
                     placeholder="Nombre de tu empresa"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-sm text-[#102B4B] placeholder:text-[#7D96B3] focus:border-[#1464B8] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors">
-                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9CC6F5] mb-1.5">
+              <div className="p-3.5 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] focus-within:border-[#1464B8] focus-within:bg-white transition-colors">
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#102B4B] mb-1.5">
                   Nombre del contacto *
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 text-[#66B2FF] absolute left-3.5 top-3" />
+                  <User className="w-4 h-4 text-[#1464B8] absolute left-3.5 top-3" />
                   <input
                     type="text"
                     value={answers.contactName}
                     onChange={(e) => updateField("contactName", e.target.value)}
                     placeholder="Tu nombre y cargo"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-sm text-[#102B4B] placeholder:text-[#7D96B3] focus:border-[#1464B8] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors">
-                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9CC6F5] mb-1.5">
+              <div className="p-3.5 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] focus-within:border-[#1464B8] focus-within:bg-white transition-colors">
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#102B4B] mb-1.5">
                   Correo electrónico *
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-[#66B2FF] absolute left-3.5 top-3" />
+                  <Mail className="w-4 h-4 text-[#1464B8] absolute left-3.5 top-3" />
                   <input
                     type="email"
                     value={answers.contactEmail}
                     onChange={(e) => updateField("contactEmail", e.target.value)}
                     placeholder="nombre@empresa.com"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-sm text-[#102B4B] placeholder:text-[#7D96B3] focus:border-[#1464B8] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors">
-                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9CC6F5] mb-1.5">
+              <div className="p-3.5 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] focus-within:border-[#1464B8] focus-within:bg-white transition-colors">
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#102B4B] mb-1.5">
                   Teléfono / WhatsApp
                 </label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 text-[#66B2FF] absolute left-3.5 top-3" />
+                  <Phone className="w-4 h-4 text-[#1464B8] absolute left-3.5 top-3" />
                   <input
                     type="tel"
                     value={answers.contactPhone}
                     onChange={(e) => updateField("contactPhone", e.target.value)}
                     placeholder="+52 55 0000 0000"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-sm text-[#102B4B] placeholder:text-[#7D96B3] focus:border-[#1464B8] focus:outline-none"
                   />
                 </div>
               </div>
@@ -2261,10 +2280,10 @@ const PublicAiBriefing: React.FC = () => {
               className={clsx(
                 "p-3.5 sm:p-4 rounded-2xl border transition-all space-y-2.5",
                 answers.privacyConsentAccepted
-                  ? "bg-[#00A9B7]/16 border-[#00A9B7]"
+                  ? "bg-[#ECFAFB] border-[#00A9B7]"
                   : welcomeError && !answers.privacyConsentAccepted
-                  ? "bg-amber-950/40 border-amber-400"
-                  : "bg-[#0E2D58] border-[#285691]"
+                  ? "bg-amber-50 border-amber-400"
+                  : "bg-[#F4F8FD] border-[#C6DAEE]"
               )}
             >
               <div
@@ -2306,31 +2325,31 @@ const PublicAiBriefing: React.FC = () => {
                   className={clsx(
                     "w-5 h-5 sm:mt-0.5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all",
                     answers.privacyConsentAccepted
-                      ? "bg-[#00A9B7] border-[#7CE8F0] text-white shadow-sm"
-                      : "bg-[#071B36] border-[#6B93C4] hover:border-[#5FD9E4]"
+                      ? "bg-[#00A9B7] border-[#00A9B7] text-white shadow-xs"
+                      : "bg-white border-[#8BAAC9] hover:border-[#1464B8]"
                   )}
                 >
                   {answers.privacyConsentAccepted && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                 </div>
 
-                <p className="text-xs sm:text-[13px] text-slate-100 leading-snug">
-                  <strong className="font-extrabold text-white">Acepto el Aviso de Privacidad y Uso Ético de IA *</strong>
-                  <span className="hidden sm:inline text-slate-300">
+                <p className="text-xs sm:text-[13px] text-[#102B4B] leading-snug">
+                  <strong className="font-extrabold">Acepto el Aviso de Privacidad y Uso Ético de IA *</strong>
+                  <span className="hidden sm:inline text-[#3F5979]">
                     {" "}— Confirmo autorización para compartir esta información bajo resguardo confidencial de INTERPRES DIGITAL.
                   </span>
-                  <span className="sm:hidden text-slate-300">
+                  <span className="sm:hidden text-[#3F5979]">
                     {" "}y confirmo autorización para compartir esta información.
                   </span>
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-white/12 text-[11px]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-[#D3E2F1] text-[11px]">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="inline-flex items-center gap-1 text-[#5FD9E4] font-bold">
+                  <span className="inline-flex items-center gap-1 text-[#00828F] font-bold">
                     <Lock className="w-3 h-3 flex-shrink-0" />
                     Cero entrenamiento IA
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[#8CC5FF] font-bold">
+                  <span className="inline-flex items-center gap-1 text-[#1464B8] font-bold">
                     <ShieldCheck className="w-3 h-3 flex-shrink-0" />
                     LFPDPPP
                   </span>
@@ -2340,7 +2359,7 @@ const PublicAiBriefing: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowLegalModal(true)}
-                    className="w-full sm:w-auto justify-center px-3.5 py-2 sm:py-1.5 rounded-xl bg-[#071B36] hover:bg-[#1464B8] border border-[#356AB0] text-xs font-extrabold text-[#8CC5FF] hover:text-white inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="w-full sm:w-auto justify-center px-3.5 py-2 sm:py-1.5 rounded-xl bg-white hover:bg-[#1464B8] border border-[#BED5EC] hover:border-[#1464B8] text-xs font-extrabold text-[#1464B8] hover:text-white inline-flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>Ver Aviso Legal y Privacidad →</span>
@@ -2349,7 +2368,7 @@ const PublicAiBriefing: React.FC = () => {
                     href="https://interpresdigital.com/"
                     target="_blank"
                     rel="noreferrer"
-                    className="hidden sm:inline-flex items-center gap-1 text-slate-300 hover:text-white font-semibold"
+                    className="hidden sm:inline-flex items-center gap-1 text-[#4A6584] hover:text-[#1464B8] font-semibold"
                   >
                     <span>Aviso Integral</span>
                     <ExternalLink className="w-3 h-3" />
@@ -2359,8 +2378,8 @@ const PublicAiBriefing: React.FC = () => {
             </div>
 
             {welcomeError && (
-              <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-400/70 text-amber-100 text-xs font-semibold flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 text-amber-300 flex-shrink-0" />
+              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
                 <span>{welcomeError}</span>
               </div>
             )}
@@ -2373,8 +2392,8 @@ const PublicAiBriefing: React.FC = () => {
                 className={clsx(
                   "group text-left p-4 sm:p-6 rounded-2xl border-2 transition-all text-white relative overflow-hidden cursor-pointer",
                   answers.privacyConsentAccepted
-                    ? "bg-gradient-to-br from-[#10386E] via-[#1464B8] to-[#0092A0] hover:from-[#144382] hover:to-[#00A9B7] border-[#5FD9E4]/75 shadow-xl shadow-[#00A9B7]/20 active:scale-[0.99]"
-                    : "bg-[#0F2F5A]/80 border-[#285691] opacity-85 hover:opacity-100"
+                    ? "bg-gradient-to-br from-[#0A274E] via-[#1464B8] to-[#0096A5] hover:from-[#0E3162] hover:to-[#00A9B7] border-[#1464B8] shadow-xl shadow-[#1464B8]/20 active:scale-[0.99]"
+                    : "bg-[#6E89A8] border-[#6E89A8] opacity-85 hover:opacity-95"
                 )}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5">
@@ -2384,11 +2403,11 @@ const PublicAiBriefing: React.FC = () => {
                       alt="Nexia IA"
                       className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover border border-[#7CE8F0] shadow-sm flex-shrink-0"
                     />
-                    <div className="w-9 h-9 rounded-xl bg-[#071B36]/65 border border-white/25 flex items-center justify-center flex-shrink-0">
-                      <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-[#7CE8F0]" />
+                    <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center flex-shrink-0">
+                      <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-[#8FF0F7]" />
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-[#071B36]/75 border border-[#5FD9E4]/60 text-[#8FF0F7] text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap flex-shrink-0">
+                  <span className="px-2.5 py-1 rounded-full bg-[#071B36]/65 border border-[#7CE8F0]/55 text-[#8FF0F7] text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap flex-shrink-0">
                     Recomendado • IA en Vivo
                   </span>
                 </div>
@@ -2406,29 +2425,29 @@ const PublicAiBriefing: React.FC = () => {
                 className={clsx(
                   "group text-left p-4 sm:p-6 rounded-2xl border-2 transition-all cursor-pointer",
                   answers.privacyConsentAccepted
-                    ? "bg-[#0E2D58] hover:bg-[#12386B] border-[#2B5D9C] hover:border-[#66B2FF] shadow-lg active:scale-[0.99]"
-                    : "bg-[#0E2D58]/75 border-[#254F86] opacity-85 hover:opacity-100"
+                    ? "bg-[#F4F8FD] hover:bg-[#EAF3FC] border-[#BED5EC] hover:border-[#1464B8] shadow-sm active:scale-[0.99]"
+                    : "bg-[#F6F9FC] border-[#D6E2EE] opacity-85 hover:opacity-100"
                 )}
               >
                 <div className="flex items-center justify-between mb-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-[#071B36] border border-[#2B5D9C] flex items-center justify-center shadow-xs">
-                    <PenTool className="w-5 h-5 text-[#66B2FF]" />
+                  <div className="w-11 h-11 rounded-xl bg-white border border-[#C2D6EB] flex items-center justify-center shadow-xs">
+                    <PenTool className="w-5 h-5 text-[#1464B8]" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-[#071B36] border border-[#2B5D9C] text-slate-200 text-[11px] font-bold uppercase tracking-wider">
+                  <span className="px-2.5 py-1 rounded-full bg-white border border-[#C2D6EB] text-[#1464B8] text-[11px] font-bold uppercase tracking-wider">
                     Paso a Paso
                   </span>
                 </div>
-                <h3 className="font-display text-lg font-extrabold text-white mb-1">
+                <h3 className="font-display text-lg font-extrabold text-[#102B4B] mb-1">
                   Llenar Manualmente por Escrito
                 </h3>
-                <p className="text-slate-300 text-xs leading-relaxed">
+                <p className="text-[#425D7D] text-xs leading-relaxed">
                   Responde las 10 secciones a tu ritmo, comparte el enlace con tu equipo de TI y adjunta archivos.
                 </p>
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-300 pt-1">
-              <ShieldCheck className="w-4 h-4 text-[#5FD9E4]" />
+            <div className="flex items-center justify-center gap-2 text-[11px] text-[#4A6584] pt-1">
+              <ShieldCheck className="w-4 h-4 text-[#00A9B7]" />
               <span>Conexión cifrada • Puedes alternar entre voz y escritura o guardar avance para tu equipo técnico.</span>
             </div>
           </div>
@@ -2439,26 +2458,26 @@ const PublicAiBriefing: React.FC = () => {
     );
   }
 
-  // WORKSPACE (HYBRID VOICE + MANUAL IN DEEP SAPPHIRE ARCHITECTURAL THEME)
+  // WORKSPACE (LIENZO EDITORIAL CLARO + PANEL INMERSIVO SOLO PARA LLAMADA DE VOZ Y FORMULARIO BLANCO LIMPIO)
   return (
     <div
-      className="min-h-screen bg-[#071B36] text-white flex flex-col"
+      className="min-h-screen bg-[#EEF4FA] text-[#102B4B] flex flex-col"
       style={{
         backgroundImage:
-          "radial-gradient(circle at 12% 10%, rgba(20,100,184,0.20) 0%, transparent 40%), radial-gradient(circle at 88% 85%, rgba(0,169,183,0.16) 0%, transparent 40%), linear-gradient(180deg, #071B36 0%, #0A2346 100%)",
+          "radial-gradient(circle at 10% 8%, rgba(20,100,184,0.08) 0%, transparent 38%), radial-gradient(circle at 90% 85%, rgba(0,169,183,0.08) 0%, transparent 38%), linear-gradient(180deg, #EEF4FA 0%, #F6F9FC 100%)",
       }}
     >
-      {/* Top Sticky Deep Sapphire Header */}
-      <header className="sticky top-0 z-30 bg-[#071B36]/95 backdrop-blur-xl border-b border-[#1E4373] px-3 sm:px-6 md:px-8 py-2.5 sm:py-3.5 shadow-lg shadow-[#041022]/30">
+      {/* Top Sticky Clean Corporate Header */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#CFE0F0] px-3 sm:px-6 md:px-8 py-2.5 sm:py-3.5 shadow-[0_4px_20px_-8px_rgba(16,43,75,0.08)]">
         <div className="max-w-[1240px] mx-auto flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
           <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
-            <img src={LOGO_BLANCO_URL} alt="Interpres Digital Labs" className="h-8 sm:h-10 w-auto object-contain flex-shrink-0" />
-            <div className="hidden sm:block h-6 w-px bg-[#234E86]" />
+            <img src={LOGO_COLOR_URL} alt="Interpres Digital Labs" className="h-8 sm:h-10 w-auto object-contain flex-shrink-0" />
+            <div className="hidden sm:block h-6 w-px bg-[#CFE0F0]" />
             <div className="min-w-0">
-              <div className="text-xs font-extrabold text-white truncate max-w-[155px] sm:max-w-xs">
+              <div className="text-xs font-extrabold text-[#102B4B] truncate max-w-[155px] sm:max-w-xs">
                 {answers.companyName}
               </div>
-              <div className="text-[11px] text-[#8CC5FF] font-medium">
+              <div className="text-[11px] text-[#1464B8] font-semibold">
                 Avance: {completedSectionsCount}/10 ({progressPercent}%)
                 {savingDraft && " • Guardando..."}
               </div>
@@ -2467,7 +2486,7 @@ const PublicAiBriefing: React.FC = () => {
 
           <div className="flex items-center gap-2">
             {/* Mode Switcher */}
-            <div className="bg-[#0C274D] p-1 rounded-xl border border-[#25528C] flex items-center">
+            <div className="bg-[#EEF4FB] p-1 rounded-xl border border-[#C6DAEE] flex items-center">
               <button
                 onClick={() => {
                   setActiveMode("voice");
@@ -2478,8 +2497,8 @@ const PublicAiBriefing: React.FC = () => {
                 className={clsx(
                   "px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer",
                   activeMode === "voice"
-                    ? "bg-gradient-to-r from-[#1464B8] to-[#00A9B7] text-white shadow-sm"
-                    : "text-slate-300 hover:text-white"
+                    ? "bg-gradient-to-r from-[#1464B8] to-[#00A9B7] text-white shadow-xs"
+                    : "text-[#3B5575] hover:text-[#102B4B]"
                 )}
               >
                 <Mic className="w-3.5 h-3.5" />
@@ -2490,8 +2509,8 @@ const PublicAiBriefing: React.FC = () => {
                 className={clsx(
                   "px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer",
                   activeMode === "manual"
-                    ? "bg-gradient-to-r from-[#1464B8] to-[#00A9B7] text-white shadow-sm"
-                    : "text-slate-300 hover:text-white"
+                    ? "bg-gradient-to-r from-[#1464B8] to-[#00A9B7] text-white shadow-xs"
+                    : "text-[#3B5575] hover:text-[#102B4B]"
                 )}
               >
                 <PenTool className="w-3.5 h-3.5" />
@@ -2502,17 +2521,17 @@ const PublicAiBriefing: React.FC = () => {
             {/* Share Draft with IT / Colleague */}
             <button
               onClick={handleCopyShareableLink}
-              className="px-2.5 sm:px-3.5 py-2 rounded-xl bg-[#0C274D] hover:bg-[#133A70] border border-[#25528C] text-xs font-bold flex items-center gap-1.5 text-slate-100 transition-all cursor-pointer"
+              className="px-2.5 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-[#F0F6FD] border border-[#C5D7EA] text-xs font-bold flex items-center gap-1.5 text-[#102B4B] transition-all cursor-pointer"
               title="Copia este enlace para compartir el avance con tu líder de TI u otro colega"
             >
               {copiedDraftLink ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#5FD9E4]" />
-                  <span className="text-[#7CE8F0] text-[11px] sm:text-xs">¡Copiado!</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#00A9B7]" />
+                  <span className="text-[#00828F] text-[11px] sm:text-xs">¡Copiado!</span>
                 </>
               ) : (
                 <>
-                  <Share2 className="w-3.5 h-3.5 text-[#66B2FF]" />
+                  <Share2 className="w-3.5 h-3.5 text-[#1464B8]" />
                   <span className="hidden md:inline">Compartir con TI</span>
                 </>
               )}
@@ -2525,12 +2544,12 @@ const PublicAiBriefing: React.FC = () => {
       <div className="max-w-[1240px] w-full mx-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 px-3 py-4 sm:p-6 md:p-8">
         {/* Left Sidebar on Desktop / Secondary List on Mobile */}
         <aside className="order-2 lg:order-1 lg:col-span-4 space-y-3">
-          <div className="bg-[#0B2548]/95 border border-[#244E85] rounded-2xl p-3.5 sm:p-4 space-y-2.5 shadow-xl">
-            <div className="flex items-center justify-between px-1 pb-2 border-b border-[#1E4373]">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
+          <div className="bg-white border border-[#C5D7EA] rounded-2xl p-3.5 sm:p-4 space-y-2.5 shadow-[0_12px_30px_-14px_rgba(16,43,75,0.10)]">
+            <div className="flex items-center justify-between px-1 pb-2 border-b border-[#DCE7F3]">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-[#102B4B]">
                 Etapas del RFI (10 bloques)
               </span>
-              <span className="text-xs font-extrabold text-[#5FD9E4]">{progressPercent}%</span>
+              <span className="text-xs font-extrabold text-[#008C99]">{progressPercent}%</span>
             </div>
 
             <div className="space-y-1.5">
@@ -2553,27 +2572,27 @@ const PublicAiBriefing: React.FC = () => {
                     className={clsx(
                       "w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all border cursor-pointer",
                       isFlashing
-                        ? "bg-[#00A9B7]/25 border-[#5FD9E4] text-white scale-[1.01]"
+                        ? "bg-[#E8F8FA] border-[#00A9B7] text-[#102B4B] scale-[1.01]"
                         : isCurrent
-                        ? "bg-[#1464B8]/35 border-[#66B2FF] text-white font-bold shadow-xs"
-                        : "bg-[#0E2D58]/80 border-[#21487A] text-slate-200 hover:bg-[#133A70] hover:border-[#376BB0]"
+                        ? "bg-[#EAF3FC] border-[#1464B8] text-[#102B4B] font-extrabold shadow-2xs"
+                        : "bg-[#F6FAFE] border-[#DCE7F3] text-[#355070] hover:bg-[#EDF4FC] hover:border-[#BDD4EC]"
                     )}
                   >
                     <span className="truncate pr-2">
                       {sec.number}. {sec.shortTitle}
                     </span>
                     {filled ? (
-                      <CheckCircle2 className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
                     ) : pending ? (
-                      <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/50 text-amber-200 text-[10px] font-bold flex-shrink-0">
+                      <span className="px-2 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-bold flex-shrink-0">
                         Pendiente TI
                       </span>
                     ) : partial ? (
-                      <span className="px-2 py-0.5 rounded bg-[#1464B8]/30 border border-[#66B2FF]/50 text-[#9CC6F5] text-[10px] font-bold flex-shrink-0">
+                      <span className="px-2 py-0.5 rounded bg-[#E3EFFB] border border-[#B9D4EF] text-[#1464B8] text-[10px] font-bold flex-shrink-0">
                         En curso
                       </span>
                     ) : (
-                      <div className="w-3.5 h-3.5 rounded-full border border-[#4973A6] flex-shrink-0" />
+                      <div className="w-3.5 h-3.5 rounded-full border border-[#B0C6DF] flex-shrink-0" />
                     )}
                   </button>
                 );
@@ -2581,22 +2600,22 @@ const PublicAiBriefing: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-[#0C274D] border border-[#244E85] rounded-2xl p-4 text-xs text-slate-200 space-y-1.5 shadow-md">
-            <div className="font-bold flex items-center gap-1.5 text-[#5FD9E4]">
+          <div className="bg-white border border-[#C5D7EA] border-l-4 border-l-[#00A9B7] rounded-2xl p-4 text-xs text-[#3B5575] space-y-1.5 shadow-xs">
+            <div className="font-extrabold flex items-center gap-1.5 text-[#00828F]">
               <Clock className="w-4 h-4 flex-shrink-0" />
               <span>¿Te falta algún dato técnico?</span>
             </div>
-            <p className="text-[11px] text-slate-200/90 leading-relaxed">
+            <p className="text-[11px] leading-relaxed">
               Si desconoces detalles de APIs o infraestructura, díselo a Nexia IA o márcalo como{" "}
-              <strong className="text-white">Pendiente para TI</strong> para compartirlo después con tu equipo técnico.
+              <strong className="text-[#102B4B]">Pendiente para TI</strong> para compartirlo después con tu equipo técnico.
             </p>
           </div>
         </aside>
 
-        {/* Right Panel (First on Mobile): Live Voice Consultant OR Deep Sapphire Manual Wizard */}
+        {/* Right Panel (First on Mobile): Live Voice Studio Card OR Crisp White Manual Wizard */}
         <section className="order-1 lg:order-2 lg:col-span-8">
           {activeMode === "voice" ? (
-            <div className="bg-[#0B2548]/95 border border-[#26538D] text-white rounded-3xl p-4 sm:p-6 md:p-8 flex flex-col justify-between space-y-5 shadow-[0_24px_60px_-15px_rgba(3,12,26,0.55)]">
+            <div className="bg-gradient-to-br from-[#071B36] via-[#0B284F] to-[#081F3E] border border-[#1E457A] text-white rounded-3xl p-4 sm:p-6 md:p-8 flex flex-col justify-between space-y-5 shadow-[0_22px_55px_-14px_rgba(7,27,54,0.32)]">
               {/* Top Stage Tracker + Nexia Identity */}
               <div className="space-y-3 border-b border-white/12 pb-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2.5">
@@ -2959,14 +2978,14 @@ const PublicAiBriefing: React.FC = () => {
               </div>
             </div>
           ) : (
-            /* MANUAL / REVIEW DEEP SAPPHIRE WIZARD */
-            <div className="bg-[#0B2548]/95 border border-[#26538D] rounded-3xl p-4 sm:p-6 md:p-8 space-y-5 shadow-[0_24px_60px_-15px_rgba(3,12,26,0.55)]">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1E4373] pb-4">
+            /* MANUAL / REVIEW CRISP EDITORIAL WIZARD */
+            <div className="bg-white border border-[#C5D7EA] rounded-3xl overflow-hidden shadow-[0_16px_45px_-14px_rgba(16,43,75,0.12)]">
+              <div className="px-5 py-4 sm:px-8 sm:py-5 bg-gradient-to-r from-[#F2F7FD] via-[#F7FAFE] to-[#EDFAFB] border-b border-[#D5E3F2] flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <span className="text-xs font-extrabold text-[#5FD9E4] uppercase tracking-wider">
+                  <span className="text-xs font-extrabold text-[#008C99] uppercase tracking-wider">
                     Sección {clampSection(activeSection)} de 10
                   </span>
-                  <h2 className="font-display text-xl font-extrabold text-white">
+                  <h2 className="font-display text-xl font-extrabold text-[#102B4B]">
                     {(AI_RFI_SECTIONS[clampSection(activeSection) - 1] || AI_RFI_SECTIONS[0]).title}
                   </h2>
                 </div>
@@ -2977,8 +2996,8 @@ const PublicAiBriefing: React.FC = () => {
                     className={clsx(
                       "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
                       toNumberArray(answers.pendingSections).includes(activeSection)
-                        ? "bg-amber-500/20 border-amber-400 text-amber-200"
-                        : "bg-[#071B36] border-[#26538D] text-slate-200 hover:border-[#66B2FF] hover:text-white"
+                        ? "bg-amber-100 border-amber-300 text-amber-900"
+                        : "bg-white border-[#C5D7EA] text-[#355070] hover:border-[#1464B8] hover:text-[#1464B8]"
                     )}
                   >
                     {toNumberArray(answers.pendingSections).includes(activeSection)
@@ -2988,621 +3007,623 @@ const PublicAiBriefing: React.FC = () => {
                 )}
               </div>
 
-              {/* Section 1 */}
-              {activeSection === 1 && (
-                <div className="space-y-4">
-                  <FieldTextarea
-                    label="¿Cuál es el problema o necesidad de negocio que el agente de IA debe resolver?"
-                    value={answers.businessProblem}
-                    onChange={(v) => updateField("businessProblem", v)}
-                    placeholder="Ej. Tardamos más de 4 horas en responder prospectos de WhatsApp y perdemos cierres fuera de horario..."
-                  />
-                  <FieldTextarea
-                    label="¿Qué resultado esperan obtener (ahorro de tiempo, reducción de costos, mejor atención, etc.)?"
-                    value={answers.expectedOutcome}
-                    onChange={(v) => updateField("expectedOutcome", v)}
-                    placeholder="Ej. Atender en menos de 1 minuto 24/7, calificar prospectos y liberar 60% del tiempo operativo..."
-                  />
-                  <FieldTextarea
-                    label="¿Existen iniciativas o herramientas de IA previas en la empresa?"
-                    value={answers.previousAiInitiatives}
-                    onChange={(v) => updateField("previousAiInitiatives", v)}
-                    placeholder="Ej. Usamos ChatGPT de forma individual, o tuvimos un chatbot básico de botones..."
-                  />
-                </div>
-              )}
-
-              {/* Section 2 */}
-              {activeSection === 2 && (
-                <div className="space-y-4">
-                  <FieldTextarea
-                    label="Descripción del puesto o proceso que hoy realiza una persona (o que se desea crear)"
-                    value={answers.roleOrProcessDescription}
-                    onChange={(v) => updateField("roleOrProcessDescription", v)}
-                    placeholder="Ej. Ejecutivo de atención a clientes / Coordinador de agendamiento y cotizaciones..."
-                  />
-                  <FieldTextarea
-                    label="Tareas diarias, semanales y mensuales que realiza esa persona"
-                    value={answers.periodicTasks}
-                    onChange={(v) => updateField("periodicTasks", v)}
-                    placeholder="Diarias: responder dudas, cotizar, agendar. Semanales: reporte de seguimiento..."
-                  />
-                  <FieldInput
-                    label="¿Qué porcentaje de esas tareas cree que puede manejar el agente?"
-                    value={answers.automationPercentage}
-                    onChange={(v) => updateField("automationPercentage", v)}
-                    placeholder="Ej. 70% - 80%"
-                  />
-                  <FieldTextarea
-                    label="¿Qué pasa hoy cuando esa persona no está disponible?"
-                    value={answers.unavailabilityImpact}
-                    onChange={(v) => updateField("unavailabilityImpact", v)}
-                    placeholder="Ej. Se acumulan los mensajes hasta el día siguiente o nadie da seguimiento en fin de semana..."
-                  />
-                </div>
-              )}
-
-              {/* Section 3 */}
-              {activeSection === 3 && (
-                <div className="space-y-4">
-                  <FieldTextarea
-                    label="Liste las funciones específicas que debe ejecutar el agente"
-                    value={answers.specificFunctions}
-                    onChange={(v) => updateField("specificFunctions", v)}
-                    placeholder="Ej. Responder correos/WhatsApp, consultar inventario, agendar citas, generar pre-cotizaciones, clasificar tickets..."
-                  />
-                  <FieldTextarea
-                    label="¿Qué tareas quedan explícitamente fuera del alcance del agente?"
-                    value={answers.outOfScopeTasks}
-                    onChange={(v) => updateField("outOfScopeTasks", v)}
-                    placeholder="Ej. Autorizar descuentos especiales, cancelar facturas o negociar contratos especiales..."
-                  />
-                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2.5">
-                    <label className="block text-xs font-bold text-slate-100">
-                      ¿El agente debe tomar decisiones autónomas o siempre escalar a un humano?
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {AUTONOMY_OPTIONS.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => updateField("autonomyLevel", opt)}
-                          className={clsx(
-                            "px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-left cursor-pointer",
-                            answers.autonomyLevel === opt
-                              ? "bg-[#1464B8] border-[#66B2FF] text-white shadow-xs"
-                              : "bg-[#071B36] border-[#25528C] text-slate-200 hover:border-[#5FD9E4]"
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      type="text"
-                      value={answers.autonomyLevel}
-                      onChange={(e) => updateField("autonomyLevel", e.target.value)}
-                      placeholder="O detalla aquí las reglas de autonomía y escalamiento..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
+              <div className="p-4 sm:p-6 md:p-8 space-y-5">
+                {/* Section 1 */}
+                {activeSection === 1 && (
+                  <div className="space-y-4">
+                    <FieldTextarea
+                      label="¿Cuál es el problema o necesidad de negocio que el agente de IA debe resolver?"
+                      value={answers.businessProblem}
+                      onChange={(v) => updateField("businessProblem", v)}
+                      placeholder="Ej. Tardamos más de 4 horas en responder prospectos de WhatsApp y perdemos cierres fuera de horario..."
+                    />
+                    <FieldTextarea
+                      label="¿Qué resultado esperan obtener (ahorro de tiempo, reducción de costos, mejor atención, etc.)?"
+                      value={answers.expectedOutcome}
+                      onChange={(v) => updateField("expectedOutcome", v)}
+                      placeholder="Ej. Atender en menos de 1 minuto 24/7, calificar prospectos y liberar 60% del tiempo operativo..."
+                    />
+                    <FieldTextarea
+                      label="¿Existen iniciativas o herramientas de IA previas en la empresa?"
+                      value={answers.previousAiInitiatives}
+                      onChange={(v) => updateField("previousAiInitiatives", v)}
+                      placeholder="Ej. Usamos ChatGPT de forma individual, o tuvimos un chatbot básico de botones..."
                     />
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Section 4 */}
-              {activeSection === 4 && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] transition-colors space-y-2.5">
-                    <label className="block text-xs font-bold text-slate-100">
-                      ¿Quiénes usarán el agente? (Selecciona todos los que apliquen)
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {TARGET_USER_OPTIONS.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => toggleArrayOption("targetUsers", opt)}
-                          className={clsx(
-                            "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
-                            toStringArray(answers.targetUsers).includes(opt)
-                              ? "bg-[#1464B8] border-[#66B2FF] text-white shadow-xs"
-                              : "bg-[#071B36] border-[#25528C] text-slate-200 hover:border-[#5FD9E4]"
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <FieldInput
-                    label="Número aproximado de usuarios"
-                    value={answers.approxUserCount}
-                    onChange={(v) => updateField("approxUserCount", v)}
-                    placeholder="Ej. 15 usuarios internos / ~500 clientes al mes"
-                  />
-                  <FieldInput
-                    label="Volumen esperado de interacciones por día / semana"
-                    value={answers.interactionVolume}
-                    onChange={(v) => updateField("interactionVolume", v)}
-                    placeholder="Ej. 80 conversaciones diarias / 500 por semana"
-                  />
-                  <FieldInput
-                    label="Horarios de operación (24/7, horario laboral, etc.)"
-                    value={answers.operatingHours}
-                    onChange={(v) => updateField("operatingHours", v)}
-                    placeholder="Ej. 24/7 todo el año"
-                  />
-                </div>
-              )}
-
-              {/* Section 5 */}
-              {activeSection === 5 && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] transition-colors space-y-2.5">
-                    <label className="block text-xs font-bold text-slate-100">
-                      ¿Por dónde debe operar? (Canales)
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {CHANNEL_OPTIONS.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => toggleArrayOption("channels", opt)}
-                          className={clsx(
-                            "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
-                            toStringArray(answers.channels).includes(opt)
-                              ? "bg-[#1464B8] border-[#66B2FF] text-white shadow-xs"
-                              : "bg-[#071B36] border-[#25528C] text-slate-200 hover:border-[#5FD9E4]"
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <FieldTextarea
-                    label="¿Con qué sistemas debe integrarse? (CRM, ERP, calendario, bases de datos, WhatsApp Business API, etc.)"
-                    value={answers.systemsToIntegrate}
-                    onChange={(v) => updateField("systemsToIntegrate", v)}
-                    placeholder="Ej. HubSpot CRM, SAP / Odoo, Google Calendar, WhatsApp Business API..."
-                  />
-                  <FieldTextarea
-                    label="¿Existen APIs o acceso técnico disponible a esos sistemas?"
-                    value={answers.apiAvailability}
-                    onChange={(v) => updateField("apiAvailability", v)}
-                    placeholder="Ej. Sí contamos con API REST y equipo técnico / No estamos seguros, lo confirmará TI..."
-                  />
-                </div>
-              )}
-
-              {/* Section 6 */}
-              {activeSection === 6 && (
-                <div className="space-y-4">
-                  <FieldTextarea
-                    label="¿Qué información / documentos usará el agente como base de conocimiento?"
-                    value={answers.knowledgeBaseDocs}
-                    onChange={(v) => updateField("knowledgeBaseDocs", v)}
-                    placeholder="Ej. Catálogo de productos y precios, políticas de garantía, preguntas frecuentes, manuales operativos..."
-                  />
-                  <FieldTextarea
-                    label="¿Dónde están alojados esos datos y en qué formato?"
-                    value={answers.dataHostingAndFormat}
-                    onChange={(v) => updateField("dataHostingAndFormat", v)}
-                    placeholder="Ej. Google Drive (PDFs y Google Sheets), Notion, base SQL en AWS..."
-                  />
-                  <FieldInput
-                    label="¿Quién es el responsable de mantenerlos actualizados?"
-                    value={answers.maintenanceOwner}
-                    onChange={(v) => updateField("maintenanceOwner", v)}
-                    placeholder="Ej. Gerencia Comercial / Área de Operaciones"
-                  />
-                </div>
-              )}
-
-              {/* Section 7 */}
-              {activeSection === 7 && (
-                <div className="space-y-4">
-                  <FieldTextarea
-                    label="¿Qué datos se consideran sensibles o confidenciales?"
-                    value={answers.sensitiveData}
-                    onChange={(v) => updateField("sensitiveData", v)}
-                    placeholder="Ej. Datos fiscales, estados de cuenta, expedientes clínicos o precios mayoristas..."
-                  />
-                  <FieldTextarea
-                    label="¿Existen políticas internas, normativas o regulaciones a cumplir (ej. Ley Federal de Protección de Datos)?"
-                    value={answers.compliancePolicies}
-                    onChange={(v) => updateField("compliancePolicies", v)}
-                    placeholder="Ej. LFPDPPP en México, NDA corporativo, aviso de privacidad..."
-                  />
-                  <FieldInput
-                    label="¿Requieren que los datos no salgan de cierta infraestructura o región?"
-                    value={answers.dataResidency}
-                    onChange={(v) => updateField("dataResidency", v)}
-                    placeholder="Ej. Nube privada en EE.UU./México o sin restricción mientras esté cifrado"
-                  />
-                </div>
-              )}
-
-              {/* Section 8 */}
-              {activeSection === 8 && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2.5">
-                    <label className="block text-xs font-bold text-slate-100">
-                      Presupuesto aproximado destinado al proyecto
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {BUDGET_RANGE_OPTIONS.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => updateField("estimatedBudget", opt)}
-                          className={clsx(
-                            "px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
-                            answers.estimatedBudget === opt
-                              ? "bg-[#00A9B7] border-[#7CE8F0] text-white shadow-xs"
-                              : "bg-[#071B36] border-[#25528C] text-slate-200 hover:border-[#5FD9E4]"
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      type="text"
-                      value={answers.estimatedBudget}
-                      onChange={(e) => updateField("estimatedBudget", e.target.value)}
-                      placeholder="O escribe aquí tu presupuesto estimado o esquema deseado..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
+                {/* Section 2 */}
+                {activeSection === 2 && (
+                  <div className="space-y-4">
+                    <FieldTextarea
+                      label="Descripción del puesto o proceso que hoy realiza una persona (o que se desea crear)"
+                      value={answers.roleOrProcessDescription}
+                      onChange={(v) => updateField("roleOrProcessDescription", v)}
+                      placeholder="Ej. Ejecutivo de atención a clientes / Coordinador de agendamiento y cotizaciones..."
+                    />
+                    <FieldTextarea
+                      label="Tareas diarias, semanales y mensuales que realiza esa persona"
+                      value={answers.periodicTasks}
+                      onChange={(v) => updateField("periodicTasks", v)}
+                      placeholder="Diarias: responder dudas, cotizar, agendar. Semanales: reporte de seguimiento..."
+                    />
+                    <FieldInput
+                      label="¿Qué porcentaje de esas tareas cree que puede manejar el agente?"
+                      value={answers.automationPercentage}
+                      onChange={(v) => updateField("automationPercentage", v)}
+                      placeholder="Ej. 70% - 80%"
+                    />
+                    <FieldTextarea
+                      label="¿Qué pasa hoy cuando esa persona no está disponible?"
+                      value={answers.unavailabilityImpact}
+                      onChange={(v) => updateField("unavailabilityImpact", v)}
+                      placeholder="Ej. Se acumulan los mensajes hasta el día siguiente o nadie da seguimiento en fin de semana..."
                     />
                   </div>
-                  <FieldInput
-                    label="Fecha ideal de puesta en marcha"
-                    value={answers.idealLaunchDate}
-                    onChange={(v) => updateField("idealLaunchDate", v)}
-                    placeholder="Ej. En 4 semanas / Próximo trimestre"
-                  />
-                  <FieldInput
-                    label="Idioma(s) de operación"
-                    value={answers.operatingLanguages}
-                    onChange={(v) => updateField("operatingLanguages", v)}
-                    placeholder="Ej. Español e Inglés"
-                  />
-                  <FieldInput
-                    label="¿Quién aprobará el diseño y quién será el usuario clave (sponsor)?"
-                    value={answers.approverAndSponsor}
-                    onChange={(v) => updateField("approverAndSponsor", v)}
-                    placeholder="Ej. Aprueba Dirección General / Sponsor: Director de Operaciones"
-                  />
-                </div>
-              )}
+                )}
 
-              {/* Section 9 */}
-              {activeSection === 9 && (
-                <div className="space-y-4">
-                  <FieldTextarea
-                    label="¿Cómo medirán que el agente funciona bien? (KPIs)"
-                    value={answers.kpis}
-                    onChange={(v) => updateField("kpis", v)}
-                    placeholder="Ej. Tiempo de respuesta < 30 seg, % de casos resueltos sin humano, citas agendadas, ahorro de horas..."
-                  />
-                  <FieldTextarea
-                    label="¿Qué resultado justificaría considerar el proyecto un éxito a 3 y 6 meses?"
-                    value={answers.successAt3And6Months}
-                    onChange={(v) => updateField("successAt3And6Months", v)}
-                    placeholder="Ej. A 3 meses automatizar 60% de atención inicial; a 6 meses incrementar conversión 25%..."
-                  />
-                </div>
-              )}
+                {/* Section 3 */}
+                {activeSection === 3 && (
+                  <div className="space-y-4">
+                    <FieldTextarea
+                      label="Liste las funciones específicas que debe ejecutar el agente"
+                      value={answers.specificFunctions}
+                      onChange={(v) => updateField("specificFunctions", v)}
+                      placeholder="Ej. Responder correos/WhatsApp, consultar inventario, agendar citas, generar pre-cotizaciones, clasificar tickets..."
+                    />
+                    <FieldTextarea
+                      label="¿Qué tareas quedan explícitamente fuera del alcance del agente?"
+                      value={answers.outOfScopeTasks}
+                      onChange={(v) => updateField("outOfScopeTasks", v)}
+                      placeholder="Ej. Autorizar descuentos especiales, cancelar facturas o negociar contratos especiales..."
+                    />
+                    <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] focus-within:border-[#1464B8] transition-colors space-y-2.5">
+                      <label className="block text-xs font-bold text-[#102B4B]">
+                        ¿El agente debe tomar decisiones autónomas o siempre escalar a un humano?
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {AUTONOMY_OPTIONS.map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => updateField("autonomyLevel", opt)}
+                            className={clsx(
+                              "px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-left cursor-pointer",
+                              answers.autonomyLevel === opt
+                                ? "bg-[#1464B8] border-[#1464B8] text-white shadow-xs"
+                                : "bg-white border-[#C5D7EA] text-[#355070] hover:border-[#1464B8]"
+                            )}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        value={answers.autonomyLevel}
+                        onChange={(e) => updateField("autonomyLevel", e.target.value)}
+                        placeholder="O detalla aquí las reglas de autonomía y escalamiento..."
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-sm text-[#102B4B] placeholder:text-[#7D96B3] focus:border-[#1464B8] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
 
-              {/* Section 10: Observations, Full Executive Summary Review, Optional Attachments & Final Submit */}
-              {activeSection === 10 && (
-                <div className="space-y-5">
-                  {/* Closing Guidance Banner */}
-                  <div className="p-4 rounded-2xl bg-[#00A9B7]/16 border border-[#00A9B7]/55 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="text-xs font-extrabold text-[#7CE8F0] flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                        <span>
-                          {voiceCompletedBanner
-                            ? "Entrevista por voz finalizada — Revisa tu resumen y observaciones"
-                            : "Etapa Final: Observaciones, Resumen de Respuestas y Envío"}
+                {/* Section 4 */}
+                {activeSection === 4 && (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] transition-colors space-y-2.5">
+                      <label className="block text-xs font-bold text-[#102B4B]">
+                        ¿Quiénes usarán el agente? (Selecciona todos los que apliquen)
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {TARGET_USER_OPTIONS.map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => toggleArrayOption("targetUsers", opt)}
+                            className={clsx(
+                              "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
+                              toStringArray(answers.targetUsers).includes(opt)
+                                ? "bg-[#1464B8] border-[#1464B8] text-white shadow-xs"
+                                : "bg-white border-[#C5D7EA] text-[#355070] hover:border-[#1464B8]"
+                            )}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <FieldInput
+                      label="Número aproximado de usuarios"
+                      value={answers.approxUserCount}
+                      onChange={(v) => updateField("approxUserCount", v)}
+                      placeholder="Ej. 15 usuarios internos / ~500 clientes al mes"
+                    />
+                    <FieldInput
+                      label="Volumen esperado de interacciones por día / semana"
+                      value={answers.interactionVolume}
+                      onChange={(v) => updateField("interactionVolume", v)}
+                      placeholder="Ej. 80 conversaciones diarias / 500 por semana"
+                    />
+                    <FieldInput
+                      label="Horarios de operación (24/7, horario laboral, etc.)"
+                      value={answers.operatingHours}
+                      onChange={(v) => updateField("operatingHours", v)}
+                      placeholder="Ej. 24/7 todo el año"
+                    />
+                  </div>
+                )}
+
+                {/* Section 5 */}
+                {activeSection === 5 && (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] transition-colors space-y-2.5">
+                      <label className="block text-xs font-bold text-[#102B4B]">
+                        ¿Por dónde debe operar? (Canales)
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {CHANNEL_OPTIONS.map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => toggleArrayOption("channels", opt)}
+                            className={clsx(
+                              "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
+                              toStringArray(answers.channels).includes(opt)
+                                ? "bg-[#1464B8] border-[#1464B8] text-white shadow-xs"
+                                : "bg-white border-[#C5D7EA] text-[#355070] hover:border-[#1464B8]"
+                            )}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <FieldTextarea
+                      label="¿Con qué sistemas debe integrarse? (CRM, ERP, calendario, bases de datos, WhatsApp Business API, etc.)"
+                      value={answers.systemsToIntegrate}
+                      onChange={(v) => updateField("systemsToIntegrate", v)}
+                      placeholder="Ej. HubSpot CRM, SAP / Odoo, Google Calendar, WhatsApp Business API..."
+                    />
+                    <FieldTextarea
+                      label="¿Existen APIs o acceso técnico disponible a esos sistemas?"
+                      value={answers.apiAvailability}
+                      onChange={(v) => updateField("apiAvailability", v)}
+                      placeholder="Ej. Sí contamos con API REST y equipo técnico / No estamos seguros, lo confirmará TI..."
+                    />
+                  </div>
+                )}
+
+                {/* Section 6 */}
+                {activeSection === 6 && (
+                  <div className="space-y-4">
+                    <FieldTextarea
+                      label="¿Qué información / documentos usará el agente como base de conocimiento?"
+                      value={answers.knowledgeBaseDocs}
+                      onChange={(v) => updateField("knowledgeBaseDocs", v)}
+                      placeholder="Ej. Catálogo de productos y precios, políticas de garantía, preguntas frecuentes, manuales operativos..."
+                    />
+                    <FieldTextarea
+                      label="¿Dónde están alojados esos datos y en qué formato?"
+                      value={answers.dataHostingAndFormat}
+                      onChange={(v) => updateField("dataHostingAndFormat", v)}
+                      placeholder="Ej. Google Drive (PDFs y Google Sheets), Notion, base SQL en AWS..."
+                    />
+                    <FieldInput
+                      label="¿Quién es el responsable de mantenerlos actualizados?"
+                      value={answers.maintenanceOwner}
+                      onChange={(v) => updateField("maintenanceOwner", v)}
+                      placeholder="Ej. Gerencia Comercial / Área de Operaciones"
+                    />
+                  </div>
+                )}
+
+                {/* Section 7 */}
+                {activeSection === 7 && (
+                  <div className="space-y-4">
+                    <FieldTextarea
+                      label="¿Qué datos se consideran sensibles o confidenciales?"
+                      value={answers.sensitiveData}
+                      onChange={(v) => updateField("sensitiveData", v)}
+                      placeholder="Ej. Datos fiscales, estados de cuenta, expedientes clínicos o precios mayoristas..."
+                    />
+                    <FieldTextarea
+                      label="¿Existen políticas internas, normativas o regulaciones a cumplir (ej. Ley Federal de Protección de Datos)?"
+                      value={answers.compliancePolicies}
+                      onChange={(v) => updateField("compliancePolicies", v)}
+                      placeholder="Ej. LFPDPPP en México, NDA corporativo, aviso de privacidad..."
+                    />
+                    <FieldInput
+                      label="¿Requieren que los datos no salgan de cierta infraestructura o región?"
+                      value={answers.dataResidency}
+                      onChange={(v) => updateField("dataResidency", v)}
+                      placeholder="Ej. Nube privada en EE.UU./México o sin restricción mientras esté cifrado"
+                    />
+                  </div>
+                )}
+
+                {/* Section 8 */}
+                {activeSection === 8 && (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] focus-within:border-[#1464B8] transition-colors space-y-2.5">
+                      <label className="block text-xs font-bold text-[#102B4B]">
+                        Presupuesto aproximado destinado al proyecto
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {BUDGET_RANGE_OPTIONS.map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => updateField("estimatedBudget", opt)}
+                            className={clsx(
+                              "px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
+                              answers.estimatedBudget === opt
+                                ? "bg-[#00A9B7] border-[#00A9B7] text-white shadow-xs"
+                                : "bg-white border-[#C5D7EA] text-[#355070] hover:border-[#00A9B7]"
+                            )}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        value={answers.estimatedBudget}
+                        onChange={(e) => updateField("estimatedBudget", e.target.value)}
+                        placeholder="O escribe aquí tu presupuesto estimado o esquema deseado..."
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-sm text-[#102B4B] placeholder:text-[#7D96B3] focus:border-[#1464B8] focus:outline-none"
+                      />
+                    </div>
+                    <FieldInput
+                      label="Fecha ideal de puesta en marcha"
+                      value={answers.idealLaunchDate}
+                      onChange={(v) => updateField("idealLaunchDate", v)}
+                      placeholder="Ej. En 4 semanas / Próximo trimestre"
+                    />
+                    <FieldInput
+                      label="Idioma(s) de operación"
+                      value={answers.operatingLanguages}
+                      onChange={(v) => updateField("operatingLanguages", v)}
+                      placeholder="Ej. Español e Inglés"
+                    />
+                    <FieldInput
+                      label="¿Quién aprobará el diseño y quién será el usuario clave (sponsor)?"
+                      value={answers.approverAndSponsor}
+                      onChange={(v) => updateField("approverAndSponsor", v)}
+                      placeholder="Ej. Aprueba Dirección General / Sponsor: Director de Operaciones"
+                    />
+                  </div>
+                )}
+
+                {/* Section 9 */}
+                {activeSection === 9 && (
+                  <div className="space-y-4">
+                    <FieldTextarea
+                      label="¿Cómo medirán que el agente funciona bien? (KPIs)"
+                      value={answers.kpis}
+                      onChange={(v) => updateField("kpis", v)}
+                      placeholder="Ej. Tiempo de respuesta < 30 seg, % de casos resueltos sin humano, citas agendadas, ahorro de horas..."
+                    />
+                    <FieldTextarea
+                      label="¿Qué resultado justificaría considerar el proyecto un éxito a 3 y 6 meses?"
+                      value={answers.successAt3And6Months}
+                      onChange={(v) => updateField("successAt3And6Months", v)}
+                      placeholder="Ej. A 3 meses automatizar 60% de atención inicial; a 6 meses incrementar conversión 25%..."
+                    />
+                  </div>
+                )}
+
+                {/* Section 10: Observations, Full Executive Summary Review, Optional Attachments & Final Submit */}
+                {activeSection === 10 && (
+                  <div className="space-y-5">
+                    {/* Closing Guidance Banner */}
+                    <div className="p-4 rounded-2xl bg-[#ECFAFB] border border-[#9FE0E8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="text-xs font-extrabold text-[#007B87] flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[#00A9B7]" />
+                          <span>
+                            {voiceCompletedBanner
+                              ? "Entrevista por voz finalizada — Revisa tu resumen y observaciones"
+                              : "Etapa Final: Observaciones, Resumen de Respuestas y Envío"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#355070] leading-relaxed">
+                          Verifica tus observaciones adicionales y el resumen de tus respuestas antes de presionar{" "}
+                          <strong className="text-[#102B4B]">Enviar RFI</strong>. La carga de archivos al final es totalmente opcional.
+                        </p>
+                      </div>
+                      {briefingId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveMode("voice");
+                            startVoiceSession(briefingId, answersRef.current);
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-[#071B36] hover:bg-[#1464B8] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 flex-shrink-0 transition-all cursor-pointer"
+                        >
+                          <Mic className="w-3.5 h-3.5 text-[#7CE8F0]" />
+                          <span>Dictar algo más con Nexia IA</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 1. Dedicated Observations & Extra Comments Box FIRST */}
+                    <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] focus-within:border-[#1464B8] transition-colors space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="block text-xs font-extrabold text-[#102B4B]">
+                          1. Observaciones o comentarios adicionales
+                        </label>
+                        <span className="text-[10px] font-semibold text-[#1464B8]">
+                          Puedes escribir o complementar cualquier comentario final aquí
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-200 leading-relaxed">
-                        Verifica tus observaciones adicionales y el resumen de tus respuestas antes de presionar{" "}
-                        <strong className="text-white">Enviar RFI</strong>. La carga de archivos al final es totalmente opcional.
-                      </p>
+                      <textarea
+                        rows={4}
+                        value={answers.additionalComments}
+                        onChange={(e) => updateField("additionalComments", e.target.value)}
+                        placeholder="Agrega aquí cualquier observación extra, contexto especial, dudas o detalles adicionales que quieras considerar en tu propuesta (o déjalo en blanco si no requieres agregar nada más)..."
+                        className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-sm text-[#102B4B] placeholder:text-[#7D96B3] focus:border-[#1464B8] focus:outline-none resize-y"
+                      />
                     </div>
-                    {briefingId && (
+
+                    {/* 2. Readable Executive Summary of All Stages (1 to 9) */}
+                    <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D5E3F2] pb-2.5">
+                        <div>
+                          <h3 className="text-xs font-extrabold text-[#102B4B]">
+                            2. Resumen de tus respuestas registradas (Etapas 1 a 9)
+                          </h3>
+                          <p className="text-[11px] text-[#476282]">
+                            Revisa la información capturada; si deseas ajustar algún punto, toca <strong>Editar</strong> en esa etapa.
+                          </p>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg bg-white border border-[#C2D6EB] text-[11px] font-bold text-[#1464B8]">
+                          {completedSectionsCount}/10 etapas listas
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
+                        {[
+                          {
+                            sec: 1,
+                            title: "1. Contexto y Objetivo",
+                            items: [
+                              ["Problema", answers.businessProblem],
+                              ["Resultado esperado", answers.expectedOutcome],
+                              ["IA previa", answers.previousAiInitiatives],
+                            ],
+                          },
+                          {
+                            sec: 2,
+                            title: "2. Puesto / Proceso",
+                            items: [
+                              ["Proceso actual", answers.roleOrProcessDescription],
+                              ["Tareas frecuentes", answers.periodicTasks],
+                              ["% Automatizable", answers.automationPercentage],
+                            ],
+                          },
+                          {
+                            sec: 3,
+                            title: "3. Funciones y Alcance",
+                            items: [
+                              ["Funciones", answers.specificFunctions],
+                              ["Fuera de alcance", answers.outOfScopeTasks],
+                              ["Autonomía", answers.autonomyLevel],
+                            ],
+                          },
+                          {
+                            sec: 4,
+                            title: "4. Usuarios y Volumen",
+                            items: [
+                              ["Usuarios", toStringArray(answers.targetUsers).join(", ")],
+                              ["Volumen", answers.interactionVolume || answers.approxUserCount],
+                              ["Horario", answers.operatingHours],
+                            ],
+                          },
+                          {
+                            sec: 5,
+                            title: "5. Canales y Sistemas",
+                            items: [
+                              ["Canales", toStringArray(answers.channels).join(", ")],
+                              ["Sistemas", answers.systemsToIntegrate],
+                              ["APIs", answers.apiAvailability],
+                            ],
+                          },
+                          {
+                            sec: 6,
+                            title: "6. Datos y Conocimiento",
+                            items: [
+                              ["Documentos base", answers.knowledgeBaseDocs],
+                              ["Alojamiento", answers.dataHostingAndFormat],
+                              ["Responsable", answers.maintenanceOwner],
+                            ],
+                          },
+                          {
+                            sec: 7,
+                            title: "7. Seguridad y Privacidad",
+                            items: [
+                              ["Datos sensibles", answers.sensitiveData],
+                              ["Normativas", answers.compliancePolicies],
+                              ["Región / Nube", answers.dataResidency],
+                            ],
+                          },
+                          {
+                            sec: 8,
+                            title: "8. Presupuesto y Tiempos",
+                            items: [
+                              ["Presupuesto", answers.estimatedBudget],
+                              ["Lanzamiento ideal", answers.idealLaunchDate],
+                              ["Aprueba / Idiomas", [answers.approverAndSponsor, answers.operatingLanguages].filter(Boolean).join(" • ")],
+                            ],
+                          },
+                          {
+                            sec: 9,
+                            title: "9. Métricas de Éxito",
+                            items: [
+                              ["KPIs", answers.kpis],
+                              ["Éxito 3 y 6 meses", answers.successAt3And6Months],
+                            ],
+                          },
+                        ].map((card) => {
+                          const isDone = isSectionFilled(answers, card.sec);
+                          const isPend = toNumberArray(answers.pendingSections).includes(card.sec);
+                          const populated = card.items
+                            .map(([lbl, val]) => [lbl, safeStr(val).trim()] as [string, string])
+                            .filter(([, val]) => val.length > 0);
+                          return (
+                            <div
+                              key={card.sec}
+                              className="p-3 rounded-xl bg-white border border-[#CEDFEF] flex flex-col justify-between space-y-2"
+                            >
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[11px] font-extrabold text-[#102B4B] flex items-center gap-1.5">
+                                    {isDone ? (
+                                      <Check className="w-3.5 h-3.5 text-[#00A9B7] flex-shrink-0" />
+                                    ) : (
+                                      <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                                    )}
+                                    {card.title}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveSection(card.sec)}
+                                    className="text-[10px] font-bold text-[#1464B8] hover:text-[#102B4B] underline flex-shrink-0 cursor-pointer"
+                                  >
+                                    Editar
+                                  </button>
+                                </div>
+
+                                {populated.length > 0 ? (
+                                  <div className="space-y-1 text-[11px] text-[#3E5878]">
+                                    {populated.map(([lbl, val], i) => (
+                                      <div key={i} className="line-clamp-2 leading-snug">
+                                        <strong className="text-[#102B4B]">{lbl}:</strong> {val}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-[11px] italic text-amber-700">
+                                    {isPend ? "Marcado pendiente para TI" : "Sin respuesta registrada aún"}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 3. Optional Attachments LAST */}
+                    <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="block text-xs font-bold text-[#102B4B]">
+                          3. Documentos adjuntos (Opcional)
+                        </label>
+                        <span className="text-[10px] font-semibold text-[#476282]">
+                          Solo si deseas anexar manuales, diagramas o ejemplos
+                        </span>
+                      </div>
+                      <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#00A9B7]/60 hover:border-[#1464B8] rounded-2xl p-4 bg-white hover:bg-[#F2F8FE] cursor-pointer transition-all text-center">
+                        {uploadingFiles ? (
+                          <Loader2 className="w-6 h-6 text-[#00A9B7] animate-spin mb-1.5" />
+                        ) : (
+                          <Upload className="w-6 h-6 text-[#1464B8] mb-1.5" />
+                        )}
+                        <span className="text-xs font-bold text-[#102B4B]">
+                          {uploadingFiles
+                            ? "Subiendo documentos..."
+                            : "Adjuntar PDFs, Word, Excel o imágenes (opcional, máx. 15 MB)"}
+                        </span>
+                        <input
+                          type="file"
+                          multiple
+                          onChange={handleFileUpload}
+                          disabled={uploadingFiles}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {toAttachmentArray(answers.attachments).length > 0 && (
+                        <div className="space-y-2 pt-2">
+                          {toAttachmentArray(answers.attachments).map((att, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-xs"
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <FileText className="w-4 h-4 text-[#1464B8] flex-shrink-0" />
+                                <a
+                                  href={att.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[#102B4B] font-semibold hover:text-[#1464B8] hover:underline truncate"
+                                >
+                                  {att.name}
+                                </a>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAttachment(idx)}
+                                className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Wizard Navigation Footer */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-5 border-t border-[#DCE7F3]">
+                  <button
+                    type="button"
+                    disabled={activeSection === 1}
+                    onClick={() => handleSaveManualStep(Math.max(1, activeSection - 1))}
+                    className="px-3.5 py-2 rounded-xl bg-[#F4F8FD] hover:bg-[#E7F0FA] border border-[#C5D7EA] disabled:opacity-40 text-xs font-bold text-[#102B4B] flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Anterior</span>
+                  </button>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveManualStep()}
+                      className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F0F6FD] border border-[#C5D7EA] text-xs font-bold text-[#355070] cursor-pointer"
+                    >
+                      Guardar avance
+                    </button>
+
+                    {activeSection < 10 ? (
                       <button
                         type="button"
-                        onClick={() => {
-                          setActiveMode("voice");
-                          startVoiceSession(briefingId, answersRef.current);
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 flex-shrink-0 transition-all cursor-pointer"
+                        onClick={() => handleSaveManualStep(activeSection + 1)}
+                        className="px-4 py-2 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-xs font-bold text-white flex items-center gap-1.5 shadow-md shadow-[#1464B8]/20 cursor-pointer"
                       >
-                        <Mic className="w-3.5 h-3.5 text-[#7CE8F0]" />
-                        <span>Dictar algo más con Nexia IA</span>
+                        <span>Siguiente</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={submittingFinal}
+                        onClick={handleFinalSubmit}
+                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-xs font-bold text-white flex items-center gap-1.5 shadow-md shadow-[#00A9B7]/25 transition-all active:scale-95 cursor-pointer"
+                      >
+                        {submittingFinal ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>Enviar RFI</span>
                       </button>
                     )}
                   </div>
-
-                  {/* 1. Dedicated Observations & Extra Comments Box FIRST */}
-                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="block text-xs font-extrabold text-white">
-                        1. Observaciones o comentarios adicionales
-                      </label>
-                      <span className="text-[10px] font-semibold text-[#8CC5FF]">
-                        Puedes escribir o complementar cualquier comentario final aquí
-                      </span>
-                    </div>
-                    <textarea
-                      rows={4}
-                      value={answers.additionalComments}
-                      onChange={(e) => updateField("additionalComments", e.target.value)}
-                      placeholder="Agrega aquí cualquier observación extra, contexto especial, dudas o detalles adicionales que quieras considerar en tu propuesta (o déjalo en blanco si no requieres agregar nada más)..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none resize-y"
-                    />
-                  </div>
-
-                  {/* 2. Readable Executive Summary of All Stages (1 to 9) */}
-                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/12 pb-2.5">
-                      <div>
-                        <h3 className="text-xs font-extrabold text-white">
-                          2. Resumen de tus respuestas registradas (Etapas 1 a 9)
-                        </h3>
-                        <p className="text-[11px] text-slate-300">
-                          Revisa la información capturada; si deseas ajustar algún punto, toca <strong>Editar</strong> en esa etapa.
-                        </p>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-[#1464B8]/25 border border-[#66B2FF]/45 text-[11px] font-bold text-[#8CC5FF]">
-                        {completedSectionsCount}/10 etapas listas
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
-                      {[
-                        {
-                          sec: 1,
-                          title: "1. Contexto y Objetivo",
-                          items: [
-                            ["Problema", answers.businessProblem],
-                            ["Resultado esperado", answers.expectedOutcome],
-                            ["IA previa", answers.previousAiInitiatives],
-                          ],
-                        },
-                        {
-                          sec: 2,
-                          title: "2. Puesto / Proceso",
-                          items: [
-                            ["Proceso actual", answers.roleOrProcessDescription],
-                            ["Tareas frecuentes", answers.periodicTasks],
-                            ["% Automatizable", answers.automationPercentage],
-                          ],
-                        },
-                        {
-                          sec: 3,
-                          title: "3. Funciones y Alcance",
-                          items: [
-                            ["Funciones", answers.specificFunctions],
-                            ["Fuera de alcance", answers.outOfScopeTasks],
-                            ["Autonomía", answers.autonomyLevel],
-                          ],
-                        },
-                        {
-                          sec: 4,
-                          title: "4. Usuarios y Volumen",
-                          items: [
-                            ["Usuarios", toStringArray(answers.targetUsers).join(", ")],
-                            ["Volumen", answers.interactionVolume || answers.approxUserCount],
-                            ["Horario", answers.operatingHours],
-                          ],
-                        },
-                        {
-                          sec: 5,
-                          title: "5. Canales y Sistemas",
-                          items: [
-                            ["Canales", toStringArray(answers.channels).join(", ")],
-                            ["Sistemas", answers.systemsToIntegrate],
-                            ["APIs", answers.apiAvailability],
-                          ],
-                        },
-                        {
-                          sec: 6,
-                          title: "6. Datos y Conocimiento",
-                          items: [
-                            ["Documentos base", answers.knowledgeBaseDocs],
-                            ["Alojamiento", answers.dataHostingAndFormat],
-                            ["Responsable", answers.maintenanceOwner],
-                          ],
-                        },
-                        {
-                          sec: 7,
-                          title: "7. Seguridad y Privacidad",
-                          items: [
-                            ["Datos sensibles", answers.sensitiveData],
-                            ["Normativas", answers.compliancePolicies],
-                            ["Región / Nube", answers.dataResidency],
-                          ],
-                        },
-                        {
-                          sec: 8,
-                          title: "8. Presupuesto y Tiempos",
-                          items: [
-                            ["Presupuesto", answers.estimatedBudget],
-                            ["Lanzamiento ideal", answers.idealLaunchDate],
-                            ["Aprueba / Idiomas", [answers.approverAndSponsor, answers.operatingLanguages].filter(Boolean).join(" • ")],
-                          ],
-                        },
-                        {
-                          sec: 9,
-                          title: "9. Métricas de Éxito",
-                          items: [
-                            ["KPIs", answers.kpis],
-                            ["Éxito 3 y 6 meses", answers.successAt3And6Months],
-                          ],
-                        },
-                      ].map((card) => {
-                        const isDone = isSectionFilled(answers, card.sec);
-                        const isPend = toNumberArray(answers.pendingSections).includes(card.sec);
-                        const populated = card.items
-                          .map(([lbl, val]) => [lbl, safeStr(val).trim()] as [string, string])
-                          .filter(([, val]) => val.length > 0);
-                        return (
-                          <div
-                            key={card.sec}
-                            className="p-3 rounded-xl bg-[#071B36] border border-[#244E85] flex flex-col justify-between space-y-2"
-                          >
-                            <div className="space-y-1.5">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[11px] font-extrabold text-white flex items-center gap-1.5">
-                                  {isDone ? (
-                                    <Check className="w-3.5 h-3.5 text-[#5FD9E4] flex-shrink-0" />
-                                  ) : (
-                                    <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
-                                  )}
-                                  {card.title}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveSection(card.sec)}
-                                  className="text-[10px] font-bold text-[#66B2FF] hover:text-white underline flex-shrink-0 cursor-pointer"
-                                >
-                                  Editar
-                                </button>
-                              </div>
-
-                              {populated.length > 0 ? (
-                                <div className="space-y-1 text-[11px] text-slate-300">
-                                  {populated.map(([lbl, val], i) => (
-                                    <div key={i} className="line-clamp-2 leading-snug">
-                                      <strong className="text-slate-100">{lbl}:</strong> {val}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="text-[11px] italic text-amber-300">
-                                  {isPend ? "Marcado pendiente para TI" : "Sin respuesta registrada aún"}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* 3. Optional Attachments LAST */}
-                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="block text-xs font-bold text-white">
-                        3. Documentos adjuntos (Opcional)
-                      </label>
-                      <span className="text-[10px] font-semibold text-slate-300">
-                        Solo si deseas anexar manuales, diagramas o ejemplos
-                      </span>
-                    </div>
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#00A9B7]/60 hover:border-[#5FD9E4] rounded-2xl p-4 bg-[#071B36]/80 hover:bg-[#092347] cursor-pointer transition-all text-center">
-                      {uploadingFiles ? (
-                        <Loader2 className="w-6 h-6 text-[#5FD9E4] animate-spin mb-1.5" />
-                      ) : (
-                        <Upload className="w-6 h-6 text-[#5FD9E4] mb-1.5" />
-                      )}
-                      <span className="text-xs font-bold text-white">
-                        {uploadingFiles
-                          ? "Subiendo documentos..."
-                          : "Adjuntar PDFs, Word, Excel o imágenes (opcional, máx. 15 MB)"}
-                      </span>
-                      <input
-                        type="file"
-                        multiple
-                        onChange={handleFileUpload}
-                        disabled={uploadingFiles}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {toAttachmentArray(answers.attachments).length > 0 && (
-                      <div className="space-y-2 pt-2">
-                        {toAttachmentArray(answers.attachments).map((att, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-xs"
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <FileText className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
-                              <a
-                                href={att.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-white font-semibold hover:text-[#7CE8F0] hover:underline truncate"
-                              >
-                                {att.name}
-                              </a>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAttachment(idx)}
-                              className="text-rose-400 hover:text-rose-300 p-1 cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Wizard Navigation Footer */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-5 border-t border-white/12">
-                <button
-                  type="button"
-                  disabled={activeSection === 1}
-                  onClick={() => handleSaveManualStep(Math.max(1, activeSection - 1))}
-                  className="px-3.5 py-2 rounded-xl bg-[#071B36] hover:bg-[#10315E] border border-[#26538D] disabled:opacity-40 text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Anterior</span>
-                </button>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveManualStep()}
-                    className="px-3.5 py-2 rounded-xl bg-[#071B36] hover:bg-[#10315E] border border-[#26538D] text-xs font-bold text-slate-200 cursor-pointer"
-                  >
-                    Guardar avance
-                  </button>
-
-                  {activeSection < 10 ? (
-                    <button
-                      type="button"
-                      onClick={() => handleSaveManualStep(activeSection + 1)}
-                      className="px-4 py-2 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-xs font-bold text-white flex items-center gap-1.5 shadow-md shadow-[#1464B8]/25 cursor-pointer"
-                    >
-                      <span>Siguiente</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={submittingFinal}
-                      onClick={handleFinalSubmit}
-                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-xs font-bold text-white flex items-center gap-1.5 shadow-md shadow-[#00A9B7]/25 transition-all active:scale-95 cursor-pointer"
-                    >
-                      {submittingFinal ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      )}
-                      <span>Enviar RFI</span>
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
@@ -3624,14 +3645,14 @@ const FieldInput = ({
   onChange: (v: string) => void;
   placeholder?: string;
 }) => (
-  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2">
-    <label className="block text-xs font-bold text-slate-100">{label}</label>
+  <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] focus-within:border-[#1464B8] transition-colors space-y-2">
+    <label className="block text-xs font-bold text-[#102B4B]">{label}</label>
     <input
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
+      className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-sm text-[#102B4B] placeholder:text-[#7D96B3] focus:border-[#1464B8] focus:outline-none"
     />
   </div>
 );
@@ -3647,14 +3668,14 @@ const FieldTextarea = ({
   onChange: (v: string) => void;
   placeholder?: string;
 }) => (
-  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2">
-    <label className="block text-xs font-bold text-slate-100">{label}</label>
+  <div className="p-4 rounded-2xl bg-[#F4F8FD] border border-[#C6DAEE] focus-within:border-[#1464B8] transition-colors space-y-2">
+    <label className="block text-xs font-bold text-[#102B4B]">{label}</label>
     <textarea
       rows={3}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none resize-y"
+      className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C5D7EA] text-sm text-[#102B4B] placeholder:text-[#7D96B3] focus:border-[#1464B8] focus:outline-none resize-y"
     />
   </div>
 );
@@ -3679,11 +3700,11 @@ class AiBriefingErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#071B36] text-white flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-[#0B2548] border border-[#26538D] rounded-3xl p-7 text-center space-y-4 shadow-2xl">
-            <AlertCircle className="w-10 h-10 text-amber-400 mx-auto" />
-            <h2 className="font-display text-lg font-extrabold text-white">Tu avance está resguardado</h2>
-            <p className="text-xs text-slate-300 leading-relaxed">
+        <div className="min-h-screen bg-[#EEF4FA] text-[#102B4B] flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-white border border-[#C5D7EA] rounded-3xl p-7 text-center space-y-4 shadow-xl">
+            <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+            <h2 className="font-display text-lg font-extrabold text-[#102B4B]">Tu avance está resguardado</h2>
+            <p className="text-xs text-[#425D7D] leading-relaxed">
               Ocurrió un ajuste visual inesperado, pero todas tus respuestas están guardadas de forma segura. Presiona continuar para retomar tu diagnóstico.
             </p>
             <button
