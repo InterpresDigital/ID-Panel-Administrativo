@@ -41,6 +41,15 @@ import {
   Check,
   Pause,
   Play,
+  Cpu,
+  Target,
+  Layers,
+  Users,
+  Database,
+  BarChart3,
+  MessageSquare,
+  Bot,
+  Workflow,
 } from "lucide-react";
 import clsx from "clsx";
 import {
@@ -1346,8 +1355,8 @@ const PublicAiBriefing: React.FC = () => {
 
   if (loadingInit) {
     return (
-      <div className="min-h-screen bg-[#F6F9FC] text-[#102B4B] flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-[#1464B8] animate-spin" />
+      <div className="min-h-screen bg-[#071B36] text-white flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-[#5FD9E4] animate-spin" />
       </div>
     );
   }
@@ -1355,26 +1364,29 @@ const PublicAiBriefing: React.FC = () => {
   // SUBMITTED SCREEN
   if (step === "submitted") {
     return (
-      <div className="min-h-screen bg-[#F6F9FC] text-[#102B4B] flex items-center justify-center p-6">
-        <div className="max-w-xl w-full bg-white border border-[#C7D5E2] rounded-3xl p-8 md:p-10 text-center shadow-[0_24px_60px_-15px_rgba(16,43,75,0.10)] space-y-6">
-          <img src={LOGO_COLOR_URL} alt="Interpres Digital Labs" className="h-14 mx-auto object-contain" />
-          <div className="w-16 h-16 rounded-2xl bg-[#00A9B7]/12 border border-[#00A9B7]/35 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-9 h-9 text-[#00A9B7]" />
+      <div className="min-h-screen bg-gradient-to-b from-[#071B36] via-[#0B264B] to-[#081E3B] text-white flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-28 -right-24 w-80 h-80 rounded-full bg-[#00A9B7]/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 -left-24 w-80 h-80 rounded-full bg-[#1464B8]/25 blur-3xl" />
+
+        <div className="relative z-10 max-w-xl w-full bg-[#0B2548]/95 backdrop-blur-xl border border-[#234E86] rounded-3xl p-8 md:p-10 text-center shadow-[0_30px_80px_-15px_rgba(4,14,30,0.65)] space-y-6">
+          <img src={LOGO_BLANCO_URL} alt="Interpres Digital Labs" className="h-14 mx-auto object-contain" />
+          <div className="w-16 h-16 rounded-2xl bg-[#00A9B7]/20 border border-[#00A9B7]/50 flex items-center justify-center mx-auto shadow-lg shadow-[#00A9B7]/15">
+            <CheckCircle2 className="w-9 h-9 text-[#5FD9E4]" />
           </div>
-          <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-[#102B4B]">
+          <h1 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight text-white">
             ¡RFI Recibido con Éxito!
           </h1>
-          <p className="text-[#102B4B]/75 text-sm leading-relaxed">
-            Gracias, <strong className="text-[#102B4B]">{answers.contactName}</strong>. Nuestro equipo de Arquitectura de IA en{" "}
-            <strong className="text-[#1464B8]">Interpres Digital</strong> ya recibió la especificación de{" "}
-            <strong className="text-[#102B4B]">{answers.companyName}</strong> y preparará tu propuesta técnica y económica a la medida.
+          <p className="text-slate-200 text-sm leading-relaxed">
+            Gracias, <strong className="text-white">{answers.contactName}</strong>. Nuestro equipo de Arquitectura de IA en{" "}
+            <strong className="text-[#5FD9E4]">Interpres Digital Labs</strong> ya recibió la especificación de{" "}
+            <strong className="text-white">{answers.companyName}</strong> y preparará tu propuesta técnica y económica a la medida.
           </p>
           <button
             onClick={() => {
               setStep("workspace");
               setActiveMode("manual");
             }}
-            className="px-6 py-3 rounded-xl bg-[#F6F9FC] hover:bg-[#EBF2F8] border border-[#C7D5E2] text-xs font-bold text-[#102B4B] transition-all"
+            className="px-6 py-3 rounded-xl bg-[#10315E] hover:bg-[#1464B8] border border-[#2A5B98] text-xs font-bold text-white transition-all cursor-pointer"
           >
             Revisar o complementar mis respuestas
           </button>
@@ -1385,9 +1397,9 @@ const PublicAiBriefing: React.FC = () => {
 
   const renderLegalModal = () =>
     showLegalModal ? (
-      <div className="fixed inset-0 z-50 bg-[#071B36]/75 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full bg-white border border-[#C7D5E2] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] text-[#102B4B]">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#C7D5E2]/80 bg-[#071B36] text-white">
+      <div className="fixed inset-0 z-50 bg-[#041022]/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-[#0B2548] border border-[#285691] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] text-white">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#21487A] bg-[#071B36]">
             <div className="flex items-center gap-2.5">
               <ShieldCheck className="w-5 h-5 text-[#5FD9E4]" />
               <h2 className="font-display text-sm md:text-base font-extrabold text-white">
@@ -1403,33 +1415,33 @@ const PublicAiBriefing: React.FC = () => {
             </button>
           </div>
 
-          <div className="p-6 overflow-y-auto space-y-4 text-xs text-[#102B4B]/85 leading-relaxed">
+          <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-200 leading-relaxed">
             <p>
-              En cumplimiento con la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong> y los Términos y Condiciones de{" "}
-              <strong>INTERPRES DIGITAL</strong> (marca comercial y plataforma tecnológica de <strong>INTERPRES S.A. de C.V.</strong>, con domicilio en San Miguel de Allende, Guanajuato, México), se informa lo siguiente respecto al presente Diagnóstico Ejecutivo (RFI):
+              En cumplimiento con la <strong className="text-white">Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong> y los Términos y Condiciones de{" "}
+              <strong className="text-white">INTERPRES DIGITAL</strong> (marca comercial y plataforma tecnológica de <strong className="text-white">INTERPRES S.A. de C.V.</strong>, con domicilio en San Miguel de Allende, Guanajuato, México), se informa lo siguiente respecto al presente Diagnóstico Ejecutivo (RFI):
             </p>
 
-            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-              <h3 className="font-extrabold text-[#008995] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
+              <h3 className="font-extrabold text-[#5FD9E4] uppercase text-[11px] tracking-wider">
                 1. Garantía de Uso Ético de Inteligencia Artificial (No Entrenamiento)
               </h3>
               <p>
                 Este diagnóstico incorpora asistencia conversacional y procesamiento mediante Inteligencia Artificial empresarial exclusivamente para transcribir, estructurar tus requerimientos y apoyar en el pre-diagnóstico técnico.{" "}
-                <strong>Ninguna grabación de voz, respuesta escrita ni documento adjunto se utiliza para entrenar, alimentar o mejorar modelos públicos o de terceros.</strong>
+                <strong className="text-white">Ninguna grabación de voz, respuesta escrita ni documento adjunto se utiliza para entrenar, alimentar o mejorar modelos públicos o de terceros.</strong>
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
+              <h3 className="font-extrabold text-[#66B2FF] uppercase text-[11px] tracking-wider">
                 2. Titularidad de la Información y Confidencialidad (Cláusulas 15 y 47)
               </h3>
               <p>
-                La empresa solicitante conserva en todo momento la titularidad única y exclusiva sobre su información operativa, comercial, flujos de trabajo y documentos adjuntos. <strong>INTERPRES S.A. de C.V.</strong> resguarda dicha información bajo estricta confidencialidad y no vende ni comercializa datos personales o corporativos con terceros.
+                La empresa solicitante conserva en todo momento la titularidad única y exclusiva sobre su información operativa, comercial, flujos de trabajo y documentos adjuntos. <strong className="text-white">INTERPRES S.A. de C.V.</strong> resguarda dicha información bajo estricta confidencialidad y no vende ni comercializa datos personales o corporativos con terceros.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
+              <h3 className="font-extrabold text-[#66B2FF] uppercase text-[11px] tracking-wider">
                 3. Finalidad del Tratamiento e Infraestructura Segura
               </h3>
               <p>
@@ -1437,8 +1449,8 @@ const PublicAiBriefing: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
+              <h3 className="font-extrabold text-[#66B2FF] uppercase text-[11px] tracking-wider">
                 4. Declaración de Autorización y Licitud (Cláusula 30)
               </h3>
               <p>
@@ -1446,13 +1458,13 @@ const PublicAiBriefing: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
+            <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#21487A] space-y-1.5">
+              <h3 className="font-extrabold text-[#66B2FF] uppercase text-[11px] tracking-wider">
                 5. Derechos ARCO y Consulta Integral
               </h3>
               <p>
                 Puedes ejercer tus derechos de Acceso, Rectificación, Cancelación u Oposición (ARCO) o revocar tu consentimiento escribiendo a{" "}
-                <a href="mailto:admin@interpresdigital.com" className="text-[#1464B8] font-bold underline">
+                <a href="mailto:admin@interpresdigital.com" className="text-[#5FD9E4] font-bold underline">
                   admin@interpresdigital.com
                 </a>
                 . El Aviso de Privacidad Integral y los Términos y Condiciones completos están disponibles permanentemente en el pie de página de{" "}
@@ -1460,7 +1472,7 @@ const PublicAiBriefing: React.FC = () => {
                   href="https://interpresdigital.com/"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[#1464B8] font-bold underline"
+                  className="text-[#5FD9E4] font-bold underline"
                 >
                   interpresdigital.com
                 </a>
@@ -1469,11 +1481,11 @@ const PublicAiBriefing: React.FC = () => {
             </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-[#C7D5E2]/80 bg-[#F6F9FC] flex flex-wrap items-center justify-end gap-3">
+          <div className="px-6 py-4 border-t border-[#21487A] bg-[#071B36] flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
               onClick={() => setShowLegalModal(false)}
-              className="px-4 py-2 rounded-xl bg-white hover:bg-[#EBF2F8] border border-[#C7D5E2] text-xs font-bold text-[#102B4B] cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-[#0F2F5A] hover:bg-[#153D73] border border-[#26538C] text-xs font-bold text-slate-200 cursor-pointer"
             >
               Cerrar
             </button>
@@ -1496,7 +1508,7 @@ const PublicAiBriefing: React.FC = () => {
                 });
                 setShowLegalModal(false);
               }}
-              className="px-5 py-2 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-xs font-extrabold text-white flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-xs font-extrabold text-white flex items-center gap-1.5 shadow-md cursor-pointer"
             >
               <Check className="w-4 h-4" />
               <span>Aceptar Aviso y Continuar</span>
@@ -1511,22 +1523,28 @@ const PublicAiBriefing: React.FC = () => {
     const attachedList = toAttachmentArray(answers.attachments);
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#EAF1F8] via-[#F6F9FC] to-[#E5F2F6] text-[#102B4B] flex flex-col">
+      <div
+        className="min-h-screen bg-gradient-to-b from-[#071B36] via-[#0A2345] to-[#071B36] text-white flex flex-col relative overflow-x-hidden"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 18% 12%, rgba(20,100,184,0.22) 0%, transparent 42%), radial-gradient(circle at 85% 28%, rgba(0,169,183,0.18) 0%, transparent 40%), linear-gradient(180deg, #071B36 0%, #0A2447 52%, #071B36 100%)",
+        }}
+      >
         {/* Top Corporate Bar (alineada en una sola fila limpia en móvil y escritorio) */}
-        <header className="bg-white/95 backdrop-blur-md border-b border-[#C7D5E2] px-3.5 sm:px-8 py-2.5 sm:py-3.5 sticky top-0 z-30">
-          <div className="max-w-[1140px] mx-auto flex items-center justify-between gap-2.5">
+        <header className="bg-[#071B36]/90 backdrop-blur-xl border-b border-[#1E4373] px-3.5 sm:px-8 py-2.5 sm:py-3.5 sticky top-0 z-30 shadow-lg shadow-[#041022]/30">
+          <div className="max-w-[1160px] mx-auto flex items-center justify-between gap-2.5">
             <img
-              src={LOGO_COLOR_URL}
+              src={LOGO_BLANCO_URL}
               alt="Interpres Digital Labs"
               className="h-8 sm:h-11 w-auto max-w-[146px] sm:max-w-none object-contain flex-shrink-0"
             />
-            <div className="inline-flex items-center gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] flex-shrink-0">
+            <div className="inline-flex items-center gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-2xl bg-[#0C274C] border border-[#26548E] flex-shrink-0 shadow-inner">
               <ShieldCheck className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
               <div className="flex flex-col text-left leading-[1.15]">
-                <span className="text-[10px] sm:text-[11px] font-extrabold text-[#071B36]">
+                <span className="text-[10px] sm:text-[11px] font-extrabold text-white">
                   Diagnóstico Confidencial
                 </span>
-                <span className="text-[9.5px] sm:text-[10.5px] font-semibold text-[#1464B8]">
+                <span className="text-[9.5px] sm:text-[10.5px] font-semibold text-[#66B2FF]">
                   Interpres Digital Labs
                 </span>
               </div>
@@ -1534,36 +1552,46 @@ const PublicAiBriefing: React.FC = () => {
           </div>
         </header>
 
-        <main className="max-w-[1140px] w-full mx-auto px-3.5 py-6 sm:px-6 sm:py-10 space-y-7">
+        <main className="max-w-[1160px] w-full mx-auto px-3.5 py-6 sm:px-6 sm:py-10 space-y-7 relative z-10">
           {/* 1. HERO CON NEXIA IA: ¿QUÉ ES EL BRIEFING DE IA Y CUÁL ES SU OBJETIVO? */}
-          <section className="bg-gradient-to-br from-[#071B36] via-[#0B2850] to-[#11396E] text-white rounded-[28px] border border-[#1B3C68] shadow-[0_28px_70px_-18px_rgba(7,27,54,0.28)] overflow-hidden relative">
-            <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#00A9B7]/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-[#1464B8]/25 blur-3xl" />
+          <section className="bg-gradient-to-br from-[#0B274C] via-[#0E3262] to-[#092040] text-white rounded-[28px] border border-[#285792] shadow-[0_28px_80px_-18px_rgba(3,12,26,0.65)] overflow-hidden relative">
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#1464B8] via-[#00A9B7] to-[#1464B8]" />
+            <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#00A9B7]/22 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-[#1464B8]/28 blur-3xl" />
 
             <div className="relative z-10 p-6 sm:p-9 md:p-11 grid grid-cols-1 lg:grid-cols-12 gap-7 items-center">
               {/* Nexia IA Portrait Column */}
-              <div className="lg:col-span-4 flex flex-col items-center text-center space-y-3.5">
+              <div className="lg:col-span-4 flex flex-col items-center text-center space-y-4">
                 <div className="relative">
-                  <div className="absolute -inset-2 rounded-[28px] bg-gradient-to-tr from-[#1464B8]/40 via-[#00A9B7]/45 to-transparent blur-xl pointer-events-none" />
+                  <div className="absolute -inset-3 rounded-[30px] bg-gradient-to-tr from-[#1464B8]/50 via-[#00A9B7]/50 to-transparent blur-xl pointer-events-none" />
                   <img
                     src={NEXIA_URL}
                     alt="Nexia IA — Consultora de Inteligencia Artificial"
-                    className="relative w-44 h-44 sm:w-56 sm:h-56 rounded-[26px] object-cover border-2 border-[#5FD9E4]/65 shadow-2xl"
+                    className="relative w-44 h-44 sm:w-56 sm:h-56 rounded-[26px] object-cover border-2 border-[#5FD9E4]/75 shadow-2xl"
                   />
-                  <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-3.5 py-1 rounded-full bg-[#071B36] border border-[#00A9B7]/70 text-[11px] font-extrabold text-[#7CE8F0] shadow-md flex items-center gap-1.5">
+                  <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap px-3.5 py-1 rounded-full bg-[#071B36] border border-[#00A9B7] text-[11px] font-extrabold text-[#7CE8F0] shadow-lg flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#00A9B7] animate-pulse" />
                     Nexia IA • Consultora Activa
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-300 pt-2 max-w-[260px] leading-snug">
-                  Especialista conversacional de <strong>Interpres Digital Labs</strong> para levantamiento arquitectónico de IA.
-                </p>
+
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2">
+                  <span className="px-2.5 py-1 rounded-lg bg-[#071B36]/80 border border-[#234E86] text-[10px] font-bold text-slate-200">
+                    ⏱ 8–12 min
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-[#071B36]/80 border border-[#234E86] text-[10px] font-bold text-[#7CE8F0]">
+                    💾 Autoguardado
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-[#071B36]/80 border border-[#234E86] text-[10px] font-bold text-slate-200">
+                    🔒 Cifrado SSL
+                  </span>
+                </div>
               </div>
 
               {/* Welcome & Objective Explanation */}
               <div className="lg:col-span-8 space-y-5">
                 <div className="flex justify-center">
-                  <div className="inline-flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-[#00A9B7]/20 border border-[#00A9B7]/45 text-[#8FF0F7] text-[10.5px] sm:text-[11px] font-extrabold uppercase tracking-wider text-center">
+                  <div className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-[#00A9B7]/20 border border-[#00A9B7]/55 text-[#8FF0F7] text-[10.5px] sm:text-[11px] font-extrabold uppercase tracking-wider text-center shadow-sm">
                     <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>Guía Previa e Instrucciones de Acceso</span>
                   </div>
@@ -1571,30 +1599,39 @@ const PublicAiBriefing: React.FC = () => {
 
                 <h1 className="font-display text-2xl sm:text-3xl md:text-[38px] font-extrabold tracking-tight leading-[1.14] text-white text-center lg:text-left">
                   Bienvenido al Diagnóstico Ejecutivo para{" "}
-                  <span className="text-[#5FD9E4]">Diseño de Agentes de IA y Automatizaciones</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#66B2FF] to-[#5FD9E4]">
+                    Diseño de Agentes de IA y Automatizaciones
+                  </span>
                 </h1>
 
                 <p className="text-slate-200 text-sm sm:text-[15px] leading-relaxed text-center lg:text-left">
-                  Hola, soy <strong className="text-white">Nexia IA</strong>. Antes de iniciar, te comparto cómo funciona este{" "}
-                  <strong className="text-white">Briefing Ejecutivo (RFI)</strong> para que aproveches al máximo la herramienta y conozcas cómo protegemos tu información.
+                  Hola, soy <strong className="text-white">Nexia IA</strong>, consultora tecnológica de{" "}
+                  <strong className="text-[#7CE8F0]">Interpres Digital Labs</strong>. Antes de comenzar, revisa cómo funciona este{" "}
+                  <strong className="text-white">Briefing Ejecutivo (RFI)</strong>, elige la dinámica que prefieras y adjunta cualquier documento de apoyo si lo deseas.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-                  <div className="p-4 rounded-2xl bg-[#0C2548]/90 border border-white/15 space-y-1.5">
-                    <h2 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#7CE8F0]">
-                      ¿Qué es este Briefing de IA?
-                    </h2>
+                  <div className="p-4 rounded-2xl bg-[#071B36]/85 border border-[#25528C] border-l-4 border-l-[#00A9B7] space-y-1.5 shadow-md">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
+                      <h2 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#7CE8F0]">
+                        ¿Qué es este Briefing de IA?
+                      </h2>
+                    </div>
                     <p className="text-xs text-slate-200/95 leading-relaxed">
-                      Es un levantamiento consultivo estructurado en <strong>10 etapas clave</strong> para comprender cómo opera hoy tu negocio, qué tareas consumen tiempo operativo, con qué sistemas trabajas y bajo qué reglas de seguridad debe actuar la tecnología.
+                      Es un levantamiento consultivo estructurado en <strong>10 etapas clave</strong> para comprender cómo opera hoy tu negocio, qué procesos consumen tiempo, qué sistemas utilizas y bajo qué políticas de seguridad debe operar la solución.
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#0C2548]/90 border border-white/15 space-y-1.5">
-                    <h2 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#7CE8F0]">
-                      ¿Cuál es el objetivo?
-                    </h2>
+                  <div className="p-4 rounded-2xl bg-[#071B36]/85 border border-[#25528C] border-l-4 border-l-[#1464B8] space-y-1.5 shadow-md">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-4 h-4 text-[#66B2FF] flex-shrink-0" />
+                      <h2 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#66B2FF]">
+                        ¿Cuál es el objetivo?
+                      </h2>
+                    </div>
                     <p className="text-xs text-slate-200/95 leading-relaxed">
-                      Obtener los criterios reales de negocio y de TI para diseñar una <strong>arquitectura a la medida</strong> —desde flujos automatizados e integraciones API/CRM/ERP hasta agentes autónomos— y entregarte una <strong>propuesta técnica y económica precisa</strong>.
+                      Traducir tus requerimientos de negocio y TI en una <strong>arquitectura tecnológica real</strong> —automatizaciones, integraciones API/CRM/ERP o agentes autónomos— para entregarte una <strong>propuesta técnica y económica exacta</strong>.
                     </p>
                   </div>
                 </div>
@@ -1603,142 +1640,187 @@ const PublicAiBriefing: React.FC = () => {
           </section>
 
           {/* 2. MODALIDADES DE PARTICIPACIÓN */}
-          <section className="bg-white rounded-3xl border border-[#C7D5E2] p-6 sm:p-8 shadow-xs space-y-5">
-            <div className="space-y-1">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1464B8]">
-                Cómo puedes responderlo
-              </span>
-              <h2 className="font-display text-xl sm:text-2xl font-extrabold text-[#071B36]">
-                3 Modalidades Flexibles (Tú eliges en todo momento)
-              </h2>
-              <p className="text-xs sm:text-sm text-[#102B4B]/75">
-                No estás atado a un solo formato: puedes empezar hablando con Nexia IA, cambiar al formulario escrito o compartir el avance con tu equipo.
+          <section className="bg-[#0B2447]/95 backdrop-blur-md rounded-[28px] border border-[#224B80] p-6 sm:p-8 shadow-2xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-[#1D4170] pb-4">
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5FD9E4] flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Dinámica de levantamiento</span>
+                </span>
+                <h2 className="font-display text-xl sm:text-2xl font-extrabold text-white">
+                  3 Modalidades Flexibles (Tú decides cómo avanzar)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-300 max-w-md">
+                Puedes alternar entre voz y escritura en cualquier momento sin perder tu progreso.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#071B36] text-[#5FD9E4] flex items-center justify-center">
+              {/* Featured Voice Card */}
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-[#0F3366] via-[#124280] to-[#0D3966] border-2 border-[#00A9B7]/70 shadow-lg shadow-[#00A9B7]/10 space-y-3 relative overflow-hidden">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="w-11 h-11 rounded-xl bg-[#071B36]/80 border border-[#5FD9E4]/50 text-[#5FD9E4] flex items-center justify-center shadow-sm">
                     <Mic className="w-5 h-5" />
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#00A9B7]/15 text-[#007B86] text-[10px] font-extrabold uppercase">
+                  <span className="px-2.5 py-1 rounded-full bg-[#00A9B7] text-white text-[10px] font-extrabold uppercase tracking-wider shadow-xs">
                     Recomendada
                   </span>
                 </div>
-                <h3 className="font-display text-base font-extrabold text-[#071B36]">
+                <h3 className="font-display text-base font-extrabold text-white">
                   1. Entrevista por Voz con Nexia IA
                 </h3>
-                <p className="text-xs text-[#102B4B]/75 leading-relaxed">
-                  Conversa con voz natural como en una videollamada consultiva. Nexia te hace <strong>una sola pregunta breve por turno</strong>, sintetiza tus respuestas y llena cada bloque automáticamente en pantalla.
+                <p className="text-xs text-slate-100/90 leading-relaxed">
+                  Conversa con voz natural como en una sesión consultiva. Nexia formula <strong>una sola pregunta breve por turno</strong>, interpreta tus respuestas y llena cada bloque en tiempo real.
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-2.5">
-                <div className="w-10 h-10 rounded-xl bg-[#1464B8]/12 text-[#1464B8] flex items-center justify-center">
-                  <PenTool className="w-5 h-5" />
+              {/* Written Form Card */}
+              <div className="p-5 rounded-2xl bg-[#0E2C56] border border-[#26528C] hover:border-[#66B2FF]/60 transition-colors space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="w-11 h-11 rounded-xl bg-[#1464B8]/25 border border-[#66B2FF]/40 text-[#66B2FF] flex items-center justify-center">
+                    <PenTool className="w-5 h-5" />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#071B36] border border-[#26528C] text-slate-300 text-[10px] font-bold uppercase tracking-wider">
+                    Paso a Paso
+                  </span>
                 </div>
-                <h3 className="font-display text-base font-extrabold text-[#071B36]">
-                  2. Formulario Ejecutivo por Escrito
+                <h3 className="font-display text-base font-extrabold text-white">
+                  2. Formulario Ejecutivo Escrito
                 </h3>
-                <p className="text-xs text-[#102B4B]/75 leading-relaxed">
-                  Avanza paso a paso escribiendo tus respuestas directamente en los 10 bloques, con botones de selección rápida para canales, usuarios, autonomía y rangos de inversión.
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Redacta directamente tus respuestas en los 10 bloques a tu propio ritmo, apoyándote en selectores rápidos de canales, usuarios, nivel de autonomía y presupuesto.
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-2.5">
-                <div className="w-10 h-10 rounded-xl bg-[#00A9B7]/15 text-[#008995] flex items-center justify-center">
-                  <Share2 className="w-5 h-5" />
+              {/* Hybrid / IT Team Card */}
+              <div className="p-5 rounded-2xl bg-[#0E2C56] border border-[#26528C] hover:border-[#5FD9E4]/60 transition-colors space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="w-11 h-11 rounded-xl bg-[#00A9B7]/20 border border-[#00A9B7]/45 text-[#5FD9E4] flex items-center justify-center">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#071B36] border border-[#26528C] text-[#7CE8F0] text-[10px] font-bold uppercase tracking-wider">
+                    Colaborativa
+                  </span>
                 </div>
-                <h3 className="font-display text-base font-extrabold text-[#071B36]">
-                  3. Híbrida y Colaborativa con TI
+                <h3 className="font-display text-base font-extrabold text-white">
+                  3. Híbrida con tu Equipo de TI
                 </h3>
-                <p className="text-xs text-[#102B4B]/75 leading-relaxed">
-                  Alterna entre voz y texto cuando gustes. Si desconoces detalles técnicos (APIs, bases de datos o normativas), márcalos como <strong>&ldquo;Pendiente para TI&rdquo;</strong> y comparte el link único con tu equipo técnico.
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Si algún dato técnico (APIs, arquitectura o bases de datos) lo conoce otro colega, márcalo como <strong>&ldquo;Pendiente para TI&rdquo;</strong> y compártele tu enlace directo de avance.
                 </p>
               </div>
             </div>
           </section>
 
-          {/* 3. INSTRUCCIONES PRÁCTICAS Y MAPA DE LAS 10 ETAPAS */}
+          {/* 3. INSTRUCCIONES DE USO Y MAPA ARQUITECTÓNICO DE LAS 10 ETAPAS */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Practical Instructions */}
-            <div className="lg:col-span-5 bg-white rounded-3xl border border-[#C7D5E2] p-6 sm:p-7 shadow-xs space-y-4">
-              <div className="space-y-1">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#008995]">
-                  Instrucciones de uso
+            {/* Left Column: Practical Instructions with Structured Icon Cards */}
+            <div className="lg:col-span-5 bg-gradient-to-b from-[#0C274D] to-[#091F3E] rounded-[28px] border border-[#244F87] p-6 sm:p-7 shadow-2xl space-y-5">
+              <div className="space-y-1 border-b border-[#1D4170] pb-3.5">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5FD9E4] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Instrucciones de uso</span>
                 </span>
-                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#071B36]">
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-white">
                   Recomendaciones para tu sesión
                 </h2>
               </div>
 
-              <ul className="space-y-3 text-xs text-[#102B4B]/80 leading-relaxed">
-                <li className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[#1464B8] text-white text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    1
-                  </span>
-                  <span>
-                    <strong className="text-[#071B36]">Duración y autoguardado:</strong> Toma entre <strong>8 y 12 minutos</strong>. Cada respuesta se guarda al instante; si cierras la ventana o se bloquea tu pantalla, retomarás exactamente en la etapa donde te quedaste.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[#1464B8] text-white text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    2
-                  </span>
-                  <span>
-                    <strong className="text-[#071B36]">Habla en términos de tu negocio:</strong> No necesitas vocabulario técnico de programación; describe tus procesos actuales y el resultado que buscas lograr.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[#1464B8] text-white text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    3
-                  </span>
-                  <span>
-                    <strong className="text-[#071B36]">Control total del micrófono:</strong> En modo Voz contarás con botones para <strong>Pausar a Nexia IA</strong>, <strong>Silenciar tu micrófono</strong> o pasar al formulario escrito en cualquier instante.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[#1464B8] text-white text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    4
-                  </span>
-                  <span>
-                    <strong className="text-[#071B36]">Revisión previa al envío:</strong> En la Etapa 10 verás un resumen ejecutivo editable de todas tus respuestas antes de enviar formalmente tu diagnóstico.
-                  </span>
-                </li>
-              </ul>
+              <div className="space-y-3">
+                {[
+                  {
+                    Icon: Clock,
+                    accent: "text-[#5FD9E4] bg-[#00A9B7]/20 border-[#00A9B7]/45",
+                    title: "Duración y autoguardado continuo",
+                    body: "Toma de 8 a 12 minutos. Cada respuesta se respalda al instante; si cierras la pestaña o se bloquea tu pantalla, retomarás exactamente en la misma etapa.",
+                  },
+                  {
+                    Icon: MessageSquare,
+                    accent: "text-[#66B2FF] bg-[#1464B8]/25 border-[#66B2FF]/40",
+                    title: "Habla en términos de tu negocio",
+                    body: "No requieres vocabulario de programación; describe tus procesos actuales, cuellos de botella y el resultado comercial u operativo que buscas.",
+                  },
+                  {
+                    Icon: Mic,
+                    accent: "text-[#5FD9E4] bg-[#00A9B7]/20 border-[#00A9B7]/45",
+                    title: "Control total de audio en vivo",
+                    body: "En modo Voz tendrás botones visibles para Pausar a Nexia IA, Silenciar tu micrófono o cambiar al modo escrito cuando lo necesites.",
+                  },
+                  {
+                    Icon: CheckCircle2,
+                    accent: "text-emerald-300 bg-emerald-500/20 border-emerald-400/40",
+                    title: "Revisión ejecutiva antes de enviar",
+                    body: "Al llegar a la Etapa 10 visualizarás un resumen completo y editable de tus respuestas antes de confirmar el envío definitivo.",
+                  },
+                ].map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3.5 rounded-2xl bg-[#071B36]/80 border border-[#1F4577] flex items-start gap-3"
+                  >
+                    <div
+                      className={clsx(
+                        "w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 mt-0.5",
+                        item.accent
+                      )}
+                    >
+                      <item.Icon className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-0.5 text-xs leading-relaxed">
+                      <div className="font-display font-extrabold text-white">
+                        {idx + 1}. {item.title}
+                      </div>
+                      <p className="text-slate-300 text-[11.5px] leading-snug">{item.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* 10 Stages Overview */}
-            <div className="lg:col-span-7 bg-white rounded-3xl border border-[#C7D5E2] p-6 sm:p-7 shadow-xs space-y-4">
-              <div className="space-y-1">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1464B8]">
-                  Estructura completa del RFI
+            {/* Right Column: 10 Stages Architectural Blueprint Grid */}
+            <div className="lg:col-span-7 bg-gradient-to-b from-[#0C274D] to-[#091F3E] rounded-[28px] border border-[#244F87] p-6 sm:p-7 shadow-2xl space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1D4170] pb-3.5">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#66B2FF] flex items-center gap-1.5">
+                    <Workflow className="w-3.5 h-3.5" />
+                    <span>Estructura completa del RFI</span>
+                  </span>
+                  <h2 className="font-display text-lg sm:text-xl font-extrabold text-white">
+                    ¿Qué temas revisaremos en las 10 etapas?
+                  </h2>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-[#1464B8]/25 border border-[#66B2FF]/40 text-[11px] font-extrabold text-[#8CC5FF]">
+                  10 Bloques Ejecutivos
                 </span>
-                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#071B36]">
-                  ¿Qué temas revisaremos en las 10 etapas?
-                </h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {[
-                  ["1. Contexto y Objetivo", "Problema operativo a resolver, resultado esperado e iniciativas previas."],
-                  ["2. Proceso Actual", "Rol o flujo que hoy ejecuta una persona, frecuencia e impacto."],
-                  ["3. Funciones y Autonomía", "Acciones exactas del agente, límites fuera de alcance y escalamiento humano."],
-                  ["4. Usuarios y Volumen", "Quién interactuará, cantidad estimada de mensajes/operaciones y horarios."],
-                  ["5. Canales y Sistemas", "WhatsApp, Web, Correo, CRM, ERP, bases de datos y disponibilidad de APIs."],
-                  ["6. Base de Conocimiento", "Manuales, catálogos, reglas de negocio y formato donde residen hoy."],
-                  ["7. Seguridad y Privacidad", "Datos confidenciales, normativas (LFPDPPP) y residencia en la nube."],
-                  ["8. Presupuesto y Tiempos", "Rango estimado de inversión, fecha meta de arranque, idiomas y sponsor."],
-                  ["9. Métricas de Éxito (KPIs)", "Indicadores para medir retorno e impacto esperado a 3 y 6 meses."],
-                  ["10. Observaciones y Cierre", "Comentarios finales, validación del resumen completo y envío."],
-                ].map(([title, desc], i) => (
+                  { num: "01", Icon: Target, title: "Contexto y Objetivo", desc: "Problema operativo a resolver, resultado esperado e iniciativas previas." },
+                  { num: "02", Icon: Workflow, title: "Proceso Actual", desc: "Rol o flujo que hoy ejecuta una persona, frecuencia e impacto." },
+                  { num: "03", Icon: Bot, title: "Funciones y Autonomía", desc: "Acciones exactas del agente, límites fuera de alcance y escalamiento." },
+                  { num: "04", Icon: Users, title: "Usuarios y Volumen", desc: "Quién interactuará, volumen estimado de operaciones y horarios." },
+                  { num: "05", Icon: Layers, title: "Canales y Sistemas", desc: "WhatsApp, Web, Correo, CRM, ERP, bases de datos y APIs." },
+                  { num: "06", Icon: Database, title: "Base de Conocimiento", desc: "Manuales, catálogos, reglas de negocio y formatos actuales." },
+                  { num: "07", Icon: ShieldCheck, title: "Seguridad y Privacidad", desc: "Datos confidenciales, normativas (LFPDPPP) y residencia cloud." },
+                  { num: "08", Icon: Clock, title: "Presupuesto y Tiempos", desc: "Rango estimado de inversión, fecha meta de arranque y sponsor." },
+                  { num: "09", Icon: BarChart3, title: "Métricas de Éxito (KPIs)", desc: "Indicadores para medir retorno e impacto esperado a 3 y 6 meses." },
+                  { num: "10", Icon: CheckCircle2, title: "Observaciones y Cierre", desc: "Comentarios finales, validación del resumen ejecutivo y envío." },
+                ].map((st) => (
                   <div
-                    key={i}
-                    className="p-3 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2]/85 space-y-0.5"
+                    key={st.num}
+                    className="p-3.5 rounded-2xl bg-[#0F2F5C]/90 hover:bg-[#133A70] border border-[#27548E] transition-colors flex items-start gap-3"
                   >
-                    <div className="font-display font-extrabold text-[#071B36] text-xs">{title}</div>
-                    <p className="text-[11px] text-[#102B4B]/70 leading-snug">{desc}</p>
+                    <span className="px-2 py-1 rounded-lg bg-gradient-to-br from-[#1464B8] to-[#00A9B7] text-white font-mono text-[11px] font-extrabold leading-none flex-shrink-0 mt-0.5 shadow-xs">
+                      {st.num}
+                    </span>
+                    <div className="space-y-1 min-w-0">
+                      <div className="font-display font-extrabold text-white text-xs flex items-center gap-1.5">
+                        <st.Icon className="w-3.5 h-3.5 text-[#5FD9E4] flex-shrink-0" />
+                        <span className="truncate">{st.title}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-snug">{st.desc}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1746,37 +1828,50 @@ const PublicAiBriefing: React.FC = () => {
           </section>
 
           {/* 4. CARGA OPCIONAL DE DOCUMENTOS O ARCHIVOS DE APOYO DESDE EL INICIO */}
-          <section className="bg-white rounded-3xl border border-[#C7D5E2] p-6 sm:p-8 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <section className="bg-gradient-to-br from-[#0B2548] to-[#0E2F5A] rounded-[28px] border border-[#25528C] p-6 sm:p-8 shadow-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-1">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#008995]">
-                  Documentación de apoyo (Opcional)
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5FD9E4] flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Documentación de apoyo (Opcional)</span>
                 </span>
-                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#071B36]">
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-white">
                   ¿Deseas compartir archivos o documentos que ayuden al diagnóstico?
                 </h2>
-                <p className="text-xs text-[#102B4B]/75">
-                  Puedes subir desde aquí diagramas de proceso, presentaciones, requerimientos técnicos, formatos actuales o manuales (también podrás adjuntar más archivos en la Etapa 10).
+                <p className="text-xs text-slate-300">
+                  Sube desde aquí diagramas de flujo, presentaciones, requerimientos técnicos, formatos actuales o manuales operativos (también podrás anexar archivos en la Etapa 10).
                 </p>
               </div>
-              <span className="px-3 py-1 rounded-full bg-[#F6F9FC] border border-[#C7D5E2] text-[11px] font-bold text-[#102B4B]/70 self-start sm:self-center flex-shrink-0">
-                Máx. 15 MB por archivo
-              </span>
+              <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-center flex-shrink-0">
+                {["PDF", "DOCX", "XLSX", "IMG"].map((fmt) => (
+                  <span
+                    key={fmt}
+                    className="px-2 py-0.5 rounded-md bg-[#071B36] border border-[#27548E] text-[10px] font-mono font-bold text-[#7CE8F0]"
+                  >
+                    {fmt}
+                  </span>
+                ))}
+                <span className="px-2.5 py-0.5 rounded-md bg-[#1464B8]/30 border border-[#66B2FF]/40 text-[10px] font-bold text-white">
+                  Máx. 15 MB
+                </span>
+              </div>
             </div>
 
-            <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#96B4D2] hover:border-[#1464B8] rounded-2xl p-5 sm:p-6 bg-[#F6F9FC] hover:bg-[#EDF4FB] cursor-pointer transition-all text-center">
-              {uploadingFiles ? (
-                <Loader2 className="w-7 h-7 text-[#1464B8] animate-spin mb-2" />
-              ) : (
-                <Upload className="w-7 h-7 text-[#1464B8] mb-2" />
-              )}
-              <span className="text-xs sm:text-sm font-extrabold text-[#071B36]">
+            <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#00A9B7]/60 hover:border-[#5FD9E4] rounded-2xl p-6 bg-[#071B36]/75 hover:bg-[#092347] cursor-pointer transition-all text-center group">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1464B8]/30 to-[#00A9B7]/30 border border-[#5FD9E4]/50 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+                {uploadingFiles ? (
+                  <Loader2 className="w-6 h-6 text-[#5FD9E4] animate-spin" />
+                ) : (
+                  <Upload className="w-6 h-6 text-[#5FD9E4]" />
+                )}
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-white">
                 {uploadingFiles
-                  ? "Subiendo tus documentos de forma cifrada..."
-                  : "Haz clic aquí para seleccionar PDF, Word, Excel, PowerPoint o imágenes"}
+                  ? "Subiendo tus documentos con cifrado..."
+                  : "Toca o haz clic aquí para adjuntar documentos de referencia"}
               </span>
-              <span className="text-[11px] text-[#102B4B]/60 mt-1">
-                Tus documentos quedan protegidos bajo confidencialidad y se vincularán automáticamente a tu expediente.
+              <span className="text-[11px] text-slate-300 mt-1">
+                Resguardados bajo confidencialidad estricta y vinculados automáticamente a tu expediente.
               </span>
               <input
                 type="file"
@@ -1789,23 +1884,23 @@ const PublicAiBriefing: React.FC = () => {
 
             {attachedList.length > 0 && (
               <div className="space-y-2 pt-1">
-                <div className="text-xs font-extrabold text-[#007B86] flex items-center gap-1.5">
+                <div className="text-xs font-extrabold text-[#7CE8F0] flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-[#00A9B7]" />
-                  <span>{attachedList.length} documento(s) listo(s) para incluirse en tu Briefing:</span>
+                  <span>{attachedList.length} documento(s) listo(s) para tu Briefing:</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {attachedList.map((att, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#F6F9FC] border border-[#C7D5E2] text-xs"
+                      className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#071B36] border border-[#285792] text-xs"
                     >
                       <div className="flex items-center gap-2 truncate pr-2">
-                        <FileText className="w-4 h-4 text-[#1464B8] flex-shrink-0" />
+                        <FileText className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
                         <a
                           href={att.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[#1464B8] font-bold hover:underline truncate"
+                          className="text-white font-bold hover:text-[#7CE8F0] hover:underline truncate"
                         >
                           {att.name}
                         </a>
@@ -1813,7 +1908,7 @@ const PublicAiBriefing: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleRemoveAttachment(idx)}
-                        className="text-rose-500 hover:text-rose-600 p-1 cursor-pointer"
+                        className="text-rose-400 hover:text-rose-300 p-1 cursor-pointer"
                         title="Quitar archivo"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1828,19 +1923,19 @@ const PublicAiBriefing: React.FC = () => {
           {/* 5. CANDADO OBLIGATORIO DE AVISO DE PRIVACIDAD, USO ÉTICO DE IA Y BOTÓN DE ACCESO */}
           <section
             className={clsx(
-              "rounded-3xl border-2 p-6 sm:p-8 shadow-md transition-all space-y-5",
+              "rounded-[28px] border-2 p-6 sm:p-8 shadow-[0_24px_60px_-15px_rgba(3,12,26,0.65)] transition-all space-y-5",
               answers.privacyConsentAccepted
-                ? "bg-white border-[#00A9B7]"
-                : "bg-white border-[#1464B8]/45"
+                ? "bg-gradient-to-br from-[#0B2A4F] via-[#0D335E] to-[#082240] border-[#00A9B7]"
+                : "bg-gradient-to-br from-[#0B2548] via-[#0E2E58] to-[#081F3D] border-[#2A5B98]"
             )}
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#C7D5E2]/80 pb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/12 pb-4">
               <div className="space-y-1">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1464B8] flex items-center gap-1.5">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5FD9E4] flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#00A9B7]" />
                   Paso Requerido para Desbloquear el Acceso
                 </span>
-                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#071B36]">
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-white">
                   Privacidad, Confidencialidad y Uso Ético de Inteligencia Artificial
                 </h2>
               </div>
@@ -1848,7 +1943,7 @@ const PublicAiBriefing: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowLegalModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-[#F6F9FC] hover:bg-[#EAF3FC] border border-[#1464B8]/40 text-xs font-extrabold text-[#1464B8] inline-flex items-center justify-center gap-2 transition-all cursor-pointer flex-shrink-0"
+                className="px-4 py-2.5 rounded-xl bg-[#071B36] hover:bg-[#1464B8] border border-[#356AB0] text-xs font-extrabold text-[#8CC5FF] hover:text-white inline-flex items-center justify-center gap-2 transition-all cursor-pointer flex-shrink-0 shadow-sm"
               >
                 <FileText className="w-4 h-4" />
                 <span>Leer Aviso Legal y Ético Completo</span>
@@ -1857,32 +1952,32 @@ const PublicAiBriefing: React.FC = () => {
 
             {/* Key Ethical & Legal Guarantees */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1">
-                <div className="font-extrabold text-[#007B86] flex items-center gap-1.5">
+              <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#234E86] space-y-1">
+                <div className="font-extrabold text-[#5FD9E4] flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#00A9B7]" />
                   <span>Cero Entrenamiento de IA</span>
                 </div>
-                <p className="text-[11px] text-[#102B4B]/75 leading-snug">
-                  Tus respuestas de voz, textos y documentos adjuntos <strong>jamás</strong> se usan para entrenar modelos públicos o de terceros.
+                <p className="text-[11px] text-slate-300 leading-snug">
+                  Tus respuestas de voz, textos y documentos adjuntos <strong className="text-white">jamás</strong> se usan para entrenar modelos públicos o de terceros.
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1">
-                <div className="font-extrabold text-[#1464B8] flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#1464B8]" />
+              <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#234E86] space-y-1">
+                <div className="font-extrabold text-[#66B2FF] flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#66B2FF]" />
                   <span>Confidencialidad y LFPDPPP</span>
                 </div>
-                <p className="text-[11px] text-[#102B4B]/75 leading-snug">
-                  Tu empresa conserva la titularidad exclusiva de su información bajo resguardo confidencial de <strong>INTERPRES S.A. de C.V.</strong>
+                <p className="text-[11px] text-slate-300 leading-snug">
+                  Tu empresa conserva la titularidad exclusiva de su información bajo resguardo confidencial de <strong className="text-white">INTERPRES S.A. de C.V.</strong>
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1">
-                <div className="font-extrabold text-[#071B36] flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#00A9B7]" />
+              <div className="p-3.5 rounded-2xl bg-[#071B36]/85 border border-[#234E86] space-y-1">
+                <div className="font-extrabold text-emerald-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Uso Exclusivo de Propuesta</span>
                 </div>
-                <p className="text-[11px] text-[#102B4B]/75 leading-snug">
+                <p className="text-[11px] text-slate-300 leading-snug">
                   La información se utiliza únicamente para estructurar tu diagnóstico arquitectónico y cotización comercial.
                 </p>
               </div>
@@ -1933,44 +2028,44 @@ const PublicAiBriefing: React.FC = () => {
               className={clsx(
                 "p-4 rounded-2xl border-2 flex items-start gap-3.5 cursor-pointer select-none transition-all",
                 answers.privacyConsentAccepted
-                  ? "bg-[#00A9B7]/10 border-[#00A9B7]"
-                  : "bg-[#F6F9FC] border-[#B8CCE0] hover:border-[#1464B8]"
+                  ? "bg-[#00A9B7]/18 border-[#00A9B7]"
+                  : "bg-[#071B36]/90 border-[#2E62A1] hover:border-[#5FD9E4]"
               )}
             >
               <div
                 className={clsx(
                   "w-6 h-6 mt-0.5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all",
                   answers.privacyConsentAccepted
-                    ? "bg-[#00A9B7] border-[#00A9B7] text-white shadow-sm"
-                    : "bg-white border-[#7E97B3]"
+                    ? "bg-[#00A9B7] border-[#7CE8F0] text-white shadow-md shadow-[#00A9B7]/30"
+                    : "bg-[#0B2548] border-[#6B93C4]"
                 )}
               >
                 {answers.privacyConsentAccepted && <Check className="w-4 h-4 stroke-[3]" />}
               </div>
 
-              <div className="space-y-1 text-xs sm:text-sm text-[#102B4B]">
-                <span className="font-extrabold block text-[#071B36]">
+              <div className="space-y-1 text-xs sm:text-sm text-white">
+                <span className="font-extrabold block text-white">
                   He leído y acepto el Aviso de Privacidad, Confidencialidad, Uso Ético de IA y Autorización de Información *
                 </span>
-                <span className="text-xs text-[#102B4B]/75 block leading-relaxed">
-                  Confirmo que cuento con autorización para compartir la información y documentos ingresados con <strong>INTERPRES DIGITAL (INTERPRES S.A. de C.V.)</strong> para fines de diagnóstico técnico y elaboración de propuesta.
+                <span className="text-xs text-slate-300 block leading-relaxed">
+                  Confirmo que cuento con autorización para compartir la información y documentos ingresados con <strong className="text-white">INTERPRES DIGITAL (INTERPRES S.A. de C.V.)</strong> para fines de diagnóstico técnico y elaboración de propuesta.
                 </span>
               </div>
             </div>
 
             {/* Gate Action Button */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
-              <div className="text-xs text-[#102B4B]/70 flex items-center gap-2">
+              <div className="text-xs text-slate-300 flex items-center gap-2">
                 {answers.privacyConsentAccepted ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
-                    <span className="font-bold text-[#007B86]">
+                    <CheckCircle2 className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
+                    <span className="font-bold text-[#7CE8F0]">
                       Consentimiento verificado. Ya puedes ingresar al Briefing de IA.
                     </span>
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
                     <span>
                       Marca la casilla de aceptación superior para habilitar el botón de ingreso al Briefing.
                     </span>
@@ -1986,14 +2081,14 @@ const PublicAiBriefing: React.FC = () => {
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className={clsx(
-                  "w-full sm:w-auto px-7 py-3.5 rounded-2xl font-display flex items-center justify-center gap-3 transition-all",
+                  "w-full sm:w-auto px-8 py-3.5 rounded-2xl font-display flex items-center justify-center gap-3 transition-all",
                   answers.privacyConsentAccepted
-                    ? "bg-gradient-to-r from-[#071B36] via-[#1464B8] to-[#00A9B7] hover:from-[#0A254A] hover:to-[#008C99] text-white shadow-lg shadow-[#1464B8]/25 cursor-pointer active:scale-[0.99]"
-                    : "bg-[#DCE6F1] text-[#102B4B]/45 cursor-not-allowed"
+                    ? "bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#1972CE] hover:to-[#00BDCB] text-white shadow-[0_12px_32px_-6px_rgba(0,169,183,0.5)] cursor-pointer active:scale-[0.99]"
+                    : "bg-[#112E57] border border-[#234B80] text-slate-400/70 cursor-not-allowed"
                 )}
               >
                 <span className="flex flex-col items-center leading-[1.12] text-center">
-                  <span className="text-[11px] font-bold uppercase tracking-wider opacity-90">
+                  <span className="text-[11px] font-bold uppercase tracking-wider opacity-95">
                     Ingresar al
                   </span>
                   <span className="text-sm sm:text-[15px] font-extrabold">
@@ -2016,10 +2111,18 @@ const PublicAiBriefing: React.FC = () => {
     const attachedCount = toAttachmentArray(answers.attachments).length;
 
     return (
-      <div className="min-h-screen bg-[#F6F9FC] text-[#102B4B] flex items-center justify-center px-3 py-6 sm:p-6 md:p-10">
-        <div className="max-w-[920px] w-full bg-white border border-[#C7D5E2] rounded-3xl overflow-hidden shadow-[0_28px_70px_-18px_rgba(16,43,75,0.12)]">
-          {/* Immersive Deep Blue Header Banner */}
-          <div className="bg-[#071B36] text-white px-5 py-6 sm:px-8 sm:py-8 md:px-10 relative overflow-hidden">
+      <div
+        className="min-h-screen bg-[#071B36] text-white flex items-center justify-center px-3 py-6 sm:p-6 md:p-10"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 15% 15%, rgba(20,100,184,0.22) 0%, transparent 45%), radial-gradient(circle at 85% 80%, rgba(0,169,183,0.18) 0%, transparent 45%), linear-gradient(180deg, #071B36 0%, #0A2447 100%)",
+        }}
+      >
+        <div className="max-w-[940px] w-full bg-[#0B2548]/95 backdrop-blur-xl border border-[#26538D] rounded-[28px] overflow-hidden shadow-[0_30px_80px_-18px_rgba(3,12,26,0.7)]">
+          <div className="h-1.5 w-full bg-gradient-to-r from-[#1464B8] via-[#00A9B7] to-[#1464B8]" />
+
+          {/* Header Banner */}
+          <div className="bg-[#071B36]/85 text-white px-4 py-5 sm:px-8 sm:py-7 md:px-10 border-b border-[#1E4373] relative overflow-hidden">
             <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-[#1464B8]/25 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-20 left-10 w-56 h-56 rounded-full bg-[#00A9B7]/20 blur-3xl pointer-events-none" />
 
@@ -2032,7 +2135,7 @@ const PublicAiBriefing: React.FC = () => {
                     setStep("intro");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-slate-100 text-[10.5px] sm:text-[11px] font-bold transition-colors cursor-pointer flex-shrink-0"
+                  className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-[#0E2E5A] hover:bg-[#1464B8] border border-[#2C5D9E] text-slate-100 text-[10.5px] sm:text-[11px] font-bold transition-colors cursor-pointer flex-shrink-0"
                 >
                   <ArrowLeft className="w-3.5 h-3.5 text-[#7CE8F0] flex-shrink-0" />
                   <span className="sm:hidden">Guía previa</span>
@@ -2052,11 +2155,11 @@ const PublicAiBriefing: React.FC = () => {
                 </div>
 
                 {/* Official Nexia Portrait Badge */}
-                <div className="hidden sm:flex items-center gap-3 bg-[#0C2548]/90 border border-white/15 rounded-2xl p-2.5 pr-4 flex-shrink-0 shadow-lg">
+                <div className="hidden sm:flex items-center gap-3 bg-[#0C2850] border border-[#285792] rounded-2xl p-2.5 pr-4 flex-shrink-0 shadow-lg">
                   <img
                     src={NEXIA_URL}
                     alt="Nexia IA"
-                    className="w-14 h-14 rounded-xl object-cover border border-[#00A9B7]/50"
+                    className="w-14 h-14 rounded-xl object-cover border border-[#00A9B7]/70"
                   />
                   <div>
                     <div className="text-xs font-extrabold text-white">Nexia IA</div>
@@ -2068,85 +2171,86 @@ const PublicAiBriefing: React.FC = () => {
             </div>
           </div>
 
-            {/* Editorial Light Body */}
+          {/* Deep Sapphire Body */}
           <div className="p-4 sm:p-8 md:p-10 space-y-6">
             {attachedCount > 0 && (
-              <div className="px-4 py-2.5 rounded-2xl bg-[#00A9B7]/10 border border-[#00A9B7]/40 text-xs text-[#007B86] font-bold flex items-center justify-between gap-2">
+              <div className="px-4 py-2.5 rounded-2xl bg-[#00A9B7]/18 border border-[#00A9B7]/55 text-xs text-[#8FF0F7] font-bold flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
+                  <FileText className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
                   <span>{attachedCount} documento(s) de apoyo adjuntado(s) y listos para tu expediente.</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setStep("intro")}
-                  className="text-[11px] text-[#1464B8] underline font-extrabold cursor-pointer"
+                  className="text-[11px] text-white underline font-extrabold cursor-pointer"
                 >
                   Gestionar archivos
                 </button>
               </div>
             )}
+
             {/* Identification Form */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] focus-within:bg-white transition-colors">
-                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#102B4B]/80 mb-1.5">
+              <div className="p-3.5 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors">
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9CC6F5] mb-1.5">
                   Empresa solicitante *
                 </label>
                 <div className="relative">
-                  <Building2 className="w-4 h-4 text-[#102B4B]/45 absolute left-3.5 top-3" />
+                  <Building2 className="w-4 h-4 text-[#66B2FF] absolute left-3.5 top-3" />
                   <input
                     type="text"
                     value={answers.companyName}
                     onChange={(e) => updateField("companyName", e.target.value)}
                     placeholder="Nombre de tu empresa"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-sm text-[#102B4B] placeholder:text-[#102B4B]/40 focus:border-[#1464B8] focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] focus-within:bg-white transition-colors">
-                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#102B4B]/80 mb-1.5">
+              <div className="p-3.5 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors">
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9CC6F5] mb-1.5">
                   Nombre del contacto *
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 text-[#102B4B]/45 absolute left-3.5 top-3" />
+                  <User className="w-4 h-4 text-[#66B2FF] absolute left-3.5 top-3" />
                   <input
                     type="text"
                     value={answers.contactName}
                     onChange={(e) => updateField("contactName", e.target.value)}
                     placeholder="Tu nombre y cargo"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-sm text-[#102B4B] placeholder:text-[#102B4B]/40 focus:border-[#1464B8] focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] focus-within:bg-white transition-colors">
-                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#102B4B]/80 mb-1.5">
+              <div className="p-3.5 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors">
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9CC6F5] mb-1.5">
                   Correo electrónico *
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-[#102B4B]/45 absolute left-3.5 top-3" />
+                  <Mail className="w-4 h-4 text-[#66B2FF] absolute left-3.5 top-3" />
                   <input
                     type="email"
                     value={answers.contactEmail}
                     onChange={(e) => updateField("contactEmail", e.target.value)}
                     placeholder="nombre@empresa.com"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-sm text-[#102B4B] placeholder:text-[#102B4B]/40 focus:border-[#1464B8] focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] focus-within:bg-white transition-colors">
-                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#102B4B]/80 mb-1.5">
+              <div className="p-3.5 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors">
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#9CC6F5] mb-1.5">
                   Teléfono / WhatsApp
                 </label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 text-[#102B4B]/45 absolute left-3.5 top-3" />
+                  <Phone className="w-4 h-4 text-[#66B2FF] absolute left-3.5 top-3" />
                   <input
                     type="tel"
                     value={answers.contactPhone}
                     onChange={(e) => updateField("contactPhone", e.target.value)}
                     placeholder="+52 55 0000 0000"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-sm text-[#102B4B] placeholder:text-[#102B4B]/40 focus:border-[#1464B8] focus:outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
                   />
                 </div>
               </div>
@@ -2157,10 +2261,10 @@ const PublicAiBriefing: React.FC = () => {
               className={clsx(
                 "p-3.5 sm:p-4 rounded-2xl border transition-all space-y-2.5",
                 answers.privacyConsentAccepted
-                  ? "bg-[#00A9B7]/8 border-[#00A9B7]"
+                  ? "bg-[#00A9B7]/16 border-[#00A9B7]"
                   : welcomeError && !answers.privacyConsentAccepted
-                  ? "bg-amber-50 border-amber-400"
-                  : "bg-[#F6F9FC] border-[#C7D5E2]"
+                  ? "bg-amber-950/40 border-amber-400"
+                  : "bg-[#0E2D58] border-[#285691]"
               )}
             >
               <div
@@ -2202,31 +2306,31 @@ const PublicAiBriefing: React.FC = () => {
                   className={clsx(
                     "w-5 h-5 sm:mt-0.5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all",
                     answers.privacyConsentAccepted
-                      ? "bg-[#00A9B7] border-[#00A9B7] text-white shadow-sm"
-                      : "bg-white border-[#8DA4BE] hover:border-[#1464B8]"
+                      ? "bg-[#00A9B7] border-[#7CE8F0] text-white shadow-sm"
+                      : "bg-[#071B36] border-[#6B93C4] hover:border-[#5FD9E4]"
                   )}
                 >
                   {answers.privacyConsentAccepted && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                 </div>
 
-                <p className="text-xs sm:text-[13px] text-[#102B4B] leading-snug">
-                  <strong className="font-extrabold">Acepto el Aviso de Privacidad y Uso Ético de IA *</strong>
-                  <span className="hidden sm:inline text-[#102B4B]/75">
+                <p className="text-xs sm:text-[13px] text-slate-100 leading-snug">
+                  <strong className="font-extrabold text-white">Acepto el Aviso de Privacidad y Uso Ético de IA *</strong>
+                  <span className="hidden sm:inline text-slate-300">
                     {" "}— Confirmo autorización para compartir esta información bajo resguardo confidencial de INTERPRES DIGITAL.
                   </span>
-                  <span className="sm:hidden text-[#102B4B]/75">
+                  <span className="sm:hidden text-slate-300">
                     {" "}y confirmo autorización para compartir esta información.
                   </span>
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-[#C7D5E2]/70 text-[11px]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-white/12 text-[11px]">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="inline-flex items-center gap-1 text-[#008995] font-bold">
+                  <span className="inline-flex items-center gap-1 text-[#5FD9E4] font-bold">
                     <Lock className="w-3 h-3 flex-shrink-0" />
                     Cero entrenamiento IA
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[#1464B8] font-bold">
+                  <span className="inline-flex items-center gap-1 text-[#8CC5FF] font-bold">
                     <ShieldCheck className="w-3 h-3 flex-shrink-0" />
                     LFPDPPP
                   </span>
@@ -2236,16 +2340,16 @@ const PublicAiBriefing: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowLegalModal(true)}
-                    className="w-full sm:w-auto justify-center px-3.5 py-2 sm:py-1.5 rounded-xl bg-white hover:bg-[#EBF2F8] border border-[#1464B8]/40 text-xs font-extrabold text-[#1464B8] shadow-xs inline-flex items-center gap-1.5 transition-all active:scale-[0.99]"
+                    className="w-full sm:w-auto justify-center px-3.5 py-2 sm:py-1.5 rounded-xl bg-[#071B36] hover:bg-[#1464B8] border border-[#356AB0] text-xs font-extrabold text-[#8CC5FF] hover:text-white inline-flex items-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <FileText className="w-3.5 h-3.5 text-[#1464B8] flex-shrink-0" />
+                    <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>Ver Aviso Legal y Privacidad →</span>
                   </button>
                   <a
                     href="https://interpresdigital.com/"
                     target="_blank"
                     rel="noreferrer"
-                    className="hidden sm:inline-flex items-center gap-1 text-[#102B4B]/60 hover:text-[#1464B8] font-semibold"
+                    className="hidden sm:inline-flex items-center gap-1 text-slate-300 hover:text-white font-semibold"
                   >
                     <span>Aviso Integral</span>
                     <ExternalLink className="w-3 h-3" />
@@ -2255,8 +2359,8 @@ const PublicAiBriefing: React.FC = () => {
             </div>
 
             {welcomeError && (
-              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-400/70 text-amber-100 text-xs font-semibold flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-300 flex-shrink-0" />
                 <span>{welcomeError}</span>
               </div>
             )}
@@ -2267,10 +2371,10 @@ const PublicAiBriefing: React.FC = () => {
                 onClick={() => handleStartBriefing("voice")}
                 disabled={savingDraft}
                 className={clsx(
-                  "group text-left p-4 sm:p-6 rounded-2xl border-2 transition-all text-white relative overflow-hidden",
+                  "group text-left p-4 sm:p-6 rounded-2xl border-2 transition-all text-white relative overflow-hidden cursor-pointer",
                   answers.privacyConsentAccepted
-                    ? "bg-gradient-to-br from-[#071B36] via-[#0E3A73] to-[#1464B8] hover:from-[#0A254B] hover:to-[#00A9B7] border-[#00A9B7]/60 shadow-xl shadow-[#1464B8]/20 active:scale-[0.99]"
-                    : "bg-[#071B36]/85 border-[#C7D5E2] opacity-85 hover:opacity-100"
+                    ? "bg-gradient-to-br from-[#10386E] via-[#1464B8] to-[#0092A0] hover:from-[#144382] hover:to-[#00A9B7] border-[#5FD9E4]/75 shadow-xl shadow-[#00A9B7]/20 active:scale-[0.99]"
+                    : "bg-[#0F2F5A]/80 border-[#285691] opacity-85 hover:opacity-100"
                 )}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5">
@@ -2278,20 +2382,20 @@ const PublicAiBriefing: React.FC = () => {
                     <img
                       src={NEXIA_URL}
                       alt="Nexia IA"
-                      className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover border border-[#00A9B7]/70 shadow-sm flex-shrink-0"
+                      className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover border border-[#7CE8F0] shadow-sm flex-shrink-0"
                     />
-                    <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/15 flex items-center justify-center flex-shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-[#071B36]/65 border border-white/25 flex items-center justify-center flex-shrink-0">
                       <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-[#7CE8F0]" />
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-[#00A9B7]/25 border border-[#00A9B7]/50 text-[#8FF0F7] text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap flex-shrink-0">
+                  <span className="px-2.5 py-1 rounded-full bg-[#071B36]/75 border border-[#5FD9E4]/60 text-[#8FF0F7] text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap flex-shrink-0">
                     Recomendado • IA en Vivo
                   </span>
                 </div>
                 <h3 className="font-display text-lg font-extrabold text-white mb-1">
                   Entrevista por Voz con Nexia IA
                 </h3>
-                <p className="text-slate-200 text-xs leading-relaxed">
+                <p className="text-slate-100 text-xs leading-relaxed">
                   Platica con voz natural con Nexia IA, la inteligencia artificial de Interpres Digital, mientras ves cómo se llena tu RFI en tiempo real.
                 </p>
               </button>
@@ -2300,31 +2404,31 @@ const PublicAiBriefing: React.FC = () => {
                 onClick={() => handleStartBriefing("manual")}
                 disabled={savingDraft}
                 className={clsx(
-                  "group text-left p-4 sm:p-6 rounded-2xl border-2 transition-all",
+                  "group text-left p-4 sm:p-6 rounded-2xl border-2 transition-all cursor-pointer",
                   answers.privacyConsentAccepted
-                    ? "bg-[#F6F9FC] hover:bg-white border-[#C7D5E2] hover:border-[#1464B8] shadow-sm active:scale-[0.99]"
-                    : "bg-[#F6F9FC]/75 border-[#C7D5E2] opacity-85 hover:opacity-100"
+                    ? "bg-[#0E2D58] hover:bg-[#12386B] border-[#2B5D9C] hover:border-[#66B2FF] shadow-lg active:scale-[0.99]"
+                    : "bg-[#0E2D58]/75 border-[#254F86] opacity-85 hover:opacity-100"
                 )}
               >
                 <div className="flex items-center justify-between mb-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-white border border-[#C7D5E2] flex items-center justify-center shadow-xs">
-                    <PenTool className="w-5 h-5 text-[#1464B8]" />
+                  <div className="w-11 h-11 rounded-xl bg-[#071B36] border border-[#2B5D9C] flex items-center justify-center shadow-xs">
+                    <PenTool className="w-5 h-5 text-[#66B2FF]" />
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-white border border-[#C7D5E2] text-[#102B4B]/80 text-[11px] font-bold uppercase tracking-wider">
+                  <span className="px-2.5 py-1 rounded-full bg-[#071B36] border border-[#2B5D9C] text-slate-200 text-[11px] font-bold uppercase tracking-wider">
                     Paso a Paso
                   </span>
                 </div>
-                <h3 className="font-display text-lg font-extrabold text-[#102B4B] mb-1">
+                <h3 className="font-display text-lg font-extrabold text-white mb-1">
                   Llenar Manualmente por Escrito
                 </h3>
-                <p className="text-[#102B4B]/70 text-xs leading-relaxed">
+                <p className="text-slate-300 text-xs leading-relaxed">
                   Responde las 10 secciones a tu ritmo, comparte el enlace con tu equipo de TI y adjunta archivos.
                 </p>
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-2 text-[11px] text-[#102B4B]/65 pt-1">
-              <ShieldCheck className="w-4 h-4 text-[#00A9B7]" />
+            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-300 pt-1">
+              <ShieldCheck className="w-4 h-4 text-[#5FD9E4]" />
               <span>Conexión cifrada • Puedes alternar entre voz y escritura o guardar avance para tu equipo técnico.</span>
             </div>
           </div>
@@ -2335,20 +2439,26 @@ const PublicAiBriefing: React.FC = () => {
     );
   }
 
-  // WORKSPACE (HYBRID VOICE + MANUAL)
+  // WORKSPACE (HYBRID VOICE + MANUAL IN DEEP SAPPHIRE ARCHITECTURAL THEME)
   return (
-    <div className="min-h-screen bg-[#F6F9FC] text-[#102B4B] flex flex-col">
-      {/* Top Sticky Light Editorial Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#C7D5E2] px-3 sm:px-6 md:px-8 py-2.5 sm:py-3.5 shadow-xs">
+    <div
+      className="min-h-screen bg-[#071B36] text-white flex flex-col"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle at 12% 10%, rgba(20,100,184,0.20) 0%, transparent 40%), radial-gradient(circle at 88% 85%, rgba(0,169,183,0.16) 0%, transparent 40%), linear-gradient(180deg, #071B36 0%, #0A2346 100%)",
+      }}
+    >
+      {/* Top Sticky Deep Sapphire Header */}
+      <header className="sticky top-0 z-30 bg-[#071B36]/95 backdrop-blur-xl border-b border-[#1E4373] px-3 sm:px-6 md:px-8 py-2.5 sm:py-3.5 shadow-lg shadow-[#041022]/30">
         <div className="max-w-[1240px] mx-auto flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
           <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
-            <img src={LOGO_COLOR_URL} alt="Interpres Digital Labs" className="h-8 sm:h-10 w-auto object-contain flex-shrink-0" />
-            <div className="hidden sm:block h-6 w-px bg-[#C7D5E2]" />
+            <img src={LOGO_BLANCO_URL} alt="Interpres Digital Labs" className="h-8 sm:h-10 w-auto object-contain flex-shrink-0" />
+            <div className="hidden sm:block h-6 w-px bg-[#234E86]" />
             <div className="min-w-0">
-              <div className="text-xs font-extrabold text-[#102B4B] truncate max-w-[160px] sm:max-w-xs">
+              <div className="text-xs font-extrabold text-white truncate max-w-[155px] sm:max-w-xs">
                 {answers.companyName}
               </div>
-              <div className="text-[11px] text-[#102B4B]/65 font-medium">
+              <div className="text-[11px] text-[#8CC5FF] font-medium">
                 Avance: {completedSectionsCount}/10 ({progressPercent}%)
                 {savingDraft && " • Guardando..."}
               </div>
@@ -2357,7 +2467,7 @@ const PublicAiBriefing: React.FC = () => {
 
           <div className="flex items-center gap-2">
             {/* Mode Switcher */}
-            <div className="bg-[#F6F9FC] p-1 rounded-xl border border-[#C7D5E2] flex items-center">
+            <div className="bg-[#0C274D] p-1 rounded-xl border border-[#25528C] flex items-center">
               <button
                 onClick={() => {
                   setActiveMode("voice");
@@ -2366,10 +2476,10 @@ const PublicAiBriefing: React.FC = () => {
                   }
                 }}
                 className={clsx(
-                  "px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all",
+                  "px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer",
                   activeMode === "voice"
-                    ? "bg-[#1464B8] text-white shadow-sm"
-                    : "text-[#102B4B]/70 hover:text-[#102B4B]"
+                    ? "bg-gradient-to-r from-[#1464B8] to-[#00A9B7] text-white shadow-sm"
+                    : "text-slate-300 hover:text-white"
                 )}
               >
                 <Mic className="w-3.5 h-3.5" />
@@ -2378,10 +2488,10 @@ const PublicAiBriefing: React.FC = () => {
               <button
                 onClick={handleStopVoiceAndEdit}
                 className={clsx(
-                  "px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all",
+                  "px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer",
                   activeMode === "manual"
-                    ? "bg-[#1464B8] text-white shadow-sm"
-                    : "text-[#102B4B]/70 hover:text-[#102B4B]"
+                    ? "bg-gradient-to-r from-[#1464B8] to-[#00A9B7] text-white shadow-sm"
+                    : "text-slate-300 hover:text-white"
                 )}
               >
                 <PenTool className="w-3.5 h-3.5" />
@@ -2392,17 +2502,17 @@ const PublicAiBriefing: React.FC = () => {
             {/* Share Draft with IT / Colleague */}
             <button
               onClick={handleCopyShareableLink}
-              className="px-2.5 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-[#F6F9FC] border border-[#C7D5E2] text-xs font-bold flex items-center gap-1.5 text-[#102B4B] transition-all shadow-xs"
+              className="px-2.5 sm:px-3.5 py-2 rounded-xl bg-[#0C274D] hover:bg-[#133A70] border border-[#25528C] text-xs font-bold flex items-center gap-1.5 text-slate-100 transition-all cursor-pointer"
               title="Copia este enlace para compartir el avance con tu líder de TI u otro colega"
             >
               {copiedDraftLink ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#00A9B7]" />
-                  <span className="text-[#008995] text-[11px] sm:text-xs">¡Copiado!</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#5FD9E4]" />
+                  <span className="text-[#7CE8F0] text-[11px] sm:text-xs">¡Copiado!</span>
                 </>
               ) : (
                 <>
-                  <Share2 className="w-3.5 h-3.5 text-[#1464B8]" />
+                  <Share2 className="w-3.5 h-3.5 text-[#66B2FF]" />
                   <span className="hidden md:inline">Compartir con TI</span>
                 </>
               )}
@@ -2415,12 +2525,12 @@ const PublicAiBriefing: React.FC = () => {
       <div className="max-w-[1240px] w-full mx-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 px-3 py-4 sm:p-6 md:p-8">
         {/* Left Sidebar on Desktop / Secondary List on Mobile */}
         <aside className="order-2 lg:order-1 lg:col-span-4 space-y-3">
-          <div className="bg-white border border-[#C7D5E2] rounded-2xl p-3.5 sm:p-4 space-y-2.5 shadow-sm">
-            <div className="flex items-center justify-between px-1 pb-2 border-b border-[#C7D5E2]/70">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-[#102B4B]/75">
+          <div className="bg-[#0B2548]/95 border border-[#244E85] rounded-2xl p-3.5 sm:p-4 space-y-2.5 shadow-xl">
+            <div className="flex items-center justify-between px-1 pb-2 border-b border-[#1E4373]">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
                 Etapas del RFI (10 bloques)
               </span>
-              <span className="text-xs font-extrabold text-[#1464B8]">{progressPercent}%</span>
+              <span className="text-xs font-extrabold text-[#5FD9E4]">{progressPercent}%</span>
             </div>
 
             <div className="space-y-1.5">
@@ -2441,29 +2551,29 @@ const PublicAiBriefing: React.FC = () => {
                       }
                     }}
                     className={clsx(
-                      "w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all border",
+                      "w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all border cursor-pointer",
                       isFlashing
-                        ? "bg-[#00A9B7]/15 border-[#00A9B7] text-[#102B4B] scale-[1.01]"
+                        ? "bg-[#00A9B7]/25 border-[#5FD9E4] text-white scale-[1.01]"
                         : isCurrent
-                        ? "bg-[#1464B8]/10 border-[#1464B8] text-[#102B4B] font-bold shadow-xs"
-                        : "bg-[#F6F9FC] border-[#C7D5E2]/80 text-[#102B4B]/80 hover:bg-white hover:border-[#1464B8]/60"
+                        ? "bg-[#1464B8]/35 border-[#66B2FF] text-white font-bold shadow-xs"
+                        : "bg-[#0E2D58]/80 border-[#21487A] text-slate-200 hover:bg-[#133A70] hover:border-[#376BB0]"
                     )}
                   >
                     <span className="truncate pr-2">
                       {sec.number}. {sec.shortTitle}
                     </span>
                     {filled ? (
-                      <CheckCircle2 className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
                     ) : pending ? (
-                      <span className="px-2 py-0.5 rounded bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-bold flex-shrink-0">
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/50 text-amber-200 text-[10px] font-bold flex-shrink-0">
                         Pendiente TI
                       </span>
                     ) : partial ? (
-                      <span className="px-2 py-0.5 rounded bg-[#1464B8]/12 border border-[#1464B8]/35 text-[#1464B8] text-[10px] font-bold flex-shrink-0">
+                      <span className="px-2 py-0.5 rounded bg-[#1464B8]/30 border border-[#66B2FF]/50 text-[#9CC6F5] text-[10px] font-bold flex-shrink-0">
                         En curso
                       </span>
                     ) : (
-                      <div className="w-3.5 h-3.5 rounded-full border border-[#9EB2C8] flex-shrink-0" />
+                      <div className="w-3.5 h-3.5 rounded-full border border-[#4973A6] flex-shrink-0" />
                     )}
                   </button>
                 );
@@ -2471,7 +2581,7 @@ const PublicAiBriefing: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-[#071B36] border border-[#1B3C68] rounded-2xl p-4 text-xs text-slate-200 space-y-1.5 shadow-sm">
+          <div className="bg-[#0C274D] border border-[#244E85] rounded-2xl p-4 text-xs text-slate-200 space-y-1.5 shadow-md">
             <div className="font-bold flex items-center gap-1.5 text-[#5FD9E4]">
               <Clock className="w-4 h-4 flex-shrink-0" />
               <span>¿Te falta algún dato técnico?</span>
@@ -2483,14 +2593,14 @@ const PublicAiBriefing: React.FC = () => {
           </div>
         </aside>
 
-        {/* Right Panel (First on Mobile): Immersive #071B36 Live Voice Consultant OR Crisp Editorial Form */}
+        {/* Right Panel (First on Mobile): Live Voice Consultant OR Deep Sapphire Manual Wizard */}
         <section className="order-1 lg:order-2 lg:col-span-8">
           {activeMode === "voice" ? (
-            <div className="bg-[#071B36] border border-[#1B3C68] text-white rounded-3xl p-4 sm:p-6 md:p-8 flex flex-col justify-between space-y-5 shadow-[0_24px_60px_-15px_rgba(7,27,54,0.35)]">
+            <div className="bg-[#0B2548]/95 border border-[#26538D] text-white rounded-3xl p-4 sm:p-6 md:p-8 flex flex-col justify-between space-y-5 shadow-[0_24px_60px_-15px_rgba(3,12,26,0.55)]">
               {/* Top Stage Tracker + Nexia Identity */}
               <div className="space-y-3 border-b border-white/12 pb-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2.5">
-                  <div className="inline-flex items-center gap-2.5 pr-3.5 pl-1.5 py-1 rounded-full bg-[#0C2548] border border-white/15">
+                  <div className="inline-flex items-center gap-2.5 pr-3.5 pl-1.5 py-1 rounded-full bg-[#071B36] border border-[#27548E]">
                     <img
                       src={NEXIA_URL}
                       alt="Nexia IA"
@@ -2541,14 +2651,14 @@ const PublicAiBriefing: React.FC = () => {
                         }}
                         title={`${sec.number}. ${sec.shortTitle}`}
                         className={clsx(
-                          "h-7 rounded-lg text-[11px] font-extrabold flex items-center justify-center border transition-all",
+                          "h-7 rounded-lg text-[11px] font-extrabold flex items-center justify-center border transition-all cursor-pointer",
                           filled
                             ? "bg-[#00A9B7]/25 border-[#00A9B7] text-[#8FF0F7]"
                             : isCurrent
                             ? "bg-[#1464B8] border-[#7CE8F0] text-white shadow-sm"
                             : partial
                             ? "bg-[#1464B8]/25 border-[#1464B8]/60 text-slate-100"
-                            : "bg-[#0C2548] border-[#1B3C68] text-slate-400"
+                            : "bg-[#071B36] border-[#21487A] text-slate-400"
                         )}
                       >
                         {filled ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : sec.number}
@@ -2585,13 +2695,13 @@ const PublicAiBriefing: React.FC = () => {
                       }
                     }}
                     className={clsx(
-                      "relative w-32 h-32 sm:w-36 sm:h-36 rounded-full flex items-center justify-center border-2 shadow-2xl transition-all duration-200 overflow-hidden",
+                      "relative w-32 h-32 sm:w-36 sm:h-36 rounded-full flex items-center justify-center border-2 shadow-2xl transition-all duration-200 overflow-hidden cursor-pointer",
                       voiceStatus === "speaking"
                         ? "border-[#5FD9E4] scale-105 ring-4 ring-[#00A9B7]/35"
                         : voiceStatus === "paused"
                         ? "border-amber-400/90"
                         : voiceStatus === "connected"
-                        ? "border-[#1464B8] ring-2 ring-[#1464B8]/40"
+                        ? "border-[#66B2FF] ring-2 ring-[#1464B8]/45"
                         : "border-white/30 hover:scale-105 hover:border-[#5FD9E4]"
                     )}
                   >
@@ -2641,7 +2751,7 @@ const PublicAiBriefing: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => startVoiceSession(briefingId, answersRef.current)}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#00A9B7]/20 transition-all active:scale-95"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#00A9B7]/20 transition-all active:scale-95 cursor-pointer"
                   >
                     <Mic className="w-4 h-4" />
                     <span>
@@ -2682,7 +2792,7 @@ const PublicAiBriefing: React.FC = () => {
 
                 {/* Quick Budget Selector shown ONLY during Stage 8 */}
                 {activeSection === 8 && (
-                  <div className="w-full max-w-xl bg-[#0C2548] border border-[#00A9B7]/45 rounded-2xl p-3.5 space-y-2.5">
+                  <div className="w-full max-w-xl bg-[#071B36] border border-[#00A9B7]/50 rounded-2xl p-3.5 space-y-2.5">
                     <div className="text-[11px] font-bold text-[#8FF0F7]">
                       Opcional — Selecciona tu rango estimado con un toque (Etapa 8):
                     </div>
@@ -2704,10 +2814,10 @@ const PublicAiBriefing: React.FC = () => {
                             if (briefingId) persistDraft(next, briefingId, "draft");
                           }}
                           className={clsx(
-                            "px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all text-left",
+                            "px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all text-left cursor-pointer",
                             answers.estimatedBudget === opt
                               ? "bg-[#00A9B7] border-[#7CE8F0] text-white shadow-sm"
-                              : "bg-[#071B36] border-[#1B3C68] text-slate-200 hover:border-[#00A9B7]"
+                              : "bg-[#0C274D] border-[#25528C] text-slate-200 hover:border-[#00A9B7]"
                           )}
                         >
                           {answers.estimatedBudget === opt ? `✓ ${opt}` : opt}
@@ -2728,7 +2838,7 @@ const PublicAiBriefing: React.FC = () => {
 
                 {/* Live Observations Box shown during Stage 10 in Voice Mode */}
                 {activeSection === 10 && (
-                  <div className="w-full max-w-xl bg-[#0C2548] border border-[#00A9B7]/55 rounded-2xl p-3.5 space-y-2.5">
+                  <div className="w-full max-w-xl bg-[#071B36] border border-[#00A9B7]/55 rounded-2xl p-3.5 space-y-2.5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-[11px] font-extrabold text-[#7CE8F0]">
                         Etapa 10/10 — Observaciones o comentarios adicionales
@@ -2742,7 +2852,7 @@ const PublicAiBriefing: React.FC = () => {
                       value={answers.additionalComments}
                       onChange={(e) => updateField("additionalComments", e.target.value)}
                       placeholder="Aquí aparecerá en vivo cualquier observación que le menciones a Nexia IA..."
-                      className="w-full px-3.5 py-2 rounded-xl bg-[#071B36] border border-[#1B3C68] text-xs text-white placeholder:text-slate-400 focus:border-[#00A9B7] focus:outline-none resize-y"
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#0C274D] border border-[#25528C] text-xs text-white placeholder:text-slate-400 focus:border-[#00A9B7] focus:outline-none resize-y"
                     />
                     <div className="flex justify-end">
                       <button
@@ -2752,7 +2862,7 @@ const PublicAiBriefing: React.FC = () => {
                           setVoiceCompletedBanner(true);
                           setActiveSection(10);
                         }}
-                        className="px-3.5 py-1.5 rounded-lg bg-[#00A9B7] hover:bg-[#008C99] text-white text-[11px] font-bold flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 rounded-lg bg-[#00A9B7] hover:bg-[#008C99] text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Revisar Resumen Completo y Enviar</span>
@@ -2764,7 +2874,7 @@ const PublicAiBriefing: React.FC = () => {
 
               {/* Live Transcript Preview with Nexia Avatar */}
               {transcriptLog.length > 0 && (
-                <div className="bg-[#0C2548] border border-[#1B3C68] rounded-2xl p-3.5 max-h-40 overflow-y-auto space-y-2.5 text-xs">
+                <div className="bg-[#071B36] border border-[#234E86] rounded-2xl p-3.5 max-h-40 overflow-y-auto space-y-2.5 text-xs">
                   {transcriptLog.slice(-3).map((entry, idx) => (
                     <div
                       key={idx}
@@ -2780,7 +2890,7 @@ const PublicAiBriefing: React.FC = () => {
                           className="w-6 h-6 rounded-full object-cover border border-[#00A9B7]/60 flex-shrink-0 mt-0.5"
                         />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-[#1464B8]/40 border border-[#1464B8] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">
+                        <div className="w-6 h-6 rounded-full bg-[#1464B8]/40 border border-[#66B2FF] flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mt-0.5">
                           Tú
                         </div>
                       )}
@@ -2806,10 +2916,10 @@ const PublicAiBriefing: React.FC = () => {
                     voiceStatus !== "paused"
                   }
                   className={clsx(
-                    "px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all disabled:opacity-40",
+                    "px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all disabled:opacity-40 cursor-pointer",
                     isVoicePaused
                       ? "bg-amber-400 hover:bg-amber-300 border-amber-200 text-[#071B36] shadow-sm"
-                      : "bg-[#0C2548] hover:bg-[#123361] border-[#1B3C68] text-white"
+                      : "bg-[#071B36] hover:bg-[#10315E] border-[#26538D] text-white"
                   )}
                 >
                   {isVoicePaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
@@ -2825,10 +2935,10 @@ const PublicAiBriefing: React.FC = () => {
                     voiceStatus !== "paused"
                   }
                   className={clsx(
-                    "px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all disabled:opacity-40",
+                    "px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all disabled:opacity-40 cursor-pointer",
                     isMuted
                       ? "bg-rose-600 border-rose-400/60 text-white"
-                      : "bg-[#0C2548] hover:bg-[#123361] border-[#1B3C68] text-white"
+                      : "bg-[#071B36] hover:bg-[#10315E] border-[#26538D] text-white"
                   )}
                 >
                   {isMuted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
@@ -2841,7 +2951,7 @@ const PublicAiBriefing: React.FC = () => {
                     handleStopVoiceAndEdit();
                     setActiveSection(10);
                   }}
-                  className="col-span-2 sm:col-span-1 px-4 py-2.5 rounded-xl bg-[#1464B8] hover:bg-[#10539A] border border-[#5BA4EE]/40 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                  className="col-span-2 sm:col-span-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Revisar Respuestas y Finalizar</span>
@@ -2849,14 +2959,14 @@ const PublicAiBriefing: React.FC = () => {
               </div>
             </div>
           ) : (
-            /* MANUAL / REVIEW EDITORIAL FORM WIZARD */
-            <div className="bg-white border border-[#C7D5E2] rounded-3xl p-4 sm:p-6 md:p-8 space-y-5 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#C7D5E2]/80 pb-4">
+            /* MANUAL / REVIEW DEEP SAPPHIRE WIZARD */
+            <div className="bg-[#0B2548]/95 border border-[#26538D] rounded-3xl p-4 sm:p-6 md:p-8 space-y-5 shadow-[0_24px_60px_-15px_rgba(3,12,26,0.55)]">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1E4373] pb-4">
                 <div>
-                  <span className="text-xs font-extrabold text-[#1464B8] uppercase tracking-wider">
+                  <span className="text-xs font-extrabold text-[#5FD9E4] uppercase tracking-wider">
                     Sección {clampSection(activeSection)} de 10
                   </span>
-                  <h2 className="font-display text-xl font-extrabold text-[#102B4B]">
+                  <h2 className="font-display text-xl font-extrabold text-white">
                     {(AI_RFI_SECTIONS[clampSection(activeSection) - 1] || AI_RFI_SECTIONS[0]).title}
                   </h2>
                 </div>
@@ -2865,10 +2975,10 @@ const PublicAiBriefing: React.FC = () => {
                   <button
                     onClick={() => togglePendingSection(activeSection)}
                     className={clsx(
-                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
+                      "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
                       toNumberArray(answers.pendingSections).includes(activeSection)
-                        ? "bg-amber-50 border-amber-400 text-amber-800"
-                        : "bg-[#F6F9FC] border-[#C7D5E2] text-[#102B4B]/80 hover:border-[#1464B8] hover:text-[#1464B8]"
+                        ? "bg-amber-500/20 border-amber-400 text-amber-200"
+                        : "bg-[#071B36] border-[#26538D] text-slate-200 hover:border-[#66B2FF] hover:text-white"
                     )}
                   >
                     {toNumberArray(answers.pendingSections).includes(activeSection)
@@ -2947,8 +3057,8 @@ const PublicAiBriefing: React.FC = () => {
                     onChange={(v) => updateField("outOfScopeTasks", v)}
                     placeholder="Ej. Autorizar descuentos especiales, cancelar facturas o negociar contratos especiales..."
                   />
-                  <div className="p-4 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] transition-colors space-y-2.5">
-                    <label className="block text-xs font-bold text-[#102B4B]">
+                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2.5">
+                    <label className="block text-xs font-bold text-slate-100">
                       ¿El agente debe tomar decisiones autónomas o siempre escalar a un humano?
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -2958,10 +3068,10 @@ const PublicAiBriefing: React.FC = () => {
                           type="button"
                           onClick={() => updateField("autonomyLevel", opt)}
                           className={clsx(
-                            "px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-left",
+                            "px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-left cursor-pointer",
                             answers.autonomyLevel === opt
-                              ? "bg-[#1464B8] border-[#1464B8] text-white shadow-xs"
-                              : "bg-white border-[#C7D5E2] text-[#102B4B] hover:border-[#1464B8]"
+                              ? "bg-[#1464B8] border-[#66B2FF] text-white shadow-xs"
+                              : "bg-[#071B36] border-[#25528C] text-slate-200 hover:border-[#5FD9E4]"
                           )}
                         >
                           {opt}
@@ -2973,7 +3083,7 @@ const PublicAiBriefing: React.FC = () => {
                       value={answers.autonomyLevel}
                       onChange={(e) => updateField("autonomyLevel", e.target.value)}
                       placeholder="O detalla aquí las reglas de autonomía y escalamiento..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-sm text-[#102B4B] placeholder:text-[#102B4B]/40 focus:border-[#1464B8] focus:outline-none"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -2982,8 +3092,8 @@ const PublicAiBriefing: React.FC = () => {
               {/* Section 4 */}
               {activeSection === 4 && (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] transition-colors space-y-2.5">
-                    <label className="block text-xs font-bold text-[#102B4B]">
+                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] transition-colors space-y-2.5">
+                    <label className="block text-xs font-bold text-slate-100">
                       ¿Quiénes usarán el agente? (Selecciona todos los que apliquen)
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -2993,10 +3103,10 @@ const PublicAiBriefing: React.FC = () => {
                           type="button"
                           onClick={() => toggleArrayOption("targetUsers", opt)}
                           className={clsx(
-                            "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all",
+                            "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
                             toStringArray(answers.targetUsers).includes(opt)
-                              ? "bg-[#1464B8] border-[#1464B8] text-white shadow-xs"
-                              : "bg-white border-[#C7D5E2] text-[#102B4B] hover:border-[#1464B8]"
+                              ? "bg-[#1464B8] border-[#66B2FF] text-white shadow-xs"
+                              : "bg-[#071B36] border-[#25528C] text-slate-200 hover:border-[#5FD9E4]"
                           )}
                         >
                           {opt}
@@ -3028,8 +3138,8 @@ const PublicAiBriefing: React.FC = () => {
               {/* Section 5 */}
               {activeSection === 5 && (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] transition-colors space-y-2.5">
-                    <label className="block text-xs font-bold text-[#102B4B]">
+                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] transition-colors space-y-2.5">
+                    <label className="block text-xs font-bold text-slate-100">
                       ¿Por dónde debe operar? (Canales)
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -3039,10 +3149,10 @@ const PublicAiBriefing: React.FC = () => {
                           type="button"
                           onClick={() => toggleArrayOption("channels", opt)}
                           className={clsx(
-                            "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all",
+                            "px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
                             toStringArray(answers.channels).includes(opt)
-                              ? "bg-[#1464B8] border-[#1464B8] text-white shadow-xs"
-                              : "bg-white border-[#C7D5E2] text-[#102B4B] hover:border-[#1464B8]"
+                              ? "bg-[#1464B8] border-[#66B2FF] text-white shadow-xs"
+                              : "bg-[#071B36] border-[#25528C] text-slate-200 hover:border-[#5FD9E4]"
                           )}
                         >
                           {opt}
@@ -3116,8 +3226,8 @@ const PublicAiBriefing: React.FC = () => {
               {/* Section 8 */}
               {activeSection === 8 && (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] transition-colors space-y-2.5">
-                    <label className="block text-xs font-bold text-[#102B4B]">
+                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2.5">
+                    <label className="block text-xs font-bold text-slate-100">
                       Presupuesto aproximado destinado al proyecto
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -3127,10 +3237,10 @@ const PublicAiBriefing: React.FC = () => {
                           type="button"
                           onClick={() => updateField("estimatedBudget", opt)}
                           className={clsx(
-                            "px-3 py-2 rounded-xl text-xs font-semibold border transition-all",
+                            "px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer",
                             answers.estimatedBudget === opt
-                              ? "bg-[#1464B8] border-[#1464B8] text-white shadow-xs"
-                              : "bg-white border-[#C7D5E2] text-[#102B4B] hover:border-[#1464B8]"
+                              ? "bg-[#00A9B7] border-[#7CE8F0] text-white shadow-xs"
+                              : "bg-[#071B36] border-[#25528C] text-slate-200 hover:border-[#5FD9E4]"
                           )}
                         >
                           {opt}
@@ -3142,7 +3252,7 @@ const PublicAiBriefing: React.FC = () => {
                       value={answers.estimatedBudget}
                       onChange={(e) => updateField("estimatedBudget", e.target.value)}
                       placeholder="O escribe aquí tu presupuesto estimado o esquema deseado..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-sm text-[#102B4B] placeholder:text-[#102B4B]/40 focus:border-[#1464B8] focus:outline-none"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
                     />
                   </div>
                   <FieldInput
@@ -3188,9 +3298,9 @@ const PublicAiBriefing: React.FC = () => {
               {activeSection === 10 && (
                 <div className="space-y-5">
                   {/* Closing Guidance Banner */}
-                  <div className="p-4 rounded-2xl bg-[#00A9B7]/10 border border-[#00A9B7]/45 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="p-4 rounded-2xl bg-[#00A9B7]/16 border border-[#00A9B7]/55 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
-                      <div className="text-xs font-extrabold text-[#007B86] flex items-center gap-1.5">
+                      <div className="text-xs font-extrabold text-[#7CE8F0] flex items-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                         <span>
                           {voiceCompletedBanner
@@ -3198,9 +3308,9 @@ const PublicAiBriefing: React.FC = () => {
                             : "Etapa Final: Observaciones, Resumen de Respuestas y Envío"}
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#102B4B]/80 leading-relaxed">
+                      <p className="text-[11px] text-slate-200 leading-relaxed">
                         Verifica tus observaciones adicionales y el resumen de tus respuestas antes de presionar{" "}
-                        <strong className="text-[#102B4B]">Enviar RFI</strong>. La carga de archivos al final es totalmente opcional.
+                        <strong className="text-white">Enviar RFI</strong>. La carga de archivos al final es totalmente opcional.
                       </p>
                     </div>
                     {briefingId && (
@@ -3210,21 +3320,21 @@ const PublicAiBriefing: React.FC = () => {
                           setActiveMode("voice");
                           startVoiceSession(briefingId, answersRef.current);
                         }}
-                        className="px-3.5 py-2 rounded-xl bg-[#071B36] hover:bg-[#1464B8] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 flex-shrink-0 transition-all"
+                        className="px-3.5 py-2 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 flex-shrink-0 transition-all cursor-pointer"
                       >
-                        <Mic className="w-3.5 h-3.5 text-[#5FD9E4]" />
+                        <Mic className="w-3.5 h-3.5 text-[#7CE8F0]" />
                         <span>Dictar algo más con Nexia IA</span>
                       </button>
                     )}
                   </div>
 
                   {/* 1. Dedicated Observations & Extra Comments Box FIRST */}
-                  <div className="p-4 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] transition-colors space-y-2">
+                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="block text-xs font-extrabold text-[#102B4B]">
+                      <label className="block text-xs font-extrabold text-white">
                         1. Observaciones o comentarios adicionales
                       </label>
-                      <span className="text-[10px] font-semibold text-[#1464B8]">
+                      <span className="text-[10px] font-semibold text-[#8CC5FF]">
                         Puedes escribir o complementar cualquier comentario final aquí
                       </span>
                     </div>
@@ -3233,22 +3343,22 @@ const PublicAiBriefing: React.FC = () => {
                       value={answers.additionalComments}
                       onChange={(e) => updateField("additionalComments", e.target.value)}
                       placeholder="Agrega aquí cualquier observación extra, contexto especial, dudas o detalles adicionales que quieras considerar en tu propuesta (o déjalo en blanco si no requieres agregar nada más)..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-sm text-[#102B4B] placeholder:text-[#102B4B]/40 focus:border-[#1464B8] focus:outline-none resize-y"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none resize-y"
                     />
                   </div>
 
                   {/* 2. Readable Executive Summary of All Stages (1 to 9) */}
-                  <div className="p-4 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#C7D5E2]/80 pb-2.5">
+                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/12 pb-2.5">
                       <div>
-                        <h3 className="text-xs font-extrabold text-[#102B4B]">
+                        <h3 className="text-xs font-extrabold text-white">
                           2. Resumen de tus respuestas registradas (Etapas 1 a 9)
                         </h3>
-                        <p className="text-[11px] text-[#102B4B]/70">
+                        <p className="text-[11px] text-slate-300">
                           Revisa la información capturada; si deseas ajustar algún punto, toca <strong>Editar</strong> en esa etapa.
                         </p>
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-[#1464B8]/10 border border-[#1464B8]/30 text-[11px] font-bold text-[#1464B8]">
+                      <span className="px-2.5 py-1 rounded-lg bg-[#1464B8]/25 border border-[#66B2FF]/45 text-[11px] font-bold text-[#8CC5FF]">
                         {completedSectionsCount}/10 etapas listas
                       </span>
                     </div>
@@ -3344,37 +3454,37 @@ const PublicAiBriefing: React.FC = () => {
                         return (
                           <div
                             key={card.sec}
-                            className="p-3 rounded-xl bg-white border border-[#C7D5E2] flex flex-col justify-between space-y-2"
+                            className="p-3 rounded-xl bg-[#071B36] border border-[#244E85] flex flex-col justify-between space-y-2"
                           >
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="text-[11px] font-extrabold text-[#102B4B] flex items-center gap-1.5">
+                                <span className="text-[11px] font-extrabold text-white flex items-center gap-1.5">
                                   {isDone ? (
-                                    <Check className="w-3.5 h-3.5 text-[#00A9B7] flex-shrink-0" />
+                                    <Check className="w-3.5 h-3.5 text-[#5FD9E4] flex-shrink-0" />
                                   ) : (
-                                    <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" />
+                                    <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
                                   )}
                                   {card.title}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => setActiveSection(card.sec)}
-                                  className="text-[10px] font-bold text-[#1464B8] hover:text-[#10539A] underline flex-shrink-0"
+                                  className="text-[10px] font-bold text-[#66B2FF] hover:text-white underline flex-shrink-0 cursor-pointer"
                                 >
                                   Editar
                                 </button>
                               </div>
 
                               {populated.length > 0 ? (
-                                <div className="space-y-1 text-[11px] text-[#102B4B]/80">
+                                <div className="space-y-1 text-[11px] text-slate-300">
                                   {populated.map(([lbl, val], i) => (
                                     <div key={i} className="line-clamp-2 leading-snug">
-                                      <strong className="text-[#102B4B]">{lbl}:</strong> {val}
+                                      <strong className="text-slate-100">{lbl}:</strong> {val}
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <div className="text-[11px] italic text-amber-700">
+                                <div className="text-[11px] italic text-amber-300">
                                   {isPend ? "Marcado pendiente para TI" : "Sin respuesta registrada aún"}
                                 </div>
                               )}
@@ -3386,22 +3496,22 @@ const PublicAiBriefing: React.FC = () => {
                   </div>
 
                   {/* 3. Optional Attachments LAST */}
-                  <div className="p-4 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-3">
+                  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="block text-xs font-bold text-[#102B4B]">
+                      <label className="block text-xs font-bold text-white">
                         3. Documentos adjuntos (Opcional)
                       </label>
-                      <span className="text-[10px] font-semibold text-[#102B4B]/60">
+                      <span className="text-[10px] font-semibold text-slate-300">
                         Solo si deseas anexar manuales, diagramas o ejemplos
                       </span>
                     </div>
-                    <label className="flex flex-col items-center justify-center border border-dashed border-[#8DA4BE] hover:border-[#1464B8] rounded-2xl p-4 bg-white hover:bg-[#F6F9FC] cursor-pointer transition-all text-center">
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#00A9B7]/60 hover:border-[#5FD9E4] rounded-2xl p-4 bg-[#071B36]/80 hover:bg-[#092347] cursor-pointer transition-all text-center">
                       {uploadingFiles ? (
-                        <Loader2 className="w-6 h-6 text-[#1464B8] animate-spin mb-1.5" />
+                        <Loader2 className="w-6 h-6 text-[#5FD9E4] animate-spin mb-1.5" />
                       ) : (
-                        <Upload className="w-6 h-6 text-[#1464B8] mb-1.5" />
+                        <Upload className="w-6 h-6 text-[#5FD9E4] mb-1.5" />
                       )}
-                      <span className="text-xs font-bold text-[#102B4B]">
+                      <span className="text-xs font-bold text-white">
                         {uploadingFiles
                           ? "Subiendo documentos..."
                           : "Adjuntar PDFs, Word, Excel o imágenes (opcional, máx. 15 MB)"}
@@ -3420,15 +3530,15 @@ const PublicAiBriefing: React.FC = () => {
                         {toAttachmentArray(answers.attachments).map((att, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-xs"
+                            className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-xs"
                           >
                             <div className="flex items-center gap-2 truncate">
-                              <FileText className="w-4 h-4 text-[#1464B8] flex-shrink-0" />
+                              <FileText className="w-4 h-4 text-[#5FD9E4] flex-shrink-0" />
                               <a
                                 href={att.url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-[#1464B8] font-semibold hover:underline truncate"
+                                className="text-white font-semibold hover:text-[#7CE8F0] hover:underline truncate"
                               >
                                 {att.name}
                               </a>
@@ -3436,7 +3546,7 @@ const PublicAiBriefing: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleRemoveAttachment(idx)}
-                              className="text-rose-500 hover:text-rose-600 p-1"
+                              className="text-rose-400 hover:text-rose-300 p-1 cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -3449,12 +3559,12 @@ const PublicAiBriefing: React.FC = () => {
               )}
 
               {/* Wizard Navigation Footer */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-5 border-t border-[#C7D5E2]/80">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-5 border-t border-white/12">
                 <button
                   type="button"
                   disabled={activeSection === 1}
                   onClick={() => handleSaveManualStep(Math.max(1, activeSection - 1))}
-                  className="px-3.5 py-2 rounded-xl bg-[#F6F9FC] hover:bg-[#EBF2F8] border border-[#C7D5E2] disabled:opacity-40 text-xs font-bold text-[#102B4B] flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl bg-[#071B36] hover:bg-[#10315E] border border-[#26538D] disabled:opacity-40 text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Anterior</span>
@@ -3464,7 +3574,7 @@ const PublicAiBriefing: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleSaveManualStep()}
-                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F6F9FC] border border-[#C7D5E2] text-xs font-bold text-[#102B4B]"
+                    className="px-3.5 py-2 rounded-xl bg-[#071B36] hover:bg-[#10315E] border border-[#26538D] text-xs font-bold text-slate-200 cursor-pointer"
                   >
                     Guardar avance
                   </button>
@@ -3473,7 +3583,7 @@ const PublicAiBriefing: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleSaveManualStep(activeSection + 1)}
-                      className="px-4 py-2 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-xs font-bold text-white flex items-center gap-1.5 shadow-md shadow-[#1464B8]/20"
+                      className="px-4 py-2 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-xs font-bold text-white flex items-center gap-1.5 shadow-md shadow-[#1464B8]/25 cursor-pointer"
                     >
                       <span>Siguiente</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -3483,7 +3593,7 @@ const PublicAiBriefing: React.FC = () => {
                       type="button"
                       disabled={submittingFinal}
                       onClick={handleFinalSubmit}
-                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-xs font-bold text-white flex items-center gap-1.5 shadow-md shadow-[#00A9B7]/20 transition-all active:scale-95"
+                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#1464B8] to-[#00A9B7] hover:from-[#10539A] hover:to-[#008C99] text-xs font-bold text-white flex items-center gap-1.5 shadow-md shadow-[#00A9B7]/25 transition-all active:scale-95 cursor-pointer"
                     >
                       {submittingFinal ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -3514,14 +3624,14 @@ const FieldInput = ({
   onChange: (v: string) => void;
   placeholder?: string;
 }) => (
-  <div className="p-4 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] focus-within:bg-white transition-colors space-y-2">
-    <label className="block text-xs font-bold text-[#102B4B]">{label}</label>
+  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2">
+    <label className="block text-xs font-bold text-slate-100">{label}</label>
     <input
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-sm text-[#102B4B] placeholder:text-[#102B4B]/40 focus:border-[#1464B8] focus:outline-none"
+      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none"
     />
   </div>
 );
@@ -3537,14 +3647,14 @@ const FieldTextarea = ({
   onChange: (v: string) => void;
   placeholder?: string;
 }) => (
-  <div className="p-4 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] focus-within:bg-white transition-colors space-y-2">
-    <label className="block text-xs font-bold text-[#102B4B]">{label}</label>
+  <div className="p-4 rounded-2xl bg-[#0E2D58] border border-[#285691] focus-within:border-[#5FD9E4] transition-colors space-y-2">
+    <label className="block text-xs font-bold text-slate-100">{label}</label>
     <textarea
       rows={3}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#C7D5E2] text-sm text-[#102B4B] placeholder:text-[#102B4B]/40 focus:border-[#1464B8] focus:outline-none resize-y"
+      className="w-full px-4 py-2.5 rounded-xl bg-[#071B36] border border-[#244E85] text-sm text-white placeholder:text-slate-400 focus:border-[#5FD9E4] focus:outline-none resize-y"
     />
   </div>
 );
@@ -3569,11 +3679,11 @@ class AiBriefingErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#F6F9FC] text-[#102B4B] flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-white border border-[#C7D5E2] rounded-3xl p-7 text-center space-y-4 shadow-xl">
-            <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
-            <h2 className="font-display text-lg font-extrabold text-[#102B4B]">Tu avance está resguardado</h2>
-            <p className="text-xs text-[#102B4B]/75 leading-relaxed">
+        <div className="min-h-screen bg-[#071B36] text-white flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-[#0B2548] border border-[#26538D] rounded-3xl p-7 text-center space-y-4 shadow-2xl">
+            <AlertCircle className="w-10 h-10 text-amber-400 mx-auto" />
+            <h2 className="font-display text-lg font-extrabold text-white">Tu avance está resguardado</h2>
+            <p className="text-xs text-slate-300 leading-relaxed">
               Ocurrió un ajuste visual inesperado, pero todas tus respuestas están guardadas de forma segura. Presiona continuar para retomar tu diagnóstico.
             </p>
             <button
@@ -3582,7 +3692,7 @@ class AiBriefingErrorBoundary extends React.Component<
                 this.setState({ hasError: false });
                 window.location.reload();
               }}
-              className="px-5 py-2.5 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-xs font-bold text-white"
+              className="px-5 py-2.5 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-xs font-bold text-white cursor-pointer"
             >
               Continuar mi diagnóstico
             </button>
