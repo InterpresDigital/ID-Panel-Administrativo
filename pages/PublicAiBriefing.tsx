@@ -153,7 +153,7 @@ const PublicAiBriefing: React.FC = () => {
   // No asignar draftParam antes de cargar Firestore para evitar que visibilitychange sobrescriba con respuestas vacías
   const [briefingId, setBriefingId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<AiBriefingAnswers>(INITIAL_AI_BRIEFING_ANSWERS);
-  const [step, setStep] = useState<"welcome" | "workspace" | "submitted">("welcome");
+  const [step, setStep] = useState<"intro" | "welcome" | "workspace" | "submitted">("intro");
   const [activeMode, setActiveMode] = useState<"voice" | "manual">("voice");
   const [usedVoiceOnce, setUsedVoiceOnce] = useState(false);
   const [usedManualOnce, setUsedManualOnce] = useState(false);
@@ -182,8 +182,11 @@ const PublicAiBriefing: React.FC = () => {
 
   // Telemetría interna de duración de voz y resguardo anti-borrado de portada
   const loadingInitRef = useRef<boolean>(true);
-  const stepRef = useRef<"welcome" | "workspace" | "submitted">("welcome");
+  const stepRef = useRef<"intro" | "welcome" | "workspace" | "submitted">("intro");
   const briefingIdRef = useRef<string | null>(null);
+  const preUploadFolderRef = useRef<string>(
+    `pre_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  );
   const linkedClientIdRef = useRef<string>(clientId || "");
   const answersRef = useRef<AiBriefingAnswers>(INITIAL_AI_BRIEFING_ANSWERS);
   const verifiedCoverRef = useRef<{
@@ -1196,14 +1199,22 @@ const PublicAiBriefing: React.FC = () => {
     setTimeout(() => setCopiedDraftLink(false), 3000);
   };
 
-  // File Upload for Section 10
+  // File Upload (disponible tanto en la Página Previa de Bienvenida como en la Etapa 10)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setUploadingFiles(true);
     try {
-      const id = await persistDraft(answers, briefingId, "draft");
+      // Solo crear/actualizar documento en Firestore si ya existe briefingId o ya hay identidad de portada completa;
+      // si el cliente adjunta archivos desde la página previa de bienvenida, subirlos a Storage y conservarlos en memoria hasta iniciar.
+      let targetFolder = briefingId || preUploadFolderRef.current;
+      let activeDraftId = briefingId;
+      if (!activeDraftId && hasValidCoverIdentity(answers)) {
+        activeDraftId = await persistDraft(answers, null, "draft");
+        targetFolder = activeDraftId;
+      }
+
       const uploaded: AiBriefingAttachment[] = [];
 
       for (let i = 0; i < files.length; i++) {
@@ -1213,7 +1224,7 @@ const PublicAiBriefing: React.FC = () => {
           continue;
         }
         const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-        const storageRef = ref(storage, `ai_briefing_attachments/${id}/${safeName}`);
+        const storageRef = ref(storage, `ai_briefing_attachments/${targetFolder}/${safeName}`);
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
         uploaded.push({
@@ -1226,12 +1237,16 @@ const PublicAiBriefing: React.FC = () => {
       }
 
       if (uploaded.length > 0) {
-        const next = {
+        const next: AiBriefingAnswers = {
+          ...answersRef.current,
           ...answers,
-          attachments: [...(answers.attachments || []), ...uploaded],
+          attachments: [...toAttachmentArray(answers.attachments), ...uploaded],
         };
         setAnswers(next);
-        await persistDraft(next, id, "draft");
+        answersRef.current = next;
+        if (activeDraftId) {
+          await persistDraft(next, activeDraftId, "draft");
+        }
       }
     } catch (err) {
       console.error("Error subiendo adjuntos:", err);
@@ -1243,11 +1258,13 @@ const PublicAiBriefing: React.FC = () => {
   };
 
   const handleRemoveAttachment = async (idx: number) => {
-    const next = {
+    const next: AiBriefingAnswers = {
+      ...answersRef.current,
       ...answers,
-      attachments: answers.attachments.filter((_, i) => i !== idx),
+      attachments: toAttachmentArray(answers.attachments).filter((_, i) => i !== idx),
     };
     setAnswers(next);
+    answersRef.current = next;
     if (briefingId) await persistDraft(next, briefingId, "draft");
   };
 
@@ -1366,8 +1383,622 @@ const PublicAiBriefing: React.FC = () => {
     );
   }
 
-  // STEP 0: WELCOME COVER
+  const renderLegalModal = () =>
+    showLegalModal ? (
+      <div className="fixed inset-0 z-50 bg-[#071B36]/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-white border border-[#C7D5E2] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] text-[#102B4B]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#C7D5E2]/80 bg-[#071B36] text-white">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-5 h-5 text-[#5FD9E4]" />
+              <h2 className="font-display text-sm md:text-base font-extrabold text-white">
+                Aviso de Privacidad, Confidencialidad y Uso Ético de IA
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowLegalModal(false)}
+              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="p-6 overflow-y-auto space-y-4 text-xs text-[#102B4B]/85 leading-relaxed">
+            <p>
+              En cumplimiento con la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong> y los Términos y Condiciones de{" "}
+              <strong>INTERPRES DIGITAL</strong> (marca comercial y plataforma tecnológica de <strong>INTERPRES S.A. de C.V.</strong>, con domicilio en San Miguel de Allende, Guanajuato, México), se informa lo siguiente respecto al presente Diagnóstico Ejecutivo (RFI):
+            </p>
+
+            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
+              <h3 className="font-extrabold text-[#008995] uppercase text-[11px] tracking-wider">
+                1. Garantía de Uso Ético de Inteligencia Artificial (No Entrenamiento)
+              </h3>
+              <p>
+                Este diagnóstico incorpora asistencia conversacional y procesamiento mediante Inteligencia Artificial empresarial exclusivamente para transcribir, estructurar tus requerimientos y apoyar en el pre-diagnóstico técnico.{" "}
+                <strong>Ninguna grabación de voz, respuesta escrita ni documento adjunto se utiliza para entrenar, alimentar o mejorar modelos públicos o de terceros.</strong>
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
+              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
+                2. Titularidad de la Información y Confidencialidad (Cláusulas 15 y 47)
+              </h3>
+              <p>
+                La empresa solicitante conserva en todo momento la titularidad única y exclusiva sobre su información operativa, comercial, flujos de trabajo y documentos adjuntos. <strong>INTERPRES S.A. de C.V.</strong> resguarda dicha información bajo estricta confidencialidad y no vende ni comercializa datos personales o corporativos con terceros.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
+              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
+                3. Finalidad del Tratamiento e Infraestructura Segura
+              </h3>
+              <p>
+                Los datos de contacto y especificaciones técnicas recabados se emplean únicamente para evaluar la viabilidad del proyecto, diseñar la arquitectura del Agente de IA y presentar la propuesta técnica y económica correspondiente, operando sobre infraestructura cifrada (Google Cloud / Firebase).
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
+              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
+                4. Declaración de Autorización y Licitud (Cláusula 30)
+              </h3>
+              <p>
+                Al marcar la casilla de aceptación, el usuario declara contar con la representación, facultades o autorización suficiente por parte de la empresa solicitante para compartir la información descrita y los archivos adjuntos con fines de evaluación y cotización, evitando incluir bases de datos con datos personales sensibles de terceros no anonimizados.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
+              <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
+                5. Derechos ARCO y Consulta Integral
+              </h3>
+              <p>
+                Puedes ejercer tus derechos de Acceso, Rectificación, Cancelación u Oposición (ARCO) o revocar tu consentimiento escribiendo a{" "}
+                <a href="mailto:admin@interpresdigital.com" className="text-[#1464B8] font-bold underline">
+                  admin@interpresdigital.com
+                </a>
+                . El Aviso de Privacidad Integral y los Términos y Condiciones completos están disponibles permanentemente en el pie de página de{" "}
+                <a
+                  href="https://interpresdigital.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#1464B8] font-bold underline"
+                >
+                  interpresdigital.com
+                </a>
+                .
+              </p>
+            </div>
+          </div>
+
+          <div className="px-6 py-4 border-t border-[#C7D5E2]/80 bg-[#F6F9FC] flex flex-wrap items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setShowLegalModal(false)}
+              className="px-4 py-2 rounded-xl bg-white hover:bg-[#EBF2F8] border border-[#C7D5E2] text-xs font-bold text-[#102B4B] cursor-pointer"
+            >
+              Cerrar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setWelcomeError(null);
+                setAnswers((prev) => {
+                  const next = {
+                    ...prev,
+                    privacyConsentAccepted: true,
+                    privacyConsentAcceptedAt:
+                      prev.privacyConsentAcceptedAt ||
+                      new Date().toLocaleString("es-MX", {
+                        timeZone: "America/Mexico_City",
+                      }),
+                  };
+                  answersRef.current = next;
+                  return next;
+                });
+                setShowLegalModal(false);
+              }}
+              className="px-5 py-2 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-xs font-extrabold text-white flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <Check className="w-4 h-4" />
+              <span>Aceptar Aviso y Continuar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  // STEP PRE-0: PÁGINA PREVIA INFORMATIVA DE BIENVENIDA Y ACCESO CON NEXIA IA
+  if (step === "intro") {
+    const attachedList = toAttachmentArray(answers.attachments);
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#EAF1F8] via-[#F6F9FC] to-[#E5F2F6] text-[#102B4B] flex flex-col">
+        {/* Top Corporate Bar */}
+        <header className="bg-white/95 backdrop-blur-md border-b border-[#C7D5E2] px-4 sm:px-8 py-3.5 sticky top-0 z-30">
+          <div className="max-w-[1140px] mx-auto flex flex-wrap items-center justify-between gap-3">
+            <img
+              src={LOGO_COLOR_URL}
+              alt="Interpres Digital Labs"
+              className="h-9 sm:h-11 w-auto object-contain"
+            />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F6F9FC] border border-[#C7D5E2] text-[11px] font-bold text-[#102B4B]/80">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#00A9B7]" />
+              <span>Diagnóstico Confidencial • Interpres Digital Labs</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-[1140px] w-full mx-auto px-3.5 py-6 sm:px-6 sm:py-10 space-y-7">
+          {/* 1. HERO CON NEXIA IA: ¿QUÉ ES EL BRIEFING DE IA Y CUÁL ES SU OBJETIVO? */}
+          <section className="bg-gradient-to-br from-[#071B36] via-[#0B2850] to-[#11396E] text-white rounded-[28px] border border-[#1B3C68] shadow-[0_28px_70px_-18px_rgba(7,27,54,0.28)] overflow-hidden relative">
+            <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#00A9B7]/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-[#1464B8]/25 blur-3xl" />
+
+            <div className="relative z-10 p-6 sm:p-9 md:p-11 grid grid-cols-1 lg:grid-cols-12 gap-7 items-center">
+              {/* Nexia IA Portrait Column */}
+              <div className="lg:col-span-4 flex flex-col items-center text-center space-y-3.5">
+                <div className="relative">
+                  <div className="absolute -inset-2 rounded-[28px] bg-gradient-to-tr from-[#1464B8]/40 via-[#00A9B7]/45 to-transparent blur-xl pointer-events-none" />
+                  <img
+                    src={NEXIA_URL}
+                    alt="Nexia IA — Consultora de Inteligencia Artificial"
+                    className="relative w-44 h-44 sm:w-56 sm:h-56 rounded-[26px] object-cover border-2 border-[#5FD9E4]/65 shadow-2xl"
+                  />
+                  <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-3.5 py-1 rounded-full bg-[#071B36] border border-[#00A9B7]/70 text-[11px] font-extrabold text-[#7CE8F0] shadow-md flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#00A9B7] animate-pulse" />
+                    Nexia IA • Consultora Activa
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 pt-2 max-w-[260px] leading-snug">
+                  Especialista conversacional de <strong>Interpres Digital Labs</strong> para levantamiento arquitectónico de IA.
+                </p>
+              </div>
+
+              {/* Welcome & Objective Explanation */}
+              <div className="lg:col-span-8 space-y-5">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#00A9B7]/20 border border-[#00A9B7]/45 text-[#8FF0F7] text-[11px] font-extrabold uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Guía Previa e Instrucciones de Acceso</span>
+                </div>
+
+                <h1 className="font-display text-2xl sm:text-3xl md:text-[38px] font-extrabold tracking-tight leading-[1.12] text-white">
+                  Bienvenido al Diagnóstico Ejecutivo para{" "}
+                  <span className="text-[#5FD9E4]">Automatización y Agentes de IA</span>
+                </h1>
+
+                <p className="text-slate-200 text-sm sm:text-[15px] leading-relaxed">
+                  Hola, soy <strong className="text-white">Nexia IA</strong>. Antes de iniciar, te comparto cómo funciona este{" "}
+                  <strong className="text-white">Briefing Ejecutivo (RFI)</strong> para que aproveches al máximo la herramienta y conozcas cómo protegemos tu información.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                  <div className="p-4 rounded-2xl bg-[#0C2548]/90 border border-white/15 space-y-1.5">
+                    <h2 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#7CE8F0]">
+                      ¿Qué es este Briefing de IA?
+                    </h2>
+                    <p className="text-xs text-slate-200/95 leading-relaxed">
+                      Es un levantamiento consultivo estructurado en <strong>10 etapas clave</strong> para comprender cómo opera hoy tu negocio, qué tareas consumen tiempo operativo, con qué sistemas trabajas y bajo qué reglas de seguridad debe actuar la tecnología.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-[#0C2548]/90 border border-white/15 space-y-1.5">
+                    <h2 className="font-display text-xs font-extrabold uppercase tracking-wider text-[#7CE8F0]">
+                      ¿Cuál es el objetivo?
+                    </h2>
+                    <p className="text-xs text-slate-200/95 leading-relaxed">
+                      Obtener los criterios reales de negocio y de TI para diseñar una <strong>arquitectura a la medida</strong> —desde flujos automatizados e integraciones API/CRM/ERP hasta agentes autónomos— y entregarte una <strong>propuesta técnica y económica precisa</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 2. MODALIDADES DE PARTICIPACIÓN */}
+          <section className="bg-white rounded-3xl border border-[#C7D5E2] p-6 sm:p-8 shadow-xs space-y-5">
+            <div className="space-y-1">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1464B8]">
+                Cómo puedes responderlo
+              </span>
+              <h2 className="font-display text-xl sm:text-2xl font-extrabold text-[#071B36]">
+                3 Modalidades Flexibles (Tú eliges en todo momento)
+              </h2>
+              <p className="text-xs sm:text-sm text-[#102B4B]/75">
+                No estás atado a un solo formato: puedes empezar hablando con Nexia IA, cambiar al formulario escrito o compartir el avance con tu equipo.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-[#071B36] text-[#5FD9E4] flex items-center justify-center">
+                    <Mic className="w-5 h-5" />
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#00A9B7]/15 text-[#007B86] text-[10px] font-extrabold uppercase">
+                    Recomendada
+                  </span>
+                </div>
+                <h3 className="font-display text-base font-extrabold text-[#071B36]">
+                  1. Entrevista por Voz con Nexia IA
+                </h3>
+                <p className="text-xs text-[#102B4B]/75 leading-relaxed">
+                  Conversa con voz natural como en una videollamada consultiva. Nexia te hace <strong>una sola pregunta breve por turno</strong>, sintetiza tus respuestas y llena cada bloque automáticamente en pantalla.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-2.5">
+                <div className="w-10 h-10 rounded-xl bg-[#1464B8]/12 text-[#1464B8] flex items-center justify-center">
+                  <PenTool className="w-5 h-5" />
+                </div>
+                <h3 className="font-display text-base font-extrabold text-[#071B36]">
+                  2. Formulario Ejecutivo por Escrito
+                </h3>
+                <p className="text-xs text-[#102B4B]/75 leading-relaxed">
+                  Avanza paso a paso escribiendo tus respuestas directamente en los 10 bloques, con botones de selección rápida para canales, usuarios, autonomía y rangos de inversión.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-2.5">
+                <div className="w-10 h-10 rounded-xl bg-[#00A9B7]/15 text-[#008995] flex items-center justify-center">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <h3 className="font-display text-base font-extrabold text-[#071B36]">
+                  3. Híbrida y Colaborativa con TI
+                </h3>
+                <p className="text-xs text-[#102B4B]/75 leading-relaxed">
+                  Alterna entre voz y texto cuando gustes. Si desconoces detalles técnicos (APIs, bases de datos o normativas), márcalos como <strong>&ldquo;Pendiente para TI&rdquo;</strong> y comparte el link único con tu equipo técnico.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* 3. INSTRUCCIONES PRÁCTICAS Y MAPA DE LAS 10 ETAPAS */}
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Practical Instructions */}
+            <div className="lg:col-span-5 bg-white rounded-3xl border border-[#C7D5E2] p-6 sm:p-7 shadow-xs space-y-4">
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#008995]">
+                  Instrucciones de uso
+                </span>
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#071B36]">
+                  Recomendaciones para tu sesión
+                </h2>
+              </div>
+
+              <ul className="space-y-3 text-xs text-[#102B4B]/80 leading-relaxed">
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#1464B8] text-white text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">
+                    1
+                  </span>
+                  <span>
+                    <strong className="text-[#071B36]">Duración y autoguardado:</strong> Toma entre <strong>8 y 12 minutos</strong>. Cada respuesta se guarda al instante; si cierras la ventana o se bloquea tu pantalla, retomarás exactamente en la etapa donde te quedaste.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#1464B8] text-white text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <span>
+                    <strong className="text-[#071B36]">Habla en términos de tu negocio:</strong> No necesitas vocabulario técnico de programación; describe tus procesos actuales y el resultado que buscas lograr.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#1464B8] text-white text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">
+                    3
+                  </span>
+                  <span>
+                    <strong className="text-[#071B36]">Control total del micrófono:</strong> En modo Voz contarás con botones para <strong>Pausar a Nexia IA</strong>, <strong>Silenciar tu micrófono</strong> o pasar al formulario escrito en cualquier instante.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#1464B8] text-white text-[10px] font-extrabold flex items-center justify-center flex-shrink-0 mt-0.5">
+                    4
+                  </span>
+                  <span>
+                    <strong className="text-[#071B36]">Revisión previa al envío:</strong> En la Etapa 10 verás un resumen ejecutivo editable de todas tus respuestas antes de enviar formalmente tu diagnóstico.
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* 10 Stages Overview */}
+            <div className="lg:col-span-7 bg-white rounded-3xl border border-[#C7D5E2] p-6 sm:p-7 shadow-xs space-y-4">
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1464B8]">
+                  Estructura completa del RFI
+                </span>
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#071B36]">
+                  ¿Qué temas revisaremos en las 10 etapas?
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                {[
+                  ["1. Contexto y Objetivo", "Problema operativo a resolver, resultado esperado e iniciativas previas."],
+                  ["2. Proceso Actual", "Rol o flujo que hoy ejecuta una persona, frecuencia e impacto."],
+                  ["3. Funciones y Autonomía", "Acciones exactas del agente, límites fuera de alcance y escalamiento humano."],
+                  ["4. Usuarios y Volumen", "Quién interactuará, cantidad estimada de mensajes/operaciones y horarios."],
+                  ["5. Canales y Sistemas", "WhatsApp, Web, Correo, CRM, ERP, bases de datos y disponibilidad de APIs."],
+                  ["6. Base de Conocimiento", "Manuales, catálogos, reglas de negocio y formato donde residen hoy."],
+                  ["7. Seguridad y Privacidad", "Datos confidenciales, normativas (LFPDPPP) y residencia en la nube."],
+                  ["8. Presupuesto y Tiempos", "Rango estimado de inversión, fecha meta de arranque, idiomas y sponsor."],
+                  ["9. Métricas de Éxito (KPIs)", "Indicadores para medir retorno e impacto esperado a 3 y 6 meses."],
+                  ["10. Observaciones y Cierre", "Comentarios finales, validación del resumen completo y envío."],
+                ].map(([title, desc], i) => (
+                  <div
+                    key={i}
+                    className="p-3 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2]/85 space-y-0.5"
+                  >
+                    <div className="font-display font-extrabold text-[#071B36] text-xs">{title}</div>
+                    <p className="text-[11px] text-[#102B4B]/70 leading-snug">{desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* 4. CARGA OPCIONAL DE DOCUMENTOS O ARCHIVOS DE APOYO DESDE EL INICIO */}
+          <section className="bg-white rounded-3xl border border-[#C7D5E2] p-6 sm:p-8 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#008995]">
+                  Documentación de apoyo (Opcional)
+                </span>
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#071B36]">
+                  ¿Deseas compartir archivos o documentos que ayuden al diagnóstico?
+                </h2>
+                <p className="text-xs text-[#102B4B]/75">
+                  Puedes subir desde aquí diagramas de proceso, presentaciones, requerimientos técnicos, formatos actuales o manuales (también podrás adjuntar más archivos en la Etapa 10).
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-[#F6F9FC] border border-[#C7D5E2] text-[11px] font-bold text-[#102B4B]/70 self-start sm:self-center flex-shrink-0">
+                Máx. 15 MB por archivo
+              </span>
+            </div>
+
+            <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#96B4D2] hover:border-[#1464B8] rounded-2xl p-5 sm:p-6 bg-[#F6F9FC] hover:bg-[#EDF4FB] cursor-pointer transition-all text-center">
+              {uploadingFiles ? (
+                <Loader2 className="w-7 h-7 text-[#1464B8] animate-spin mb-2" />
+              ) : (
+                <Upload className="w-7 h-7 text-[#1464B8] mb-2" />
+              )}
+              <span className="text-xs sm:text-sm font-extrabold text-[#071B36]">
+                {uploadingFiles
+                  ? "Subiendo tus documentos de forma cifrada..."
+                  : "Haz clic aquí para seleccionar PDF, Word, Excel, PowerPoint o imágenes"}
+              </span>
+              <span className="text-[11px] text-[#102B4B]/60 mt-1">
+                Tus documentos quedan protegidos bajo confidencialidad y se vincularán automáticamente a tu expediente.
+              </span>
+              <input
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                disabled={uploadingFiles}
+                className="hidden"
+              />
+            </label>
+
+            {attachedList.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <div className="text-xs font-extrabold text-[#007B86] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#00A9B7]" />
+                  <span>{attachedList.length} documento(s) listo(s) para incluirse en tu Briefing:</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {attachedList.map((att, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#F6F9FC] border border-[#C7D5E2] text-xs"
+                    >
+                      <div className="flex items-center gap-2 truncate pr-2">
+                        <FileText className="w-4 h-4 text-[#1464B8] flex-shrink-0" />
+                        <a
+                          href={att.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#1464B8] font-bold hover:underline truncate"
+                        >
+                          {att.name}
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAttachment(idx)}
+                        className="text-rose-500 hover:text-rose-600 p-1 cursor-pointer"
+                        title="Quitar archivo"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* 5. CANDADO OBLIGATORIO DE AVISO DE PRIVACIDAD, USO ÉTICO DE IA Y BOTÓN DE ACCESO */}
+          <section
+            className={clsx(
+              "rounded-3xl border-2 p-6 sm:p-8 shadow-md transition-all space-y-5",
+              answers.privacyConsentAccepted
+                ? "bg-white border-[#00A9B7]"
+                : "bg-white border-[#1464B8]/45"
+            )}
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#C7D5E2]/80 pb-4">
+              <div className="space-y-1">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#1464B8] flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#00A9B7]" />
+                  Paso Requerido para Desbloquear el Acceso
+                </span>
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#071B36]">
+                  Privacidad, Confidencialidad y Uso Ético de Inteligencia Artificial
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowLegalModal(true)}
+                className="px-4 py-2.5 rounded-xl bg-[#F6F9FC] hover:bg-[#EAF3FC] border border-[#1464B8]/40 text-xs font-extrabold text-[#1464B8] inline-flex items-center justify-center gap-2 transition-all cursor-pointer flex-shrink-0"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Leer Aviso Legal y Ético Completo</span>
+              </button>
+            </div>
+
+            {/* Key Ethical & Legal Guarantees */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1">
+                <div className="font-extrabold text-[#007B86] flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#00A9B7]" />
+                  <span>Cero Entrenamiento de IA</span>
+                </div>
+                <p className="text-[11px] text-[#102B4B]/75 leading-snug">
+                  Tus respuestas de voz, textos y documentos adjuntos <strong>jamás</strong> se usan para entrenar modelos públicos o de terceros.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1">
+                <div className="font-extrabold text-[#1464B8] flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#1464B8]" />
+                  <span>Confidencialidad y LFPDPPP</span>
+                </div>
+                <p className="text-[11px] text-[#102B4B]/75 leading-snug">
+                  Tu empresa conserva la titularidad exclusiva de su información bajo resguardo confidencial de <strong>INTERPRES S.A. de C.V.</strong>
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1">
+                <div className="font-extrabold text-[#071B36] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#00A9B7]" />
+                  <span>Uso Exclusivo de Propuesta</span>
+                </div>
+                <p className="text-[11px] text-[#102B4B]/75 leading-snug">
+                  La información se utiliza únicamente para estructurar tu diagnóstico arquitectónico y cotización comercial.
+                </p>
+              </div>
+            </div>
+
+            {/* Mandatory Checkbox */}
+            <div
+              onClick={() => {
+                const nextVal = !answers.privacyConsentAccepted;
+                setWelcomeError(null);
+                setAnswers((prev) => {
+                  const next = {
+                    ...prev,
+                    privacyConsentAccepted: nextVal,
+                    privacyConsentAcceptedAt: nextVal
+                      ? new Date().toLocaleString("es-MX", {
+                          timeZone: "America/Mexico_City",
+                        })
+                      : "",
+                  };
+                  answersRef.current = next;
+                  return next;
+                });
+              }}
+              role="checkbox"
+              aria-checked={answers.privacyConsentAccepted}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === " " || e.key === "Enter") {
+                  e.preventDefault();
+                  const nextVal = !answers.privacyConsentAccepted;
+                  setWelcomeError(null);
+                  setAnswers((prev) => {
+                    const next = {
+                      ...prev,
+                      privacyConsentAccepted: nextVal,
+                      privacyConsentAcceptedAt: nextVal
+                        ? new Date().toLocaleString("es-MX", {
+                            timeZone: "America/Mexico_City",
+                          })
+                        : "",
+                    };
+                    answersRef.current = next;
+                    return next;
+                  });
+                }
+              }}
+              className={clsx(
+                "p-4 rounded-2xl border-2 flex items-start gap-3.5 cursor-pointer select-none transition-all",
+                answers.privacyConsentAccepted
+                  ? "bg-[#00A9B7]/10 border-[#00A9B7]"
+                  : "bg-[#F6F9FC] border-[#B8CCE0] hover:border-[#1464B8]"
+              )}
+            >
+              <div
+                className={clsx(
+                  "w-6 h-6 mt-0.5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all",
+                  answers.privacyConsentAccepted
+                    ? "bg-[#00A9B7] border-[#00A9B7] text-white shadow-sm"
+                    : "bg-white border-[#7E97B3]"
+                )}
+              >
+                {answers.privacyConsentAccepted && <Check className="w-4 h-4 stroke-[3]" />}
+              </div>
+
+              <div className="space-y-1 text-xs sm:text-sm text-[#102B4B]">
+                <span className="font-extrabold block text-[#071B36]">
+                  He leído y acepto el Aviso de Privacidad, Confidencialidad, Uso Ético de IA y Autorización de Información *
+                </span>
+                <span className="text-xs text-[#102B4B]/75 block leading-relaxed">
+                  Confirmo que cuento con autorización para compartir la información y documentos ingresados con <strong>INTERPRES DIGITAL (INTERPRES S.A. de C.V.)</strong> para fines de diagnóstico técnico y elaboración de propuesta.
+                </span>
+              </div>
+            </div>
+
+            {/* Gate Action Button */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+              <div className="text-xs text-[#102B4B]/70 flex items-center gap-2">
+                {answers.privacyConsentAccepted ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
+                    <span className="font-bold text-[#007B86]">
+                      Consentimiento verificado. Ya puedes ingresar al Briefing de IA.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <span>
+                      Marca la casilla de aceptación superior para habilitar el botón de ingreso al Briefing.
+                    </span>
+                  </>
+                )}
+              </div>
+
+              <button
+                type="button"
+                disabled={!answers.privacyConsentAccepted}
+                onClick={() => {
+                  setStep("welcome");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className={clsx(
+                  "w-full sm:w-auto px-7 py-4 rounded-2xl font-display text-sm font-extrabold flex items-center justify-center gap-2.5 transition-all",
+                  answers.privacyConsentAccepted
+                    ? "bg-gradient-to-r from-[#071B36] via-[#1464B8] to-[#00A9B7] hover:from-[#0A254A] hover:to-[#008C99] text-white shadow-lg shadow-[#1464B8]/25 cursor-pointer active:scale-[0.99]"
+                    : "bg-[#DCE6F1] text-[#102B4B]/45 cursor-not-allowed"
+                )}
+              >
+                <span>Ingresar al Briefing de IA</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </section>
+        </main>
+
+        {renderLegalModal()}
+      </div>
+    );
+  }
+
+  // STEP 0: REGISTRO DEL SOLICITANTE Y ELECCIÓN DE MODALIDAD (UNA VEZ ACEPTADA LA BIENVENIDA)
   if (step === "welcome") {
+    const attachedCount = toAttachmentArray(answers.attachments).length;
+
     return (
       <div className="min-h-screen bg-[#F6F9FC] text-[#102B4B] flex items-center justify-center px-3 py-6 sm:p-6 md:p-10">
         <div className="max-w-[920px] w-full bg-white border border-[#C7D5E2] rounded-3xl overflow-hidden shadow-[0_28px_70px_-18px_rgba(16,43,75,0.12)]">
@@ -1379,10 +2010,17 @@ const PublicAiBriefing: React.FC = () => {
             <div className="relative z-10 space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/12 pb-4">
                 <img src={LOGO_BLANCO_URL} alt="Interpres Digital Labs" className="h-10 sm:h-12 w-auto object-contain" />
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#00A9B7]/18 border border-[#00A9B7]/45 text-[#7CE8F0] text-[11px] font-bold tracking-wide">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  RFI — Automatización y Agentes de IA
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("intro");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-slate-100 text-[11px] font-bold transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-[#7CE8F0]" />
+                  <span>Volver a guía e instrucciones</span>
+                </button>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
@@ -1392,9 +2030,7 @@ const PublicAiBriefing: React.FC = () => {
                     <span className="block text-[#5FD9E4]">Diseño de Agentes de IA</span>
                   </h1>
                   <p className="text-slate-200/90 text-xs sm:text-[15px] leading-relaxed">
-                    Abarca tanto <strong className="text-white">automatizaciones de procesos e integraciones entre sistemas</strong> como{" "}
-                    <strong className="text-white">agentes autónomos de IA</strong>. Complétalo{" "}
-                    <strong className="text-[#7CE8F0]">conversando por voz con Nexia IA</strong> o por escrito paso a paso; tu avance se guarda automáticamente.
+                    Ingresa tus datos corporativos para vincular tu expediente y elige si deseas iniciar conversando por voz con <strong className="text-[#7CE8F0]">Nexia IA</strong> o por escrito paso a paso.
                   </p>
                 </div>
 
@@ -1407,8 +2043,8 @@ const PublicAiBriefing: React.FC = () => {
                   />
                   <div>
                     <div className="text-xs font-extrabold text-white">Nexia IA</div>
-                    <div className="text-[11px] text-[#7CE8F0] font-semibold">Consultora de Arquitectura</div>
-                    <div className="text-[10px] text-slate-300 mt-0.5">Voz en vivo • Español / Inglés</div>
+                    <div className="text-[11px] text-[#7CE8F0] font-semibold">Lista para iniciar</div>
+                    <div className="text-[10px] text-slate-300 mt-0.5">Voz en vivo • Formulario</div>
                   </div>
                 </div>
               </div>
@@ -1417,6 +2053,21 @@ const PublicAiBriefing: React.FC = () => {
 
           {/* Editorial Light Body */}
           <div className="p-5 sm:p-8 md:p-10 space-y-6">
+            {attachedCount > 0 && (
+              <div className="px-4 py-2.5 rounded-2xl bg-[#00A9B7]/10 border border-[#00A9B7]/40 text-xs text-[#007B86] font-bold flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#00A9B7] flex-shrink-0" />
+                  <span>{attachedCount} documento(s) de apoyo adjuntado(s) y listos para tu expediente.</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStep("intro")}
+                  className="text-[11px] text-[#1464B8] underline font-extrabold cursor-pointer"
+                >
+                  Gestionar archivos
+                </button>
+              </div>
+            )}
             {/* Identification Form */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] focus-within:border-[#1464B8] focus-within:bg-white transition-colors">
@@ -1662,124 +2313,7 @@ const PublicAiBriefing: React.FC = () => {
           </div>
         </div>
 
-        {/* Legal, Data Protection & Ethical AI Modal */}
-        {showLegalModal && (
-          <div className="fixed inset-0 z-50 bg-[#071B36]/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="max-w-2xl w-full bg-white border border-[#C7D5E2] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-[#102B4B]">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#C7D5E2]/80 bg-[#071B36] text-white">
-                <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="w-5 h-5 text-[#5FD9E4]" />
-                  <h2 className="font-display text-sm md:text-base font-extrabold text-white">
-                    Aviso de Privacidad, Confidencialidad y Uso Ético de IA
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowLegalModal(false)}
-                  className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-6 overflow-y-auto space-y-4 text-xs text-[#102B4B]/85 leading-relaxed">
-                <p>
-                  En cumplimiento con la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong> y los Términos y Condiciones de{" "}
-                  <strong>INTERPRES DIGITAL</strong> (marca comercial y plataforma tecnológica de <strong>INTERPRES S.A. de C.V.</strong>, con domicilio en San Miguel de Allende, Guanajuato, México), se informa lo siguiente respecto al presente Diagnóstico Ejecutivo (RFI):
-                </p>
-
-                <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-                  <h3 className="font-extrabold text-[#008995] uppercase text-[11px] tracking-wider">
-                    1. Garantía de Uso Ético de Inteligencia Artificial (No Entrenamiento)
-                  </h3>
-                  <p>
-                    Este diagnóstico incorpora asistencia conversacional y procesamiento mediante Inteligencia Artificial empresarial exclusivamente para transcribir, estructurar tus requerimientos y apoyar en el pre-diagnóstico técnico.{" "}
-                    <strong>Ninguna grabación de voz, respuesta escrita ni documento adjunto se utiliza para entrenar, alimentar o mejorar modelos públicos o de terceros.</strong>
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-                  <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
-                    2. Titularidad de la Información y Confidencialidad (Cláusulas 15 y 47)
-                  </h3>
-                  <p>
-                    La empresa solicitante conserva en todo momento la titularidad única y exclusiva sobre su información operativa, comercial, flujos de trabajo y documentos adjuntos. <strong>INTERPRES S.A. de C.V.</strong> resguarda dicha información bajo estricta confidencialidad y no vende ni comercializa datos personales o corporativos con terceros.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-                  <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
-                    3. Finalidad del Tratamiento e Infraestructura Segura
-                  </h3>
-                  <p>
-                    Los datos de contacto y especificaciones técnicas recabados se emplean únicamente para evaluar la viabilidad del proyecto, diseñar la arquitectura del Agente de IA y presentar la propuesta técnica y económica correspondiente, operando sobre infraestructura cifrada (Google Cloud / Firebase).
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-                  <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
-                    4. Declaración de Autorización y Licitud (Cláusula 30)
-                  </h3>
-                  <p>
-                    Al marcar la casilla de aceptación, el usuario declara contar con la representación, facultades o autorización suficiente por parte de la empresa solicitante para compartir la información descrita y los archivos adjuntos con fines de evaluación y cotización, evitando incluir bases de datos con datos personales sensibles de terceros no anonimizados.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#F6F9FC] border border-[#C7D5E2] space-y-1.5">
-                  <h3 className="font-extrabold text-[#1464B8] uppercase text-[11px] tracking-wider">
-                    5. Derechos ARCO y Consulta Integral
-                  </h3>
-                  <p>
-                    Puedes ejercer tus derechos de Acceso, Rectificación, Cancelación u Oposición (ARCO) o revocar tu consentimiento escribiendo a{" "}
-                    <a href="mailto:admin@interpresdigital.com" className="text-[#1464B8] font-bold underline">
-                      admin@interpresdigital.com
-                    </a>
-                    . El Aviso de Privacidad Integral y los Términos y Condiciones completos están disponibles permanentemente en el pie de página de{" "}
-                    <a
-                      href="https://interpresdigital.com/"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[#1464B8] font-bold underline"
-                    >
-                      interpresdigital.com
-                    </a>
-                    .
-                  </p>
-                </div>
-              </div>
-
-              <div className="px-6 py-4 border-t border-[#C7D5E2]/80 bg-[#F6F9FC] flex flex-wrap items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowLegalModal(false)}
-                  className="px-4 py-2 rounded-xl bg-white hover:bg-[#EBF2F8] border border-[#C7D5E2] text-xs font-bold text-[#102B4B]"
-                >
-                  Cerrar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWelcomeError(null);
-                    setAnswers((prev) => ({
-                      ...prev,
-                      privacyConsentAccepted: true,
-                      privacyConsentAcceptedAt:
-                        prev.privacyConsentAcceptedAt ||
-                        new Date().toLocaleString("es-MX", {
-                          timeZone: "America/Mexico_City",
-                        }),
-                    }));
-                    setShowLegalModal(false);
-                  }}
-                  className="px-5 py-2 rounded-xl bg-[#1464B8] hover:bg-[#10539A] text-xs font-extrabold text-white flex items-center gap-1.5 shadow-sm"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Aceptar y Continuar</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderLegalModal()}
       </div>
     );
   }
